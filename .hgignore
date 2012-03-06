@@ -27,3 +27,4 @@ likes_*.json
 *pep8.txt
 *pylint.txt
 *_
+uploads*

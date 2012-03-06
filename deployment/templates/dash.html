@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% comment %}
+Though we're rendering real info from real supervisord via xmlrpc, this is still just
+a prototype.  To make it real, we need to do this:
+
+1 - When rendering the Django template, list all of the processes that we know about
+for each host.
+2 - When getting supervisord info from the ajax call, match up supervisord proc statuses
+with the procs we know about in the DB.  Account for the following scenarios:
+  - We have a proc listed from the DB, and a status comes back for it from supd.  good!
+  - We have a proc listed from the DB, but no status comes back from supd.  bad :(
+  - We get info from supd about a proc that we don't know about in the DB.  wtf?!
+{% endcomment %}
+
+{% block content %}
+<ul class="thumbnails">
+{% for host in deployments_by_host %}
+<li class="span3 dash-host" data-hostname="{{ host }}">
+  <h4>{{ host }}</h4>
+</li>
+{% endfor %}
+</ul>
+{% endblock content %}
+
+
+{% block script %}
+<script src="/static/js/dash.js"></script>
+
+{# template for list of processes inside each host block #}
+<script id="host-procs-tmpl" type="text/goatee">
+  <ul class="host-procs-list">
+  <%#states%>
+  <li class="host-status label <%statename%>"><%name%></li>
+  <%/states%>
+</ul>
+</script>
+{% endblock script %}

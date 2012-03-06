@@ -1,17 +1,23 @@
 from django.conf.urls.defaults import patterns, include, url
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+from django.views.generic import ListView
+from django.contrib import admin
 
-# Uncomment the next two lines to enable the admin:
-# from django.contrib import admin
-# admin.autodiscover()
+from deployment.models import DeploymentLogEntry
+
+# Tell the Django admin to scan all apps in our project and automatically
+# display their admin interfaces.
+admin.autodiscover()
 
 urlpatterns = patterns('',
-    # Examples:
-    # url(r'^$', 'velociraptor.views.home', name='home'),
-    # url(r'^velociraptor/', include('velociraptor.foo.urls')),
-
-    # Uncomment the admin/doc line below to enable admin documentation:
-    # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
-
-    # Uncomment the next line to enable the admin:
-    # url(r'^admin/', include(admin.site.urls)),
+    url(r'^$', 'deployment.views.dash', name='dash'),
+    url(r'^log/$', ListView.as_view(model=DeploymentLogEntry,
+                                    template_name='log.html'), name='log'),
+    url(r'^api/status/(?P<host>[a-zA-Z0-9_.]+)/$', 'deployment.views.api_host_status',
+        name='api_host_status'),
+    url(r'^api/status/(?P<host>[a-zA-Z0-9_.]+)/(?P<proc>[a-zA-Z0-9_.]+)/$', 'deployment.views.api_proc_status',
+        name='api_proc_status'),
+    url(r'^admin/', include(admin.site.urls)),
 )
+
+urlpatterns += staticfiles_urlpatterns()
