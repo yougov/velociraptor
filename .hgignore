@@ -3,8 +3,6 @@ syntax: glob
 .*.swp
 .*.swo
 *~
-*.orig
-*.idea
 *.egg
 ._*
 *.log
@@ -16,7 +14,6 @@ dist/*
 tmp/*
 run/*
 env/
-cumulus.egg-info/*
 _build/*
 coverage.xml
 nosetests.xml
@@ -26,5 +23,4 @@ likes_*.json
 *.sublime-workspace
 *pep8.txt
 *pylint.txt
-*_
 uploads*

@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.conf import settings
 
+from yamlfield.fields import YAMLField
 
 LOG_ENTRY_TYPES = (
     ('build', 'Build'),
@@ -21,11 +23,18 @@ class DeploymentLogEntry(models.Model):
         ordering = ['-time']
 
 
+
 class App(models.Model):
     name = models.CharField(max_length=50)
 
+    # string representation of the Python function that will be used to
+    # actually push your code.  This will probably be a Fabric task.
+    push_with = models.CharField(max_length=100,
+                                   choices=settings.PUSH_FUNCTIONS)
+
     def __unicode__(self):
         return self.name
+
 
 class Build(models.Model):
     file = models.FileField(upload_to='builds/')
@@ -34,20 +43,13 @@ class Build(models.Model):
     def __unicode__(self):
         return '%s:%s' % (self.app.name, self.file)
 
+
 class Release(models.Model):
     build = models.ForeignKey(Build)
 
-    # Store the config used for the release right here, in YAML form.  This
-    # freezes it in time so we always know exactly what config went into a
-    # release, without a lot of sleuthing.
-
-    # To be determined: How we populate this field, whether through copy/paste,
-    # or sucking values out of Puppet or something like Hiera, or storing
-    # master config in this same DB. 
-
-    # TODO: Create a YAMLField() field type that validates that the information
-    # being saved is valid YAML.
-    config = models.TextField()
+    # Freeze the release-time config by storing it here.  TBD: How we populate
+    # this field.
+    config = YAMLField()
 
     def __unicode__(self):
         return 'release %s of build %s' % (self.id, self.build)

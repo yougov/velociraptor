@@ -1,6 +1,9 @@
 import os
 import sys
 
+import djcelery
+djcelery.setup_loader()
+
 
 here = os.path.dirname(os.path.realpath(__file__))
 
@@ -29,6 +32,12 @@ DATABASES = {
         'PORT': '',
     }
 }
+
+BROKER_HOST = "localhost"
+BROKER_PORT = 5672
+BROKER_USER = "guest"
+BROKER_PASSWORD = "guest"
+BROKER_VHOST = "/"
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -165,3 +174,12 @@ LOGGING = {
         },
     }
 }
+
+# The functions available for pushing an app.  Formatted as a list of
+# tuples where the first item is a stringified version of the function's
+# location in the Python import path, and the second item is a text label to be
+# shown in forms.
+
+PUSH_FUNCTIONS = (
+    ('deployment.tasks.get_host_os_version', 'Dummy Host Version Function'),
+)
