@@ -15,7 +15,7 @@ with the procs we know about in the DB.  Account for the following scenarios:
 
 {% block content %}
 <ul class="thumbnails">
-{% for host in deployments_by_host %}
+{% for host in hosts %}
 <li class="span3 dash-host" data-hostname="{{ host }}">
   <h4>{{ host }}</h4>
 </li>

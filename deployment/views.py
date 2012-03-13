@@ -4,27 +4,14 @@ import xmlrpclib
 
 from django.shortcuts import render
 from django.http import HttpResponse
+from celery.tasks import AsyncResult
 
-from deployment.models import Deployment, STATUS_DECOMMISSIONED
+from deployment.models import Host
 from deployment.forms import DeploymentForm
 
 
 def dash(request):
-    # Query all currently active deployments to get a list of all hosts that
-    # we've deployed to.  Pass that list out to the template.
-
-    all_procs = Deployment.objects.exclude(
-                    deployment_status=STATUS_DECOMMISSIONED).order_by('host')
-
-    # Build a dictionary where each key is a host, and each value is a list of
-    # deployments on that host.
-    deployments_by_host = OrderedDict()
-    for proc in all_procs:
-        if proc.host in deployments_by_host:
-            deployments_by_host[proc.host].append(proc)
-        else:
-            deployments_by_host[proc.host] = [proc]
-
+    hosts = Host.objects.filter(active=True)
     return render(request, 'dash.html', locals())
 
 
@@ -34,12 +21,14 @@ def connect_supd(host):
     url = 'http://%s:%s' % (host, SUPERVISOR_PORT)
     return xmlrpclib.Server(url)
 
+
 def json_response(obj):
     """Given a Python object, dump it to JSON and return a Django HttpResponse
     with the contents and proper Content-Type"""
     resp = HttpResponse(json.dumps(obj))
     resp['Content-Type'] = 'application/json'
     return resp
+
 
 def api_host_status(request, host):
     """Display status of all supervisord-managed processes on a single host, in
@@ -54,6 +43,7 @@ def api_host_status(request, host):
     }
     return json_response(data)
 
+
 def api_proc_status(request, host, proc):
     """Display status of a single supervisord-managed process on a host, in JSON"""
     server = connect_supd(host)
@@ -62,6 +52,21 @@ def api_proc_status(request, host, proc):
     state['host'] = host
     return json_response(state)
 
+
+def api_task_status(request, task_id):
+    task = AsyncResult(task_id)
+    status = {
+        'successful': task.successful(),
+        'result': task.result,
+        'status': task.status,
+        'ready': task.ready(),
+        'failed': task.failed(),
+        'name': task.task_name,
+        'id': task.task_id
+    }
+    if task.failed:
+        status['traceback'] = task.traceback
+    return json_response(status)
 
 def deploy(request):
     # will need a form that lets you create a new deployment.

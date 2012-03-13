@@ -50,6 +50,14 @@ class Release(models.Model):
     def __unicode__(self):
         return 'release %s of build %s' % (self.id, self.build)
 
+class Host(models.Model):
+    name = models.CharField(max_length=200)
+    active = models.BooleanField(default=True)
+
+    def __unicode__(self):
+        return self.name
+
+
 (STATUS_DEPLOYING,
  STATUS_DEPLOYED,
  STATUS_DECOMMISSIONED) = xrange(3)

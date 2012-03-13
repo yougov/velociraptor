@@ -5,7 +5,7 @@ $(document).ready(function() {
     $('.dash-host').each(function() {
         var el = $(this);
         var host = el.data('hostname');
-        var url = '/api/status/' + host;
+        var url = '/api/host/' + host + '/procs/';
         $.getJSON(url, function(data, txtStatus, xhr) {
             el.append(tmpl.goatee(data));
 
