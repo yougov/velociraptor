@@ -174,12 +174,3 @@ LOGGING = {
         },
     }
 }
-
-# The functions available for pushing an app.  Formatted as a list of
-# tuples where the first item is a stringified version of the function's
-# location in the Python import path, and the second item is a text label to be
-# shown in forms.
-
-PUSH_FUNCTIONS = (
-    ('deployment.tasks.get_host_os_version', 'Dummy Host Version Function'),
-)

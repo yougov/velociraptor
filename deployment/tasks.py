@@ -22,8 +22,11 @@ def wait_and_count(ceil, secs=1):
     return "blerg"
 
 @celery_task()
-def get_host_os_version(hostname):
+def get_host_os_version(hostname, user, password):
     env.host_string = hostname
+    env.user = user
+    env.password = password
+    env.abort_on_prompts = True
     return get_os_version()
 
 @celery_task()

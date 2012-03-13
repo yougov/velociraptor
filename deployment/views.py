@@ -6,6 +6,8 @@ from django.shortcuts import render
 from django.http import HttpResponse
 
 from deployment.models import Deployment, STATUS_DECOMMISSIONED
+from deployment.forms import DeploymentForm
+
 
 def dash(request):
     # Query all currently active deployments to get a list of all hosts that
@@ -59,3 +61,26 @@ def api_proc_status(request, host, proc):
     # Add the host in too for convenvience's sake
     state['host'] = host
     return json_response(state)
+
+
+def deploy(request):
+    # will need a form that lets you create a new deployment.
+    form = DeploymentForm(request.POST or None)
+
+    if form.is_valid():
+        # deploy the thing!
+        # get the deployment function.
+        # STUB
+        import deployment
+        func = deployment.tasks.get_host_os_version
+        # /STUB
+        job = func.delay(
+            form.cleaned_data['host'],
+            form.cleaned_data['user'],
+            form.cleaned_data['password'],
+        )
+        # send it to a worker
+        # save the new deployment
+        # return a redirect.  Ideally to the page that lets you watch the
+        # deployment as it happens.
+    return render(request, 'deploy.html', locals())

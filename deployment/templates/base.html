@@ -1,4 +1,5 @@
 {% load current_nav %}
+<!DOCTYPE html>
 <html>
 <head>
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
@@ -31,7 +32,7 @@
               <li class="{% current_nav dash_url %}"><a href="{{ dash_url }}">Dash</a></li>
               <li class="{% current_nav log_url %}"><a href="{{ log_url }}">Log</a></li>
             </ul>
-            <p class="navbar-text pull-right">Logged in as <a href="#">username</a></p>
+            <!--<p class="navbar-text pull-right">Logged in as <a href="#">username</a></p>-->
           </div><!--/.nav-collapse -->
           {% endblock nav %}
         </div>
@@ -41,9 +42,7 @@
         {% block content %}
         {% endblock content %}
     </div>
-    <!-- Le javascript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
+    <!-- Javascript placed at the end of the document so the pages load faster -->
     <script src="/static/js/jquery.min.js"></script>
     <script src="/static/js/goatee.js"></script>
     <script src="/static/js/bootstrap.js"></script>

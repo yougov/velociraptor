@@ -11,6 +11,7 @@ admin.autodiscover()
 
 urlpatterns = patterns('',
     url(r'^$', 'deployment.views.dash', name='dash'),
+    url(r'^deploy/$', 'deployment.views.deploy', name='deploy'),
     url(r'^log/$', ListView.as_view(model=DeploymentLogEntry,
                                     template_name='log.html'), name='log'),
     url(r'^api/status/(?P<host>[a-zA-Z0-9_.]+)/$', 'deployment.views.api_host_status',

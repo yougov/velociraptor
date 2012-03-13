@@ -27,21 +27,17 @@ class DeploymentLogEntry(models.Model):
 class App(models.Model):
     name = models.CharField(max_length=50)
 
-    # string representation of the Python function that will be used to
-    # actually push your code.  This will probably be a Fabric task.
-    push_with = models.CharField(max_length=100,
-                                   choices=settings.PUSH_FUNCTIONS)
-
     def __unicode__(self):
         return self.name
 
 
 class Build(models.Model):
-    file = models.FileField(upload_to='builds/')
+    file = models.URLField()
     app = models.ForeignKey(App)
 
     def __unicode__(self):
-        return '%s:%s' % (self.app.name, self.file)
+        folder, sep, filename = self.file.rpartition('/')
+        return filename
 
 
 class Release(models.Model):
