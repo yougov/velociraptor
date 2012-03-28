@@ -28,8 +28,10 @@
           {% block nav %}
             {% url dash as dash_url %}
             {% url log as log_url %}
+            {% url deploy as deploy_url %}
             <ul class="nav">
               <li class="{% current_nav dash_url %}"><a href="{{ dash_url }}">Dash</a></li>
+              <li class="{% current_nav deploy_url %}"><a href="{{ deploy_url }}">Deploy</a></li>
               <li class="{% current_nav log_url %}"><a href="{{ log_url }}">Log</a></li>
             </ul>
             <!--<p class="navbar-text pull-right">Logged in as <a href="#">username</a></p>-->
@@ -38,6 +40,16 @@
         </div>
       </div>
     </div>
+    {% if messages %}
+        <div class="container">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+             <a class="close" data-dismiss="alert">×</a>
+            {{ message }}
+        </div>
+        {% endfor %}
+        </div>
+    {% endif %}
     <div class="container">
         {% block content %}
         {% endblock content %}

@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.conf import settings
 
 from yamlfield.fields import YAMLField
 
@@ -23,29 +22,39 @@ class DeploymentLogEntry(models.Model):
         ordering = ['-time']
 
 
+class ConfigValue(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    value = models.TextField()
+
+    def __unicode__(self):
+        return self.name
+
 
 class App(models.Model):
     name = models.CharField(max_length=50)
+
+    # Link configvalues to an app.  These will be resolved at release time to
+    # create a settings.yaml for the app.
+    #configvalues = models.ManyToManyField(ConfigValue, blank=True)
 
     def __unicode__(self):
         return self.name
 
 
 class Build(models.Model):
-    file = models.URLField()
+    file = models.FileField(upload_to='builds')
     app = models.ForeignKey(App)
 
     def __unicode__(self):
-        folder, sep, filename = self.file.rpartition('/')
-        return filename
+        return str(self.file)
 
 
 class Release(models.Model):
     build = models.ForeignKey(Build)
 
-    # Freeze the release-time config by storing it here.  TBD: How we populate
-    # this field.
-    config = YAMLField()
+    # Freeze the release-time config by storing it here.  
+    #config = YAMLField()
+    config = models.FileField(upload_to='configs')
 
     def __unicode__(self):
         return 'release %s of build %s' % (self.id, self.build)

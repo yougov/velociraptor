@@ -7,3 +7,6 @@ def get_os_version():
 # something that would take a while so I could watch its progress.
 def install_pycrypto():
     return sudo('pip install pycrypto --upgrade')
+
+def get_date():
+    return run('date')

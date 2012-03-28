@@ -150,6 +150,7 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
     'djcelery',
+    'django_extensions',
 )
 
 # A sample logging configuration. The only tangible logging
