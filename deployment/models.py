@@ -37,6 +37,8 @@ class App(models.Model):
     # create a settings.yaml for the app.
     #configvalues = models.ManyToManyField(ConfigValue, blank=True)
 
+    repo_url = models.CharField(max_length=200, blank=True, null=True)
+
     def __unicode__(self):
         return self.name
 

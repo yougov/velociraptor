@@ -10,6 +10,8 @@ admin.autodiscover()
 urlpatterns = patterns('',
     url(r'^$', 'deployment.views.dash', name='dash'),
     url(r'^deploy/$', 'deployment.views.deploy', name='deploy'),
+    url(r'^build/$', 'deployment.views.build_hg', name='build_hg'),
+    url(r'^release/$', 'deployment.views.release', name='release'),
     url(r'^upload/$', 'deployment.views.upload_build', name='upload_build'),
     url(r'^log/$', ListView.as_view(model=DeploymentLogEntry,
                                     template_name='log.html'), name='log'),

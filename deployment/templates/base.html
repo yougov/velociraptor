@@ -27,10 +27,14 @@
           <div class="nav-collapse">
           {% block nav %}
             {% url dash as dash_url %}
-            {% url log as log_url %}
+            {% url build_hg as build_url %}
+            {% url release as release_url %}
             {% url deploy as deploy_url %}
+            {% url log as log_url %}
             <ul class="nav">
               <li class="{% current_nav dash_url %}"><a href="{{ dash_url }}">Dash</a></li>
+              <li class="{% current_nav build_url %}"><a href="{{ build_url }}">Build</a></li>
+              <li class="{% current_nav release_url %}"><a href="{{ release_url }}">Release</a></li>
               <li class="{% current_nav deploy_url %}"><a href="{{ deploy_url }}">Deploy</a></li>
               <li class="{% current_nav log_url %}"><a href="{{ log_url }}">Log</a></li>
             </ul>
