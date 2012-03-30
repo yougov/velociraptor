@@ -14,6 +14,7 @@ with the procs we know about in the DB.  Account for the following scenarios:
 {% endcomment %}
 
 {% block content %}
+<div id="dash-main">
 <ul class="thumbnails">
 {% for host in hosts %}
 <li class="span3 dash-host" data-hostname="{{ host }}">
@@ -21,6 +22,7 @@ with the procs we know about in the DB.  Account for the following scenarios:
 </li>
 {% endfor %}
 </ul>
+</div>
 {% endblock content %}
 
 
@@ -34,5 +36,15 @@ with the procs we know about in the DB.  Account for the following scenarios:
   <li class="host-status label <%statename%>"><%name%></li>
   <%/states%>
 </ul>
+</script>
+
+{# template for list of currently running jobs #}
+<script id="tasks-tmpl" type="text/goatee">
+    <h1>Currently-running tasks</h1>
+  <ul class="host-procs-list">
+    <%#tasks%>
+      <li class="label"><%desc%></li>
+    <%/tasks%>
+  <ul class="host-procs-list">
 </script>
 {% endblock script %}

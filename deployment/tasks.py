@@ -1,5 +1,3 @@
-# Define Celery celery_tasks here.
-
 import time
 import logging
 import tempfile
@@ -11,7 +9,6 @@ from celery.task import task as celery_task
 from fabric.api import env
 from django.conf import settings
 
-from deployment.fabfile import get_date
 from deployment.models import Release, App, Build
 from yg.deploy.fabric.system import deploy_parcel
 from yg.deploy.paver.build import assemble_hg_raw
@@ -63,17 +60,3 @@ def build_hg(app_id, tag):
         shutil.move(build_path, filepath)
         build = Build(file='builds/' + posixpath.basename(build_path), app=app)
         build.save()
-
-
-
-# DUMMY TASKS BELOW HERE.
-
-@celery_task()
-def get_host_date(hostname):
-    env.host_string = hostname
-    env.abort_on_prompts = True
-    env.celery_task = get_host_date
-    get_host_date.update_state(state='PROGRESS', meta='Started')
-    time.sleep(20)
-    return get_date()
-

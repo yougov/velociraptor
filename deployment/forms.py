@@ -42,4 +42,3 @@ class DeploymentForm(forms.Form):
                                              Release.objects.all()]
         self.fields['host'].choices = [(h.name, h.name) for h in
                                        Host.objects.filter(active=True)]
-

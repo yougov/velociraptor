@@ -15,7 +15,6 @@ admin.site.register(models.App)
 admin.site.register(models.Build)
 admin.site.register(models.Release)
 admin.site.register(models.Host)
-admin.site.register(models.Deployment)
 admin.site.register(models.DeploymentLogEntry)
 
 # Also unregister the Django 'group' model, as I don't think we'll be using it.
