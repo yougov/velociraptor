@@ -1,0 +1,58 @@
+Meet Velociraptor
+=================
+
+Velociraptor is a Django- and Celery-powered web application for building and
+deploying software services.  It is /very/ opinionated about how this should be
+done, adhering (with one or two exceptions) to the `Twelve Factor App`_
+methodology.
+
+Development
+===========
+
+VM
+~~
+
+The smoothest way to get running is to start up a VM with the included
+Vagrantfile.  This requires having VirtualBox_ and Vagrant_ installed.  Once
+they're installed, just type 'vagrant up' in this repo's root, wait for the
+lucid64 VM image download, and you should get a local VM running with all of
+Velociraptor's system-level dependencies (e.g. RabbitMQ).  If you 'vagrant ssh'
+to enter the environment, the Velociraptor source code will be at /vagrant.
+
+Provisioning of system-level dependencies inside the VM is done using Vagrant's
+Puppet provisioner.  You can see the Puppet manifest at manifests/yhost.pp.
+
+Database
+~~~~~~~~
+
+There is a dbsetup.sql file included that will create the database used by
+Velociraptor.  You can change the database settings by editing the settings.py
+file.
+
+Python Dependencies
+~~~~~~~~~~~~~~~~~~~
+
+Velociraptor contains a requirements.txt file listing its Python dependencies.
+You can install them with 'pip install -r requirements.txt'.
+
+Dev Server
+~~~~~~~~~~
+
+Velociraptor is composed of two main processes:
+
+1. The main web service.
+2. A Celery daemon that starts and controls one or more workers.
+
+There is a Procfile included with Velociraptor that can be used to run a
+development environment with both of these processes.  To use it, you must have
+Foreman_ installed.  This is done for you by default if you use the provided
+Vagrant VM.
+
+With Foreman installed, you can start up your dev environment by running this::
+
+  foreman start -f Procfile.dev
+
+.. _Twelve Factor App: http://www.12factor.net/
+.. _Vagrant: http://vagrantup.com/docs/getting-started/index.html
+.. _VirtualBox: http://www.virtualbox.org/wiki/Downloads
+.. _Foreman: http://ddollar.github.com/foreman/

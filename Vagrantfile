@@ -1,6 +1,14 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 #
+# This Vagrantfile and accompanying Puppet manifest are an early stab at
+# providing a standard 'yhost' definition for developers to run their own VMs
+# that look like production.  Right now it's tuned for velociraptor
+# development, which is a bit of a special case.  But I hope that we'll soon
+# have a 'yhost' repo with Vagrant and Puppet config so that devs can run their
+# own production VM clones.
+# -Brent
+
 
 Vagrant::Config.run do |config|
     # All Vagrant configuration is done here.  For a complete reference of
