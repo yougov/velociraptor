@@ -1,3 +1,0 @@
-1. Add view for in-progress job, with AJAX timer callback to refresh status and
-redirect at the end.
-2. Log every action in both logging module and DB log
