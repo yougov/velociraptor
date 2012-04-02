@@ -179,3 +179,9 @@ LOGGING = {
         },
     }
 }
+
+# Allow production to override these settings.
+try:
+    from secret_settings import *
+except ImportError:
+    pass
