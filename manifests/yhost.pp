@@ -1,4 +1,3 @@
-
 group { "puppet": 
     ensure => "present", 
 }
@@ -7,27 +6,25 @@ Exec { path => '/usr/bin:/bin:/usr/sbin:/sbin' }
 
 # We have to update first to ensure that apt can find the
 # python-software-properties package that will then let us add PPAs
-class fresh_apt {
+
+class yhost {
     exec {
       firstupdate:
         command => "apt-get update",
         timeout => "300",
     }
-}
-
-class yhost {
-    Package {ensure => present}
+    
+    Package {ensure => present, require => Exec [firstupdate]}
 
     package {
         nginx:; 
         supervisor:; 
-        python-pycurl:; 
-        python-dev:;
         ruby:;
         libevent-dev:;
         vim:;
         python-software-properties:;
         curl:;
+        libcurl4-gnutls-dev:;
         rabbitmq-server:;
         libldap2-dev:;
         libsasl2-dev:;
@@ -46,14 +43,10 @@ class yhost {
 # trivial to make a ygpip provider that pulls from our cheeseshop.
 
 class pipdeps {
-    Package {provider => pip}
+    Package {provider => pip, ensure => present, require => Class [py27]}
     package { 
-      pip: # use pip to install newer pip
-        ensure => latest;
-      mercurial:
-        ensure => present;
-      virtualenv:
-        ensure => latest;
+      mercurial:;
+      virtualenv:;
     }
 }
 
@@ -63,7 +56,7 @@ class pg91 {
       addpgbackport:
         command => "add-apt-repository ppa:pitti/postgresql",
         require => Class [yhost];
-      runaptgetupdate:
+      pgaptupdate:
         command => "apt-get update",
         timeout => "300",
         require => Exec [addpgbackport];
@@ -72,10 +65,10 @@ class pg91 {
     package {
       "postgresql-9.1":
         ensure => present,
-        require => Exec [runaptgetupdate];
+        require => Exec [pgaptupdate];
       "postgresql-server-dev-9.1":
         ensure => present,
-        require => Exec [runaptgetupdate];
+        require => Exec [pgaptupdate];
     }
     # TODO: Ensure that /etc/postgresql/9.1/main/pg_hba.conf is configured to
     # trust local connections.
@@ -84,16 +77,23 @@ class pg91 {
 class py27 {
     exec {
       pythonppa:
-        command => "add-apt-repository ppa:fkrull/deadsnakes";
+        command => "add-apt-repository ppa:fkrull/deadsnakes",
+        require => Class [yhost];
+      pyaptupdate:
+        command => "apt-get update",
+        timeout => "300",
+        require => Exec [pythonppa];
+      pip27:
+        command => "easy_install-2.7 pip",
+        require => Package ["python-distribute-deadsnakes"];
     }
 
+    Package {ensure => present, require => Exec [pyaptupdate]}
+
     package {
-      "python2.7":
-        ensure => present,
-        require => Exec [pythonppa];
-      "python2.7-dev":
-        ensure => present,
-        require => Exec [pythonppa];
+      "python2.7":;
+      "python2.7-dev":;
+      "python-distribute-deadsnakes":;
     }
 }
 
@@ -104,7 +104,7 @@ package {
     require => Class [yhost];
 }
 
-class {'fresh_apt': } -> class {'yhost': }
+class {'yhost': }
 class {'pipdeps': }
 class {'py27': }
 class {'pg91': }

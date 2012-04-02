@@ -1,4 +1,3 @@
-import time
 import logging
 import tempfile
 import os
@@ -8,26 +7,12 @@ import posixpath
 from celery.task import task as celery_task
 from fabric.api import env
 from django.conf import settings
+import yaml
 
 from deployment.models import Release, App, Build
 from yg.deploy.fabric.system import deploy_parcel
-from yg.deploy.paver.build import assemble_hg_raw
+from yg.deploy.paver import build as paver_build
 
-@celery_task()
-def deploy(release_id, host, proc, port, user, password):
-    release = Release.objects.get(id=release_id)
-
-    # Set up env for Fabric
-    env.host_string = host
-    env.abort_on_prompts = True
-    env.celery_task = deploy
-    env.user=user
-    env.password=password
-
-    deploy.update_state(state='PROGRESS', meta='Started')
-    logging.info('deploying %s:%s to %s:%s' % (release, proc, host, port))
-    return deploy_parcel(release.build.file.path, release.config.path,
-                         proc, port)
 
 class tmpdir(object):
     """Context processor for putting you into a temporary directory on enter
@@ -46,13 +31,38 @@ class tmpdir(object):
 
 
 @celery_task()
+def deploy(release_id, host, proc, port, user, password):
+    release = Release.objects.get(id=release_id)
+
+    # Set up env for Fabric
+    env.host_string = host
+    env.abort_on_prompts = True
+    env.celery_task = deploy
+    env.user=user
+    env.password=password
+
+    deploy.update_state(state='PROGRESS', meta='Started')
+    logging.info('deploying %s:%s to %s:%s' % (release, proc, host, port))
+
+    try:
+        # Pull the config yaml from the release and write it to a file.
+        oshandle, tmp_path = tempfile.mkstemp()
+        f = open(tmp_path, 'wb')
+        f.write(yaml.safe_dump(release.config, default_flow_style=False))
+        f.close()
+        result = deploy_parcel(release.build.file.path, tmp_path, proc, port)
+    finally:
+        os.remove(tmp_path)
+    return result
+
+
+@celery_task()
 def build_hg(app_id, tag):
     # call the assemble_hg function.
     app = App.objects.get(id=app_id)
     url = '%s#%s' % (app.repo_url, tag)
-    print "URL:", url
     with tmpdir():
-        build_path = assemble_hg_raw(url)
+        build_path = paver_build.assemble_hg_raw(url)
         # Create build record in DB and put tarball in MEDIA_ROOT/builds/
         filepath = settings.MEDIA_ROOT + 'builds/'
         if not os.path.exists(filepath):

@@ -22,12 +22,16 @@ to enter the environment, the Velociraptor source code will be at /vagrant.
 Provisioning of system-level dependencies inside the VM is done using Vagrant's
 Puppet provisioner.  You can see the Puppet manifest at manifests/yhost.pp.
 
+The first time you 'vagrant up', the Puppet provisioning could take about
+5 minutes.  It will be faster on later startups, since most packages will
+already be installed.
+
 Database
 ~~~~~~~~
 
-There is a dbsetup.sql file included that will create the database used by
-Velociraptor.  You can change the database settings by editing the settings.py
-file.
+There is a dbsetup.sql file included that contains commands for creating the
+Postgres database used by Velociraptor.  You can change the database settings
+by editing the settings.py file.
 
 Python Dependencies
 ~~~~~~~~~~~~~~~~~~~

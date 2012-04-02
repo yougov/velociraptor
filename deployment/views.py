@@ -4,13 +4,12 @@ import xmlrpclib
 
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseRedirect
-from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.conf import settings
 from celery.result import AsyncResult
 from celery.task.control import inspect
 
-from deployment.models import Host, App, Release, remember
+from deployment.models import Host, App, Release, Build, Profile, remember
 from deployment.forms import (DeploymentForm, BuildUploadForm, BuildForm,
                               ReleaseForm)
 from deployment import tasks
@@ -18,6 +17,7 @@ from deployment import tasks
 
 def dash(request):
     hosts = Host.objects.filter(active=True)
+    apps = App.objects.all()
     return render(request, 'dash.html', vars())
 
 
@@ -27,6 +27,11 @@ def json_response(obj):
     resp = HttpResponse(json.dumps(obj))
     resp['Content-Type'] = 'application/json'
     return resp
+
+def api_host(request):
+    # list all hosts
+    return json_response({'hosts': [h.name for h in
+                                    Host.objects.filter(active=True)]})
 
 
 def api_host_status(request, hostname):
@@ -134,13 +139,16 @@ def upload_build(request):
 
 
 def release(request):
-    form = ReleaseForm(request.POST or None, request.FILES or None)
+    form = ReleaseForm(request.POST or None)
     if form.is_valid():
-        form.save()
-        remember('release', 'created release %s with %s' % (form.instance.id,
-                                                            str(form.instance.build)))
+        build=Build.objects.get(id=form.cleaned_data['build_id'])
+        r = Release(
+            build=build,
+            config=Profile.objects.get(id=form.cleaned_data['profile_id']).assemble(),
+        )
+        r.save()
+        remember('release', 'created release %s with %s' % (r.id, str(build)))
         return HttpResponseRedirect(reverse('deploy'))
-    enctype = "multipart/form-data"
     btn_text = 'Save'
     return render(request, 'basic_form.html', vars())
 

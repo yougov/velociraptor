@@ -1,6 +1,6 @@
 from django import forms
 
-from deployment.models import Release, Host, App, Build
+from deployment.models import Release, Host, App, Build, Profile
 
 
 class BuildForm(forms.Form):
@@ -17,9 +17,17 @@ class BuildUploadForm(forms.ModelForm):
     class Meta:
         model = Build
 
-class ReleaseForm(forms.ModelForm):
-    class Meta:
-        model = Release
+class ReleaseForm(forms.Form):
+    build_id = forms.ChoiceField(choices=[], label='Build')
+    profile_id = forms.ChoiceField(choices=[], label='Profile')
+
+    def __init__(self, *args, **kwargs):
+        super(ReleaseForm, self).__init__(*args, **kwargs)
+        # TODO: somehow ensure that profile.app == build.app.  Maybe by only
+        # listing a specific app's builds/profiles here?
+        self.fields['build_id'].choices = [(b.id, b) for b in Build.objects.all()]
+        self.fields['profile_id'].choices = [(p.id, p) for p in
+                                             Profile.objects.all()]
 
 
 class DeploymentForm(forms.Form):

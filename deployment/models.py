@@ -6,6 +6,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
 
+import yaml
 from yamlfield.fields import YAMLField
 
 LOG_ENTRY_TYPES = (
@@ -26,6 +27,7 @@ class DeploymentLogEntry(models.Model):
     class Meta:
         ordering = ['-time']
 
+
 # XXX Once we require login everywhere, update this function to not be stupid.
 def remember(msg_type, msg, username='brent'):
     logentry = DeploymentLogEntry(
@@ -38,19 +40,19 @@ def remember(msg_type, msg, username='brent'):
     logging.info('%s %s: %s' % (msg_type, username, msg))
 
 
-# XXX Right now settings are uploaded as a file each time you want to do a
-# release.  Soon we want to switch that so that config is stored in the DB, and
-# apps have 'profiles' of the config values they care about, which will be
-# written into a settings.yaml at release time, and placed on the host at
-# deploy time.
 class ConfigValue(models.Model):
-    name = models.CharField(max_length=50, unique=True)
+    label = models.CharField(max_length=50,
+                             help_text="e.g. datamart_chrome_db", unique=True)
+    setting_name = models.CharField(max_length=50,
+                                    help_text=("Setting name used in "
+                                    "settings.yaml, e.g. DATAMART_DB"))
     # Config values must be valid yaml.  This is validated on the way in, and
     # parsed automatically on the way out.
-    value = YAMLField()
+    value = YAMLField(help_text=("Must be valid YAML.  Simple strings and "
+                                 "numbers are valid YAML."))
 
     def __unicode__(self):
-        return self.name
+        return u'%s (%s)' % (self.label, self.setting_name)
 
 
 class App(models.Model):
@@ -59,6 +61,24 @@ class App(models.Model):
 
     def __unicode__(self):
         return self.name
+
+
+class Profile(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    app = models.ForeignKey(App)
+    configvalues = models.ManyToManyField(ConfigValue)
+
+    def __unicode__(self):
+        return self.name
+
+    def assemble(self):
+        out = {}
+        for cv in self.configvalues.all():
+            out[cv.setting_name] = cv.value
+        return out
+
+    def to_yaml(self):
+        return yaml.safe_dump(self.assemble(), default_flow_style=False)
 
 
 class Build(models.Model):
@@ -71,7 +91,12 @@ class Build(models.Model):
 
 class Release(models.Model):
     build = models.ForeignKey(Build)
-    config = models.FileField(upload_to='configs')
+    config = YAMLField()
+
+    # TODO: Add a 'label' or 'profile_name' field to make for better release
+    # naming.  It could also be used in the proc names to more easily
+    # differentiate between android and chrome datamarts, for example, or
+    # between panel sites based on the same build.
 
     def __unicode__(self):
         # XXX Not happy with this, but haven't been able to come up with a more

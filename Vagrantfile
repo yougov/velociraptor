@@ -40,7 +40,7 @@ Vagrant::Config.run do |config|
 
     # Use Puppet to ensure that certain system packages are installed in the VM
     config.vm.provision :puppet do |puppet|
-        puppet.manifests_path = "yhost/manifests"
+        puppet.manifests_path = "manifests"
         puppet.manifest_file  = "yhost.pp"
     end
 

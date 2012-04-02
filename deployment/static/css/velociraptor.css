@@ -42,8 +42,11 @@ ul.deployment-log {
   margin-left: 0;
 }
 
-.host-status.label {
-  margin: 7px 0;
+.host-status {
+  margin: 3px;
+  padding: 3px;
+  width: 150px;
+  overflow: hidden;
 }
 
 /* TODO: instead of just passing back the status from supervisord, and using
@@ -54,18 +57,59 @@ ul.deployment-log {
 .FATAL {
   background-color: #b94a48;
 }
-.FATAL:hover {
-  background-color: #953b39;
+.RUNNING {
+  background-color: #468847;
 }
 .STOPPED {
   background-color: #f89406;
 }
+.FATAL:hover {
+  background-color: #953b39;
+}
 .STOPPED:hover {
   background-color: #c67605;
 }
-.RUNNING {
-  background-color: #468847;
-}
 .RUNNING:hover {
   background-color: #356635;
+}
+
+.procfilter {
+  min-width: 50px;
+}
+
+/**** Isotope filtering ****/
+
+.isotope-item {
+  z-index: 2;
+}
+
+.isotope-hidden.isotope-item {
+  pointer-events: none;
+  z-index: 1;
+}
+
+.isotope,
+.isotope .isotope-item {
+  /* change duration value to whatever you like */
+  -webkit-transition-duration: 0.4s;
+     -moz-transition-duration: 0.4s;
+      -ms-transition-duration: 0.4s;
+       -o-transition-duration: 0.4s;
+          transition-duration: 0.4s;
+}
+
+.isotope {
+  -webkit-transition-property: height, width;
+     -moz-transition-property: height, width;
+      -ms-transition-property: height, width;
+       -o-transition-property: height, width;
+          transition-property: height, width;
+}
+
+.isotope .isotope-item {
+  -webkit-transition-property: -webkit-transform, opacity;
+     -moz-transition-property:    -moz-transform, opacity;
+      -ms-transition-property:     -ms-transform, opacity;
+       -o-transition-property:         top, left, opacity;
+          transition-property:         transform, opacity;
 }
