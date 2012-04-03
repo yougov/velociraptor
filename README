@@ -37,7 +37,9 @@ Python Dependencies
 ~~~~~~~~~~~~~~~~~~~
 
 Velociraptor contains a requirements.txt file listing its Python dependencies.
-You can install them with 'pip install -r requirements.txt'.
+You can install them with this::
+
+    pip install -r requirements.txt -i http://cheese.yougov.net
 
 Dev Server
 ~~~~~~~~~~
