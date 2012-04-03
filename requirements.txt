@@ -7,3 +7,4 @@ yg.deploy==6.5.1
 keyring==0.7.1
 Paver==1.0.5
 django-yamlfield==0.2
+gunicorn==0.13.4
