@@ -1,3 +1,7 @@
+
+/* http://paulirish.com/2012/box-sizing-border-box-ftw/ */
+* { -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box; }
+
 /* Some headers want to float left so we can stick some other UI on the
  * same line to the right */
 .float {
@@ -43,10 +47,49 @@ ul.deployment-log {
 }
 
 .host-status {
-  margin: 3px;
-  padding: 3px;
-  width: 150px;
+  margin: 5px;
+  padding: 3px 0 0;
+  width: 100px;
+}
+
+.host-status .label {
   overflow: hidden;
+}
+
+.host-status .host-more {
+  display: none;
+}
+
+.host-status .longname {
+  display: none;
+}
+
+.host-expanded {
+  width: 210px;
+}
+
+.host-expanded .host-more {
+  display: block;
+  z-index: 20;
+  overflow: visible;
+}
+
+/* When expanded, show the longname and hide the shortname */
+.host-expanded .longname {
+  display: inline;
+}
+
+.host-expanded .shortname {
+  display: none;
+}
+
+.host-more {
+  color: black;
+  text-shadow: none;
+  background: white;
+  font-weight: normal;
+  font-size: 11px;
+  min-height: 72px;
 }
 
 /* TODO: instead of just passing back the status from supervisord, and using
@@ -75,6 +118,10 @@ ul.deployment-log {
 
 .procfilter {
   min-width: 50px;
+}
+
+.statusfilters, .hostlist, .applist {
+  display: inline-block;
 }
 
 /**** Isotope filtering ****/

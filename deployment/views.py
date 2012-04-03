@@ -39,8 +39,7 @@ def api_host_status(request, hostname):
     JSON"""
     server = xmlrpclib.Server('http://%s:%s' % (hostname, settings.SUPERVISOR_PORT))
     states = server.supervisor.getAllProcessInfo()
-    # It's a security vulnerability to return a top-level JSON array, so wrap
-    # it in an object and stick some extra info on.
+
     data = {
         'states': states,
         'host': hostname,

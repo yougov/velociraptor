@@ -13,6 +13,7 @@ $(document).ready(function() {
                     // strip dots from the host so it can be used as a
                     // classname
                     el.hostclass = data.host.replace(/\./g, "");
+                    el.appclass = el.name.split('-')[0];
                     el.shortname = el.name.split('-')[0].split('_')[0];
                 });
                 container.isotope('insert', proc_tmpl.goatee(data));
@@ -39,8 +40,15 @@ $(document).ready(function() {
         var selector = $(this).attr('data-filter');
         $(this).button('toggle');
         // hide the host dropdown
-        $('.hostlist').removeClass('open');
+        $('.hostlist, .applist').removeClass('open');
         container.isotope({ filter: selector });
         return false;
+      });
+
+    $('#dash-procs').delegate('.host-status .label', 'click', function() {
+        // add a class to make big
+        $(this).parent().toggleClass('host-expanded');
+        // reflow the isotope
+        container.isotope('reLayout');
       });
 });

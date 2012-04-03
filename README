@@ -26,13 +26,6 @@ The first time you 'vagrant up', the Puppet provisioning could take about
 5 minutes.  It will be faster on later startups, since most packages will
 already be installed.
 
-Database
-~~~~~~~~
-
-There is a dbsetup.sql file included that contains commands for creating the
-Postgres database used by Velociraptor.  You can change the database settings
-by editing the settings.py file.
-
 Python Dependencies
 ~~~~~~~~~~~~~~~~~~~
 
@@ -40,6 +33,20 @@ Velociraptor contains a requirements.txt file listing its Python dependencies.
 You can install them with this::
 
     pip install -r requirements.txt -i http://cheese.yougov.net
+
+Database
+~~~~~~~~
+
+There is a dbsetup.sql file included that contains commands for creating the
+Postgres database used by Velociraptor.  You can change the database settings
+by editing the settings.py file.
+
+Once your database is created, you'll need to create the tables::
+
+    cd /vagrant
+    ./manage.py syncdb
+
+(That command assumes that you have populated and entered your virtualenv.)
 
 Dev Server
 ~~~~~~~~~~
