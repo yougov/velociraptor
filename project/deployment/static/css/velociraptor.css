@@ -25,6 +25,10 @@ ul.deployment-log {
 
 }
 
+div.label {
+  cursor: pointer;
+}
+
 /* yellow for deployments in log */
 .label-deployment {
   background-color: #f89406;
