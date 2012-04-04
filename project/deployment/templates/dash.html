@@ -16,7 +16,6 @@
       <span class="caret"></span>
     </a>
     <ul class="dropdown-menu">
-      <li><a href="#" class="procfilter" data-filter=".host-status">all</a>
       {% for host in hosts %}
       <li><a href="#" class="procfilter" data-filter=".host-{{ host.name|stripchar:"." }}">{{ host }}</a>
       {% endfor %}
@@ -28,7 +27,6 @@
       <span class="caret"></span>
     </a>
     <ul class="dropdown-menu">
-      <li><a href="#" class="procfilter" data-filter=".host-status">all</a>
       {% for app in apps %}
       <li><a href="#" class="procfilter" data-filter=".app-{{ app.name|stripchar:"." }}">{{ app }}</a>
       {% endfor %}
