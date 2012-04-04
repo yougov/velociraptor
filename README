@@ -17,7 +17,8 @@ Vagrantfile.  This requires having VirtualBox_ and Vagrant_ installed.  Once
 they're installed, just type 'vagrant up' in this repo's root, wait for the
 lucid64 VM image download, and you should get a local VM running with all of
 Velociraptor's system-level dependencies (e.g. RabbitMQ).  If you 'vagrant ssh'
-to enter the environment, the Velociraptor source code will be at /vagrant.
+to enter the environment, the Velociraptor repo will be at /vagrant and the
+source code for the django app will be at /vagrant/velociraptor.
 
 Provisioning of system-level dependencies inside the VM is done using Vagrant's
 Puppet provisioner.  You can see the Puppet manifest at manifests/yhost.pp.
@@ -30,7 +31,8 @@ Python Dependencies
 ~~~~~~~~~~~~~~~~~~~
 
 Velociraptor contains a requirements.txt file listing its Python dependencies.
-You can install them with this::
+You should run this inside a virtualenv that lives inside your vagrant VM. You
+can install the dependencies with this::
 
     pip install -r requirements.txt -i http://cheese.yougov.net
 
@@ -39,7 +41,13 @@ Database
 
 There is a dbsetup.sql file included that contains commands for creating the
 Postgres database used by Velociraptor.  You can change the database settings
-by editing the settings.py file.
+by editing the settings.py file. If you are using the stock settings and
+dbsetup.sql and this is the first time running psql on your deployed vagrant
+you should be aware you need to execute the script with the postgresql user::
+
+    sudo su
+    su postgres
+    psql < dbsetup.sql
 
 Once your database is created, you'll need to create the tables::
 
@@ -61,9 +69,10 @@ development environment with both of these processes.  To use it, you must have
 Foreman_ installed.  This is done for you by default if you use the provided
 Vagrant VM.
 
-With Foreman installed, you can start up your dev environment by running this::
+With Foreman installed, you can start up your dev environment by running this
+inside your virtualenv and on the /vagrant folder::
 
-  foreman start -f Procfile.dev
+   foreman start -f Procfile.dev
 
 .. _Twelve Factor App: http://www.12factor.net/
 .. _Vagrant: http://vagrantup.com/docs/getting-started/index.html
