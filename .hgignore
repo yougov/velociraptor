@@ -25,3 +25,4 @@ likes_*.json
 *pylint.txt
 uploads*
 secret_settings.py
+.vagrant

@@ -18,12 +18,14 @@ they're installed, type this in the repo's root::
 
     vagrant up
 
-Now go make a sandwich while you wait for the lucid64 VM image download (it's
-about 250MB), and you should get a local VM running with all of Velociraptor's
-system-level dependencies (e.g. RabbitMQ).  
+Now go make a sandwich while you wait for the lucid64 VM image to download
+(it's about 250MB).  
 
-Provisioning of system-level dependencies inside the VM is done using Vagrant's
-Puppet provisioner.  You can see the Puppet manifest at manifests/yhost.pp.
+Installation of system-level dependencies inside the VM is done automatically
+using Vagrant's Puppet provisioner.  This includes some normal apt packages,
+(RabbitMQ), some from Ubuntu PPAs (Postgres 9.1 and Python 2.7), and some
+installed with pip (Mercurial and Virtualenv).  You can see the Puppet manifest
+at manifests/yhost.pp.
 
 The first time you 'vagrant up', the Puppet provisioning could take about
 5 minutes.  It will be faster on later startups, since most packages will
@@ -34,8 +36,8 @@ Once the image is all downloaded and Puppet has done its thing, type this::
     vagrant ssh
 
 You're now inside your new Vagrant VM!.  The Velociraptor repo will be at
-/vagrant.  Now make a virtualenv for yourself.  It will use Python 2.7 by
-default.
+/vagrant.  Now make a Python virtualenv for yourself.  It will use Python 2.7
+by default.
 
     virtualenv ~/envs/velo
     source ~/envs/velo/bin/activate
@@ -44,8 +46,7 @@ Python Dependencies
 ~~~~~~~~~~~~~~~~~~~
 
 Velociraptor contains a requirements.txt file listing its Python dependencies.
-You should run this inside a virtualenv that lives inside your vagrant VM. You
-can install the dependencies with this::
+You can install the dependencies with this::
 
     cd /vagrant
     pip install -r requirements.txt -i http://cheese.yougov.net

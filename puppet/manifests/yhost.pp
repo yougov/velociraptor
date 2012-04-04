@@ -11,7 +11,10 @@ class yhost {
     exec {
       firstupdate:
         command => "apt-get update",
-        timeout => "300",
+        timeout => "300";
+      supervisor_reload:
+        command => "supervisorctl reload",
+        require => File ['supervisord.conf'];
     }
     
     Package {ensure => present, require => Exec [firstupdate]}
@@ -29,18 +32,20 @@ class yhost {
         libldap2-dev:;
         libsasl2-dev:;
     }
+
+    # ensure that supervisord's config has the line to include
+    # /opt/yg/procs/*/proc.conf
+    file { 'supervisord.conf':
+      path    => '/etc/supervisor/supervisord.conf',
+      ensure  => file,
+      require => Package['supervisor'],
+      source  => 'puppet:///modules/supervisor/supervisord.conf';
+    }
 }
-
-# TODO: Once Jason has the upstart config ready for supervisord, switch to the
-# pip-installed version instead of the apt-installed one.
-
-# TODO: ensure that supervisord's config has the line to include
-# /opt/yg/procs/*/proc.conf
 
 # As of http://projects.puppetlabs.com/issues/6527, Puppet contains native
 # support for using pip as a package provider.  We can use that to provide
-# newer versions of Python packages than Ubuntu provides.  It would also be
-# trivial to make a ygpip provider that pulls from our cheeseshop.
+# newer versions of Python packages than Ubuntu provides.  
 
 class pipdeps {
     Package {provider => pip, ensure => present, require => Class [py27]}
@@ -49,6 +54,11 @@ class pipdeps {
       virtualenv:;
     }
 }
+
+# TODO: Make a ygpip provider that pulls from our cheeseshop.
+
+# TODO: Once Jason has the upstart config ready for supervisord, switch to the
+# pip-installed version instead of the apt-installed one.
 
 
 class pg91 {
@@ -60,6 +70,9 @@ class pg91 {
         command => "apt-get update",
         timeout => "300",
         require => Exec [addpgbackport];
+      pgrestart:
+        command => "/etc/init.d/postgresql restart",
+        require => File ['pg_hba.conf'];
     }
 
     package {
@@ -70,8 +83,13 @@ class pg91 {
         ensure => present,
         require => Exec [pgaptupdate];
     }
-    # TODO: Ensure that /etc/postgresql/9.1/main/pg_hba.conf is configured to
-    # trust local connections.
+
+    file { 'pg_hba.conf':
+      path    => '/etc/postgresql/9.1/main/pg_hba.conf',
+      ensure  => file,
+      require => Package['postgresql-9.1'],
+      source  => 'puppet:///modules/postgres/pg_hba.conf';
+    }
 }
 
 class py27 {

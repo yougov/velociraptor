@@ -39,8 +39,8 @@ Vagrant::Config.run do |config|
     config.vm.forward_port 8009, 8009
 
     # Use Puppet to ensure that certain system packages are installed in the VM
-    config.vm.provision :puppet do |puppet|
-        puppet.manifests_path = "manifests"
+    config.vm.provision :puppet, :module_path => "puppet/modules" do |puppet|
+        puppet.manifests_path = "puppet/manifests"
         puppet.manifest_file  = "yhost.pp"
     end
 
