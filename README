@@ -2,7 +2,7 @@ Meet Velociraptor
 =================
 
 Velociraptor is a Django- and Celery-powered web application for building and
-deploying software services.  It is /very/ opinionated about how this should be
+deploying software services.  It is *very* opinionated about how this should be
 done, adhering (with one or two exceptions) to the `Twelve Factor App`_
 methodology.
 
@@ -14,11 +14,13 @@ VM
 
 The smoothest way to get running is to start up a VM with the included
 Vagrantfile.  This requires having VirtualBox_ and Vagrant_ installed.  Once
-they're installed, just type 'vagrant up' in this repo's root, wait for the
-lucid64 VM image download, and you should get a local VM running with all of
-Velociraptor's system-level dependencies (e.g. RabbitMQ).  If you 'vagrant ssh'
-to enter the environment, the Velociraptor repo will be at /vagrant and the
-source code for the django app will be at /vagrant/velociraptor.
+they're installed, type this in the repo's root::
+
+    vagrant up
+
+Now go make a sandwich while you wait for the lucid64 VM image download (it's
+about 250MB), and you should get a local VM running with all of Velociraptor's
+system-level dependencies (e.g. RabbitMQ).  
 
 Provisioning of system-level dependencies inside the VM is done using Vagrant's
 Puppet provisioner.  You can see the Puppet manifest at manifests/yhost.pp.
@@ -27,6 +29,17 @@ The first time you 'vagrant up', the Puppet provisioning could take about
 5 minutes.  It will be faster on later startups, since most packages will
 already be installed.
 
+Once the image is all downloaded and Puppet has done its thing, type this::
+
+    vagrant ssh
+
+You're now inside your new Vagrant VM!.  The Velociraptor repo will be at
+/vagrant.  Now make a virtualenv for yourself.  It will use Python 2.7 by
+default.
+
+    virtualenv ~/envs/velo
+    source ~/envs/velo/bin/activate
+
 Python Dependencies
 ~~~~~~~~~~~~~~~~~~~
 
@@ -34,6 +47,7 @@ Velociraptor contains a requirements.txt file listing its Python dependencies.
 You should run this inside a virtualenv that lives inside your vagrant VM. You
 can install the dependencies with this::
 
+    cd /vagrant
     pip install -r requirements.txt -i http://cheese.yougov.net
 
 Database
@@ -51,10 +65,8 @@ you should be aware you need to execute the script with the postgresql user::
 
 Once your database is created, you'll need to create the tables::
 
-    cd /vagrant
+    cd /vagrant/project
     ./manage.py syncdb
-
-(That command assumes that you have populated and entered your virtualenv.)
 
 Dev Server
 ~~~~~~~~~~
@@ -69,10 +81,18 @@ development environment with both of these processes.  To use it, you must have
 Foreman_ installed.  This is done for you by default if you use the provided
 Vagrant VM.
 
-With Foreman installed, you can start up your dev environment by running this
-inside your virtualenv and on the /vagrant folder::
+With Foreman installed, you can start up your dev environment by running this::
 
-   foreman start -f Procfile.dev
+    cd /vagrant
+    foreman start -f Procfile.dev
+
+Editing Code
+~~~~~~~~~~~~
+
+Running the code inside a VM does not mean that you need to do your editing
+there.  Since the project repo is mounted inside the VM, you can do your
+editing on the outside with your regular tools, and the code running on the
+inside will stay in sync.  
 
 .. _Twelve Factor App: http://www.12factor.net/
 .. _Vagrant: http://vagrantup.com/docs/getting-started/index.html
