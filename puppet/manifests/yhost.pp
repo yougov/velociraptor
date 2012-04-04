@@ -55,11 +55,11 @@ class pipdeps {
     }
 }
 
-# TODO: Make a ygpip provider that pulls from our cheeseshop.
+# TODO: Make a ygpip provider that pulls from our cheeseshop.  Modify this:
+# https://github.com/rcrowley/puppet-pip/blob/master/lib/puppet/provider/package/pip.rb
 
-# TODO: Once Jason has the upstart config ready for supervisord, switch to the
+# TODO: Once we have a ygpip provider, switch to the
 # pip-installed version instead of the apt-installed one.
-
 
 class pg91 {
     exec {
