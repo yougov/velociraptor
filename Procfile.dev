@@ -1,2 +1,2 @@
-web: python velociraptor/manage.py runserver 0.0.0.0:8000
-worker: python velociraptor/manage.py celeryd -l info -c 4
+web: python project/manage.py runserver 0.0.0.0:8000
+worker: python project/manage.py celeryd -l info -c 4
