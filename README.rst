@@ -19,7 +19,7 @@ they're installed, type this in the repo's root::
     vagrant up
 
 Now go make a sandwich while you wait for the lucid64 VM image to download
-(it's about 250MB).  
+(it's about 250MB).
 
 Installation of system-level dependencies inside the VM is done automatically
 using Vagrant's Puppet provisioner.  This includes some normal apt packages,
@@ -78,13 +78,22 @@ read the Procfile and start the processes it lists::
     cd /vagrant
     foreman start -f Procfile.dev
 
+That will wake up the django dev server on port 8000 and the celery worker. The
+Vagrantfile config automatically forwards ports 8000-8009 to your local machine
+so in your browser you can go to http://localhost:8000 and you will be viewing
+the django dev server running inside the virtual host.
+
+Also note that the forwarding occupies the port on you machine as long as the
+vagrant machine is running, so if you use ports 8000 to 8009 constantly you
+should shut down the machine once you are done with velociraptor testing.
+
 Editing Code
 ~~~~~~~~~~~~
 
 Running the code inside a VM does not mean that you need to do your editing
 there.  Since the project repo is mounted inside the VM, you can do your
 editing on the outside with your regular tools, and the code running on the
-inside will stay in sync.  
+inside will stay in sync.
 
 .. _Twelve Factor App: http://www.12factor.net/
 .. _Vagrant: http://vagrantup.com/docs/getting-started/index.html
