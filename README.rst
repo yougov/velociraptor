@@ -37,10 +37,9 @@ Once the image is all downloaded and Puppet has done its thing, type this::
 
 You're now inside your new Vagrant VM!.  The Velociraptor repo will be at
 /vagrant.  Now make a Python virtualenv for yourself.  It will use Python 2.7
-by default.
+by default.  Virtualenvwrapper_ is pre-installed to make this extra easy::
 
-    virtualenv ~/envs/velo
-    source ~/envs/velo/bin/activate
+    mkvirtualenv velo
 
 Python Dependencies
 ~~~~~~~~~~~~~~~~~~~
@@ -55,14 +54,9 @@ Database
 ~~~~~~~~
 
 There is a dbsetup.sql file included that contains commands for creating the
-Postgres database used by Velociraptor.  You can change the database settings
-by editing the settings.py file. If you are using the stock settings and
-dbsetup.sql and this is the first time running psql on your deployed vagrant
-you should be aware you need to execute the script with the postgresql user::
+Postgres database used by Velociraptor::
 
-    sudo su
-    su postgres
-    psql < dbsetup.sql
+    psql -U postgres < dbsetup.sql
 
 Once your database is created, you'll need to create the tables::
 
@@ -74,15 +68,12 @@ Dev Server
 
 Velociraptor is composed of two main processes:
 
-1. The main web service.
+1. The main Django web service.
 2. A Celery daemon that starts and controls one or more workers.
 
 There is a Procfile included with Velociraptor that can be used to run a
-development environment with both of these processes.  To use it, you must have
-Foreman_ installed.  This is done for you by default if you use the provided
-Vagrant VM.
-
-With Foreman installed, you can start up your dev environment by running this::
+development environment with both of these processes. You can use Foreman_ to
+read the Procfile and start the processes it lists::
 
     cd /vagrant
     foreman start -f Procfile.dev
@@ -99,3 +90,4 @@ inside will stay in sync.
 .. _Vagrant: http://vagrantup.com/docs/getting-started/index.html
 .. _VirtualBox: http://www.virtualbox.org/wiki/Downloads
 .. _Foreman: http://ddollar.github.com/foreman/
+.. _Virtualenvwrapper: http://www.doughellmann.com/docs/virtualenvwrapper/

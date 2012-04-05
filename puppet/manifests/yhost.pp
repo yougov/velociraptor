@@ -52,6 +52,13 @@ class pipdeps {
     package { 
       mercurial:;
       virtualenv:;
+      virtualenvwrapper:;
+    }
+
+    file { '.bashrc':
+        path => '/home/vagrant/.bashrc',
+        ensure => file,
+        source => 'puppet:///modules/home/bashrc';
     }
 }
 
