@@ -13,6 +13,9 @@ here = os.path.dirname(os.path.realpath(__file__))
 if not here in sys.path:
     sys.path.insert(0, here)
 
+parentpath = os.path.dirname(here)
+
+
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
@@ -187,10 +190,10 @@ LOGGING = {
 }
 
 # Allow production to override these settings.
-try:
-    from secret_settings import *
-except ImportError:
-    pass
+if os.environ.get('APP_SETTINGS_YAML'):
+    import yaml
+    globals().update(yaml.safe_load(os.environ['APP_SETTINGS_YAML']))
+
 
 # connect mongoengine.  Need to parse the DB name off the URI first.
 db_name = MONGODB_URL.rpartition('/')[-1]

@@ -8,5 +8,5 @@ import sys
 here = os.path.dirname(os.path.realpath(__file__))
 # add parent dir to path so things like velociraptor.urls will resolve.
 sys.path.insert(0, os.path.dirname(here))
-os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+os.environ['DJANGO_SETTINGS_MODULE'] = 'project.settings'
 app = django.core.handlers.wsgi.WSGIHandler()
