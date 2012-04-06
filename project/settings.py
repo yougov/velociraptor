@@ -192,7 +192,7 @@ LOGGING = {
 # Allow production to override these settings.
 if os.environ.get('APP_SETTINGS_YAML'):
     import yaml
-    globals().update(yaml.safe_load(os.environ['APP_SETTINGS_YAML']))
+    globals().update(yaml.safe_load(open(os.environ['APP_SETTINGS_YAML'])))
 
 
 # connect mongoengine.  Need to parse the DB name off the URI first.
