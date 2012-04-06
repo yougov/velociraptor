@@ -7,6 +7,7 @@ import posixpath
 from celery.task import task as celery_task
 from fabric.api import env
 from django.conf import settings
+from mongoengine.django.storage import GridFSStorage
 import yaml
 
 from deployment.models import Release, App, Build
@@ -44,15 +45,22 @@ def deploy(release_id, host, proc, port, user, password):
     deploy.update_state(state='PROGRESS', meta='Started')
     logging.info('deploying %s:%s to %s:%s' % (release, proc, host, port))
 
-    try:
-        # Pull the config yaml from the release and write it to a file.
-        oshandle, tmp_path = tempfile.mkstemp()
-        f = open(tmp_path, 'wb')
+    with tmpdir():
+        f = open('settings.yaml', 'wb')
         f.write(yaml.safe_dump(release.config, default_flow_style=False))
         f.close()
-        result = deploy_parcel(release.build.file.path, tmp_path, proc, port)
-    finally:
-        os.remove(tmp_path)
+        # pull the build out of gridfs, write it to a temporary location, and
+        # deploy it. 
+        build_name = posixpath.basename(release.build.file.name)
+        fs = GridFSStorage()
+        local_build = open(build_name, 'wb')
+        gridfs_build = fs.open(release.build.file.name)
+        local_build.write(gridfs_build.read())
+
+        local_build.close()
+        gridfs_build.close()
+
+        result = deploy_parcel(build_name, 'settings.yaml', proc, port)
     return result
 
 
@@ -63,10 +71,14 @@ def build_hg(app_id, tag):
     url = '%s#%s' % (app.repo_url, tag)
     with tmpdir():
         build_path = paver_build.assemble_hg_raw(url)
-        # Create build record in DB and put tarball in MEDIA_ROOT/builds/
-        filepath = settings.MEDIA_ROOT + 'builds/'
-        if not os.path.exists(filepath):
-            os.mkdir(filepath)
-        shutil.move(build_path, filepath)
-        build = Build(file='builds/' + posixpath.basename(build_path), app=app)
+
+        # Save the file to Mongo GridFS
+        fs = GridFSStorage()
+        localfile = open(build_path, 'r')
+        filepath = 'builds/' + posixpath.basename(build_path)
+        fs.save(filepath, localfile)
+        localfile.close()
+
+        # Create a record of the build in the db
+        build = Build(file=filepath, app=app)
         build.save()

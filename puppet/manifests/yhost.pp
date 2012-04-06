@@ -122,6 +122,26 @@ class py27 {
     }
 }
 
+class currentmongo {
+  exec {
+    tengenkey:
+      command => 'apt-key adv --keyserver keyserver.ubuntu.com --recv 7F0CEB10';
+    tengensource:
+      command => "echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' >> /etc/apt/sources.list",
+      unless => 'grep 10gen /etc/apt/sources.list',
+      require => Exec [tengenkey];
+    tengenupdate:
+      command => "apt-get update",
+      require => Exec [tengensource];
+  }
+
+  package {
+    mongodb-10gen:
+      ensure => present,
+      require => Exec [tengenupdate];
+  }
+}
+
 package { 
   foreman:
     ensure => present,
@@ -133,3 +153,4 @@ class {'yhost': }
 class {'pipdeps': }
 class {'py27': }
 class {'pg91': }
+class {'currentmongo': }

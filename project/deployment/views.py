@@ -72,8 +72,7 @@ def api_proc_status(request, host, proc):
                 server.supervisor.startProcess(proc)
                 server.supervisor.stopProcess(proc)
         except xmlrpclib.Fault as e:
-            response = json_response({'fault': e.faultString}, 500)
-            return response
+            return json_response({'fault': e.faultString}, 500)
     state = server.supervisor.getProcessInfo(proc)
     # Add the host in too for convenvience's sake
     state['host'] = host

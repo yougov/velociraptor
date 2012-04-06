@@ -1,6 +1,7 @@
 import os
 import sys
 
+import mongoengine as mgo
 import djcelery
 djcelery.setup_loader()
 
@@ -32,6 +33,8 @@ DATABASES = {
         'PORT': '',
     }
 }
+
+MONGODB_URL = 'mongodb://localhost/velociraptor'
 
 BROKER_HOST = "localhost"
 BROKER_PORT = 5672
@@ -74,6 +77,9 @@ MEDIA_ROOT = os.path.join(here, 'uploads/')
 # trailing slash.
 # Examples: "http://media.lawrence.com/media/", "http://example.com/media/"
 MEDIA_URL = '/uploads/'
+
+# Store files using mongodb gridfs by default.
+DEFAULT_FILE_STORAGE = 'mongoengine.django.storage.GridFSStorage'
 
 # Absolute path to the directory static files should be collected to.
 # Don't put anything in this directory yourself; store your static files
@@ -185,3 +191,7 @@ try:
     from secret_settings import *
 except ImportError:
     pass
+
+# connect mongoengine.  Need to parse the DB name off the URI first.
+db_name = MONGODB_URL.rpartition('/')[-1]
+mgo.connect(db_name, host=MONGODB_URL)

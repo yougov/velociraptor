@@ -104,7 +104,7 @@ class Release(models.Model):
         # counter?  Maybe include the name of the config profile once we have
         # those?
         return 'release %s of %s' % (self.id,
-                                     posixpath.basename(self.build.file.path))
+                                     posixpath.basename(self.build.file.name))
 
 
 class Host(models.Model):

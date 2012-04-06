@@ -17,6 +17,7 @@ Vagrant::Config.run do |config|
     
     # Every Vagrant virtual environment requires a box to build off of.
     config.vm.box = "yhost"
+
     # The url from where the 'config.vm.box' box will be fetched if it
     # doesn't already exist on the user's system.  If you already have a
     # lucid64 box image sitting around, you can skip this download by doing
