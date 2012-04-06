@@ -18,6 +18,15 @@ dash.init = function() {
     // use $().delegate to set up handlers for elements that don't exist yet.
     dash.container.delegate('.host-status .label', 'click', dash.onHostClick);
     dash.container.delegate('.host-actions .btn', 'click', dash.onHostActionClick);
+    $('body').delegate('.action-dialog .btn', 'click', dash.onActionModalClick); 
+};
+
+dash.cleanName = function(host) {
+  return host.replace(/\./g, "");
+};
+
+dash.createID = function(host, proc) {
+  return host.replace(/\./g, "") + proc.replace(/\./g, "");
 };
 
 // EVENT HANDLERS
@@ -30,10 +39,13 @@ dash.onHostData = function(data, txtStatus, xhr) {
               el.host = data.host;
               // strip dots from the host so it can be used as a
               // classname
-              el.hostclass = data.host.replace(/\./g, "");
+              el.hostclass = dash.cleanName(data.host);
               el.appclass = el.name.split('-')[0];
               el.destroyable = dash.procIsOurs(el.name); 
               el.shortname = el.name.split('-')[0].split('_')[0];
+              // each proc gets a unique id of host + procname, with illegal
+              // chars stripped out.
+              el.procid = dash.createID(el.host, el.name);
           });
           dash.container.isotope('insert', dash.proc_tmpl.goatee(data));
       });
@@ -64,7 +76,50 @@ dash.onHostClick = function() {
 };
 
 dash.onHostActionClick = function() {
-  console.log(this);
+  var data = $(this).parents('.host-status').data();
+  // action buttons will have their action stored in the 'rel attribute.
+  data.action = $(this).attr('rel');
+  if (data.action === 'destroy') {
+    popup = $('#proc-modal-tmpl').goatee(data);
+    popup.data(data);
+    $(popup).modal();
+  } else {
+    // do stops and starts automatically
+    dash.doHostAction(data.host, data.proc, data.action);
+  }
+};
+
+dash.doHostAction = function(host, proc, action) {
+  var url = '/api/host/' + host + '/procs/' + proc + '/';
+  data = {host:host,proc:proc,action:action};
+  $.post(url, data, dash.onActionResponse);
+};
+
+dash.onActionModalClick = function() {
+  var btn = $(this).attr('rel');
+  var modal = $(this).parents('.modal');
+  if (btn === 'confirm') {
+    // get the data, and make an ajax request with it.
+    var data = modal.data();
+    dash.doHostAction(data.host, data.proc, data.action);
+  } 
+  // no matter what button we got, hide and destroy the modal.
+  modal.modal('hide');
+  modal.remove();
+};
+
+dash.clearStatus = function(proc) {
+  _.each(['RUNNING', 'STOPPED', 'FATAL', 'BACKOFF', 'STARTING'], function(el, idx, lst) {
+    proc.removeClass('status-' + el);
+  });
+};
+
+dash.onActionResponse = function(data, txtStatus, xhr) {
+  // find the proc
+  // update its class so it changes colors
+  var proc = $('#' + dash.createID(data.host, data.name));
+  dash.clearStatus(proc);
+  proc.addClass('status-' + data.statename);
 };
 
 // UTILITY FUNCTIONS

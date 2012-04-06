@@ -1,6 +1,7 @@
 import json
 import ast
 import xmlrpclib
+import logging
 
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseRedirect
@@ -15,16 +16,17 @@ from deployment.forms import (DeploymentForm, BuildUploadForm, BuildForm,
 from deployment import tasks
 
 
+
 def dash(request):
     hosts = Host.objects.filter(active=True)
     apps = App.objects.all()
     return render(request, 'dash.html', vars())
 
 
-def json_response(obj):
+def json_response(obj, status=200):
     """Given a Python object, dump it to JSON and return a Django HttpResponse
     with the contents and proper Content-Type"""
-    resp = HttpResponse(json.dumps(obj))
+    resp = HttpResponse(json.dumps(obj), status=status)
     resp['Content-Type'] = 'application/json'
     return resp
 
@@ -58,6 +60,20 @@ def api_host_ports(request, hostname):
 def api_proc_status(request, host, proc):
     """Display status of a single supervisord-managed process on a host, in JSON"""
     server = xmlrpclib.Server('http://%s:%s' % (host, settings.SUPERVISOR_PORT))
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        # TODO: don't try to stop an already-stopped process, and vice versa
+        try:
+            if action == 'start':
+                server.supervisor.startProcess(proc)
+            elif action == 'stop':
+                server.supervisor.stopProcess(proc)
+            elif action == 'restart':
+                server.supervisor.startProcess(proc)
+                server.supervisor.stopProcess(proc)
+        except xmlrpclib.Fault as e:
+            response = json_response({'fault': e.faultString}, 500)
+            return response
     state = server.supervisor.getProcessInfo(proc)
     # Add the host in too for convenvience's sake
     state['host'] = host
@@ -67,23 +83,25 @@ def api_proc_status(request, host, proc):
 def api_task_active(request):
     # Make a list of jobs, each one a dict with a desc and an id.
     out = []
-    for hostname, tasklist in inspect().active().items():
-        # data will be formatted like
-        # http://ask.github.com/celery/userguide/workers.html#dump-of-currently-executing-tasks
+    active = inspect().active()
+    if active:
+        for hostname, tasklist in active.items():
+            # data will be formatted like
+            # http://ask.github.com/celery/userguide/workers.html#dump-of-currently-executing-tasks
 
-        # XXX This is kinda ugly.  Think of a better way to get this data out
-        # in a nice format for the JS to display
-        for task in tasklist:
-            kwargs = ast.literal_eval(task['kwargs'])
-            if task['name'] == "deployment.tasks.build_hg":
-                app = App.objects.get(id=int(kwargs['app_id']))
-                desc = 'hg build of ' + app.name
-                out.append({'id': task['id'], 'desc': desc})
-            elif task['name'] == 'deployment.tasks.deploy':
-                release = Release.objects.get(id=int(kwargs['release_id']))
-                kwargs['appname'] = release.build.app.name
-                desc = '%(appname)s deploy to %(host)s:%(port)s' % kwargs
-                out.append({'id': task['id'], 'desc': desc})
+            # XXX This is kinda ugly.  Think of a better way to get this data out
+            # in a nice format for the JS to display
+            for task in tasklist:
+                kwargs = ast.literal_eval(task['kwargs'])
+                if task['name'] == "deployment.tasks.build_hg":
+                    app = App.objects.get(id=int(kwargs['app_id']))
+                    desc = 'hg build of ' + app.name
+                    out.append({'id': task['id'], 'desc': desc})
+                elif task['name'] == 'deployment.tasks.deploy':
+                    release = Release.objects.get(id=int(kwargs['release_id']))
+                    kwargs['appname'] = release.build.app.name
+                    desc = '%(appname)s deploy to %(host)s:%(port)s' % kwargs
+                    out.append({'id': task['id'], 'desc': desc})
 
     # XXX DEBUG
     #out.append({'id': 'blerg', 'desc': 'fake task'})

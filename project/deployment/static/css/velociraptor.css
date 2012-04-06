@@ -100,27 +100,37 @@ div.label {
   margin-top: 3px;
 }
 
+/* hide/show action buttons depending on host status */
+
+.status-RUNNING .start {
+  display: none;
+}
+
+.status-STOPPED .stop {
+  display: none;
+}
+
 /* TODO: instead of just passing back the status from supervisord, and using
  * that as a class name for styling, have more abstract statuses like "ok" and
  * "alert", that can be based on additional info like smoke tests or nagios
  * checks. */
 
-.FATAL {
+.status-FATAL .label {
   background-color: #b94a48;
 }
-.RUNNING {
+.status-RUNNING .label {
   background-color: #468847;
 }
-.STOPPED {
+.status-STOPPED .label {
   background-color: #f89406;
 }
-.FATAL:hover {
+.status-FATAL .label:hover {
   background-color: #953b39;
 }
-.STOPPED:hover {
+.status-STOPPED .label:hover {
   background-color: #c67605;
 }
-.RUNNING:hover {
+.status-RUNNING .label:hover {
   background-color: #356635;
 }
 

@@ -78,10 +78,10 @@ read the Procfile and start the processes it lists::
     cd /vagrant
     foreman start -f Procfile.dev
 
-That will wake up the django dev server on port 8000 and the celery worker. The
-Vagrantfile config automatically forwards ports 8000-8009 to your local machine
-so in your browser you can go to http://localhost:8000 and you will be viewing
-the django dev server running inside the virtual host.
+That will wake up the Django dev server on port 8000 and the Celery daemon. The
+Vagrantfile config automatically forwards ports 8000-8009 to the VM so in your
+browser you can go to http://localhost:8000 and you will be viewing the django
+dev server running inside the virtual host.
 
 Also note that the forwarding occupies the port on you machine as long as the
 vagrant machine is running, so if you use ports 8000 to 8009 constantly you

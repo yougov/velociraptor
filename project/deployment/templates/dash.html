@@ -8,6 +8,7 @@
   <div class="btn-group statusfilters" data-toggle="buttons-radio">
     <button class="btn btn-mini btn-inverse procfilter" data-filter="*">All</button>
     <button class="btn btn-mini btn-success procfilter" data-filter=".status-RUNNING">Running</button>
+    <button class="btn btn-mini btn-warning procfilter" data-filter=".status-STOPPED">Stopped</button>
     <button class="btn btn-mini btn-danger procfilter" data-filter=".status-FATAL">Fatal</button>
   </div>
   <div class="btn-group hostlist">
@@ -45,7 +46,7 @@
 {# Goatee template for list of processes inside each host block #}
 <script id="host-procs-tmpl" type="text/goatee">
   <%#states%>
-  <div class="host-status status-<%statename%> host-<%hostclass%> app-<%appclass%>" data-host="<%host%>" data-proc="<%name%>">
+  <div id="<%procid%>" class="host-status status-<%statename%> host-<%hostclass%> app-<%appclass%>" data-host="<%host%>" data-proc="<%name%>">
     <div class="label <%statename%>">
       <span class="shortname"><%shortname%></span>
       <span class="longname"><%name%></span>
@@ -53,11 +54,10 @@
     <div class="host-more">
       <%host%><br />
       <%description%>
-      <div class="btn-group host-actions">
-        <a class="btn btn-mini" href="#">Start</a>
-        <a class="btn btn-mini" href="#">Stop</a>
-        <a class="btn btn-mini" href="#">Restart</a>
-        <%#destroyable%><a class="btn btn-mini" href="#">Destroy</a><%/destroyable%>
+      <div class="host-actions">
+        <a class="btn btn-mini start" href="#" rel="start">Start</a>
+        <a class="btn btn-mini stop" href="#" rel="stop">Stop</a>
+        <!--<%#destroyable%><a class="btn btn-mini destroy" href="#" rel="destroy">Destroy</a><%/destroyable%>-->
       </div>
 
     </div>
@@ -80,17 +80,17 @@
 
 {# Goatee template for "are you sure you want to delete this proc?" #}
 <script id="proc-modal-tmpl" type="text/goatee">
-<div class="modal" id="myModal">
+<div class="modal action-dialog">
   <div class="modal-header">
     <a class="close" data-dismiss="modal">×</a>
-    <h3>Modal header</h3>
+    <h3>Are you sure?</h3>
   </div>
   <div class="modal-body">
-    <p>One fine body…</p>
+    <p>You're about to <%action%> <%proc%> on <%host%>.  Do you really want to do this?</p>
   </div>
   <div class="modal-footer">
-    <a href="#" class="btn">Close</a>
-    <a href="#" class="btn btn-primary">Save changes</a>
+    <a href="#" class="btn" rel="cancel">No</a>
+    <a href="#" class="btn btn-primary" rel="confirm">Do it!</a>
   </div>
 </div>
 </script>
