@@ -159,11 +159,10 @@ INSTALLED_APPS = (
     #'django.contrib.sites', # Unneeded?
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'deployment',
-    # Uncomment the next line to enable the admin:
     'django.contrib.admin',
     'djcelery',
     'django_extensions',
+    'deployment', # Our main velociraptor app
 )
 
 # A sample logging configuration. The only tangible logging

@@ -39,6 +39,7 @@ def remember(msg_type, msg, username='brent'):
     # Also log it to actual python logging
     logging.info('%s %s: %s' % (msg_type, username, msg))
 
+# TODO: revamp this to look like https://paste.yougov.net/LMMml
 
 class ConfigValue(models.Model):
     label = models.CharField(max_length=50,
