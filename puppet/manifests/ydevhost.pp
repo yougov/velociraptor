@@ -31,6 +31,8 @@ class yhost {
         rabbitmq-server:;
         libldap2-dev:;
         libsasl2-dev:;
+        libpcre3-dev:;
+        git-core:;
     }
 
     # ensure that supervisord's config has the line to include

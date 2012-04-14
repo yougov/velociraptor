@@ -5,6 +5,7 @@ import posixpath
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
+from south.modelsinspector import add_introspection_rules
 
 import yaml
 from yamlfield.fields import YAMLField
@@ -14,6 +15,9 @@ LOG_ENTRY_TYPES = (
     ('release', 'Release'),
     ('deployment', 'Deployment'),
 )
+
+# Let South know how to handle our custom field type
+add_introspection_rules([], ["^yamlfield\.fields\.YAMLField"])
 
 class DeploymentLogEntry(models.Model):
     type = models.CharField(max_length=50, choices=LOG_ENTRY_TYPES)
