@@ -42,13 +42,7 @@ def remember(msg_type, msg, username='brent'):
 # TODO: revamp this to look like https://paste.yougov.net/LMMml
 
 class ConfigValue(models.Model):
-    label = models.CharField(max_length=50,
-                             help_text="e.g. datamart_chrome_db", unique=True)
-    setting_name = models.CharField(max_length=50,
-                                    help_text=("Setting name used in "
-                                    "settings.yaml, e.g. DATAMART_DB"))
-    # Config values must be valid yaml.  This is validated on the way in, and
-    # parsed automatically on the way out.
+    label = models.CharField(max_length=50, unique=True)
     value = YAMLField(help_text=("Must be valid YAML.  Simple strings and "
                                  "numbers are valid YAML."))
 
@@ -67,7 +61,7 @@ class App(models.Model):
 class Profile(models.Model):
     name = models.CharField(max_length=50, unique=True)
     app = models.ForeignKey(App)
-    configvalues = models.ManyToManyField(ConfigValue)
+    configvalues = models.ManyToManyField(ConfigValue, through='ProfileConfig')
 
     def __unicode__(self):
         return self.name
@@ -80,6 +74,24 @@ class Profile(models.Model):
 
     def to_yaml(self):
         return yaml.safe_dump(self.assemble(), default_flow_style=False)
+
+class ProfileConfig(models.Model):
+    """
+    Through-table for the many:many relationship between configvalues and
+    profiles.  Managed manually so we can have some extra fields.
+    """
+    configvalue = models.ForeignKey(ConfigValue)
+    profile = models.ForeignKey(Profile)
+
+    ohelp = 'Order for merging when creating release.  Lowest to highest.'
+    order = models.IntegerField(blank=True, null=True,  help_text=ohelp)
+
+    thelp = 'Map for renaming configvalue keys to be more app-friendly'
+    translations = YAMLField(blank=True, null=True, help_text=thelp)
+
+    class Meta:
+        unique_together = ('configvalue', 'profile')
+
 
 
 class Build(models.Model):
