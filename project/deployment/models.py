@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.conf import settings
 from django.core.serializers.pyyaml import DjangoSafeDumper
 from django.core.exceptions import ValidationError
-
+from south.modelsinspector import add_introspection_rules
 import yaml
 
 
@@ -16,6 +16,9 @@ LOG_ENTRY_TYPES = (
     ('release', 'Release'),
     ('deployment', 'Deployment'),
 )
+
+# Let South know how to handle our custom field type
+add_introspection_rules([], ["^deployment\.models\.YAMLDictField"])
 
 def validate_yaml_dict(value):
     if (value is not None and

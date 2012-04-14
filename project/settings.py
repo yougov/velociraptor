@@ -163,6 +163,7 @@ INSTALLED_APPS = (
     'djcelery',
     'django_extensions',
     'deployment', # Our main velociraptor app
+    'south',
 )
 
 # A sample logging configuration. The only tangible logging
