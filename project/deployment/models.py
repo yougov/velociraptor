@@ -5,15 +5,79 @@ import posixpath
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
+from django.core.serializers.pyyaml import DjangoSafeDumper
+from django.core.exceptions import ValidationError
 
 import yaml
-from yamlfield.fields import YAMLField
+
 
 LOG_ENTRY_TYPES = (
     ('build', 'Build'),
     ('release', 'Release'),
     ('deployment', 'Deployment'),
 )
+
+def validate_yaml_dict(value):
+    if (value is not None and
+        value != '' and
+        not isinstance(value, dict)):
+        raise ValidationError
+
+class YAMLDictField(models.TextField):
+    """
+    YAMLDictField is a TextField that serializes and deserializes YAML dicts
+    from the database.
+
+    Based on https://github.com/datadesk/django-yamlfield, but goes one step
+    further by ensuring that the data is a dict (or null), not just any valid
+    yaml.
+    """
+    # Used so to_python() is called
+    __metaclass__ = models.SubfieldBase
+
+    def __init__(self, *args, **kwargs):
+        super(YAMLDictField, self).__init__(*args, **kwargs)
+        self.validators.append(validate_yaml_dict)
+
+    def to_python(self, value):
+        """
+        Convert our YAML string to a Python dict after we load it from the DB.
+        Complain if it's not a dict.
+        """
+        if not value:
+            return None
+
+        # Seems like sometimes Django will pass a string into this function,
+        # and other times a dict.  Pass out a dict either way.
+        if isinstance(value, basestring):
+            value = yaml.safe_load(value)
+
+        return value
+
+    def get_db_prep_save(self, value, connection, prepared=False):
+        """
+        Convert our Python object to a string of YAML before we save.
+        """
+        if not value:
+            return ""
+
+        value = yaml.dump(value, Dumper=DjangoSafeDumper,
+                          default_flow_style=False)
+        return super(YAMLDictField, self).get_db_prep_save(value, connection)
+
+    def value_from_object(self, obj):
+        """
+        Returns the value of this field in the given model instance.
+
+        We need to override this so that the YAML comes out properly formatted
+        in the admin widget.
+        """
+        value = getattr(obj, self.attname)
+        if not value or value == "":
+            return value
+        return yaml.dump(value, Dumper=DjangoSafeDumper,
+            default_flow_style=False)
+
 
 class DeploymentLogEntry(models.Model):
     type = models.CharField(max_length=50, choices=LOG_ENTRY_TYPES)
@@ -43,11 +107,10 @@ def remember(msg_type, msg, username='brent'):
 
 class ConfigValue(models.Model):
     label = models.CharField(max_length=50, unique=True)
-    value = YAMLField(help_text=("Must be valid YAML.  Simple strings and "
-                                 "numbers are valid YAML."))
+    value = YAMLDictField(help_text=("Must be valid YAML dict."))
 
     def __unicode__(self):
-        return u'%s (%s)' % (self.label, self.setting_name)
+        return self.label 
 
 
 class App(models.Model):
@@ -56,6 +119,22 @@ class App(models.Model):
 
     def __unicode__(self):
         return self.name
+
+def rename_keys(d, translations):
+    """
+    Return a copy of dictionary 'd' where any keys also present in
+    'translations' have been renamed according to that mapping.
+    """
+    print d
+    if not translations:
+        return d
+    out = {}
+    for k in d.keys():
+        if k in translations:
+            out[translations[k]] = d[k]
+        else:
+            out[k] = d[k]
+    return out
 
 
 class Profile(models.Model):
@@ -68,12 +147,13 @@ class Profile(models.Model):
 
     def assemble(self):
         out = {}
-        for cv in self.configvalues.all():
-            out[cv.setting_name] = cv.value
+        for r in ProfileConfig.objects.filter(profile=self):
+            out.update(rename_keys(r.configvalue.value, r.translations))
         return out
 
     def to_yaml(self):
         return yaml.safe_dump(self.assemble(), default_flow_style=False)
+
 
 class ProfileConfig(models.Model):
     """
@@ -87,11 +167,10 @@ class ProfileConfig(models.Model):
     order = models.IntegerField(blank=True, null=True,  help_text=ohelp)
 
     thelp = 'Map for renaming configvalue keys to be more app-friendly'
-    translations = YAMLField(blank=True, null=True, help_text=thelp)
+    translations = YAMLDictField(blank=True, null=True, help_text=thelp)
 
     class Meta:
         unique_together = ('configvalue', 'profile')
-
 
 
 class Build(models.Model):
@@ -104,7 +183,7 @@ class Build(models.Model):
 
 class Release(models.Model):
     build = models.ForeignKey(Build)
-    config = YAMLField()
+    config = YAMLDictField(blank=True, null=True)
 
     # TODO: Add a 'label' or 'profile_name' field to make for better release
     # naming.  It could also be used in the proc names to more easily

@@ -7,8 +7,11 @@ from deployment import models
 # admin.autodiscover() call in the project's urls.py
 admin.site.register(models.ConfigValue)
 
+class ProfileConfigInline(admin.TabularInline):
+    model = models.ProfileConfig
+
 class ProfileAdmin(admin.ModelAdmin):
-    filter_horizontal = ('configvalues',)
+    inlines = [ProfileConfigInline]
 
 admin.site.register(models.Profile, ProfileAdmin)
 
