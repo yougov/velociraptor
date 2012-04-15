@@ -3,7 +3,6 @@ import sys
 
 import mongoengine as mgo
 import djcelery
-djcelery.setup_loader()
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -198,3 +197,5 @@ if os.environ.get('APP_SETTINGS_YAML'):
 # connect mongoengine.  Need to parse the DB name off the URI first.
 db_name = MONGODB_URL.rpartition('/')[-1]
 mgo.connect(db_name, host=MONGODB_URL)
+
+djcelery.setup_loader()

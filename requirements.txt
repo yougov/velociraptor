@@ -3,9 +3,9 @@ Fabric==1.4.0
 django-celery==2.5.1
 psycopg2==2.4.4
 django-extensions==0.7.1
-yg.deploy>=7.0,<8.0dev# allow VR to update to compatible yg.deploy on build
 keyring==0.7.1
 Paver==1.0.5
 django-yamlfield==0.2
 gunicorn==0.13.4
 mongoengine==0.6.3
+yg.deploy==8.0.1
