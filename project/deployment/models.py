@@ -146,7 +146,7 @@ class Profile(models.Model):
     def assemble(self):
         out = {}
         for r in ProfileConfig.objects.filter(profile=self):
-            if not r.translations: continue
+            translations = r.translations or {}
             out.update(rename_keys(r.configvalue.value, r.translations))
         return out
 
