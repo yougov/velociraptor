@@ -26,7 +26,8 @@ class ReleaseForm(forms.Form):
         super(ReleaseForm, self).__init__(*args, **kwargs)
         # TODO: somehow ensure that profile.app == build.app.  Maybe by only
         # listing a specific app's builds/profiles here?
-        self.fields['build_id'].choices = [(b.id, b) for b in Build.objects.all()]
+        self.fields['build_id'].choices = [(b.id, b) for b in
+                                           Build.objects.all().reverse()]
         self.fields['profile_id'].choices = [(p.id, p) for p in
                                              Profile.objects.all()]
 

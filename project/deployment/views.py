@@ -2,6 +2,7 @@ import json
 import ast
 import xmlrpclib
 import base64
+import copy
 
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseRedirect
@@ -63,6 +64,15 @@ def api_host_ports(request, hostname):
     })
 
 
+def get_creds(request):
+    """
+    Given a request made by a logged-in user, pull off the username/password
+    that we saved in the session so they can be used to do some action on the
+    user's behalf.  Return a tuple of username,password.
+    """
+    return base64.b64decode(request.session['creds']).split(':')
+
+
 @login_required
 def api_host_proc(request, host, proc):
     """Display status of a single supervisord-managed process on a host, in JSON"""
@@ -72,7 +82,7 @@ def api_host_proc(request, host, proc):
     elif request.method == 'DELETE':
         # Do proc deletions syncronously instead of with Celery, since they're
         # fast and we want instant feedback.
-        user, password = base64.b64decode(request.session['creds']).split(':')
+        user, password = get_creds(request)
         tasks.delete_proc(host, proc, user, password)
         state = {'name': proc, 'deleted': True}
     elif request.method == 'POST':
@@ -199,7 +209,9 @@ def deploy(request):
     if form.is_valid():
         # We made the form fields exactly match the arguments to the celery
         # task, so we can just use that dict for kwargs
-        job = tasks.deploy.delay(**form.cleaned_data)
+        data = copy.copy(form.cleaned_data)
+        data['user'], data['password'] = get_creds(request)
+        job = tasks.deploy.delay(**data)
         form.cleaned_data['release'] = str(Release.objects.get(id=form.cleaned_data['release_id']))
         msg = ('deployed %(release)s:%(proc)s to %(host)s:%(port)s'
                % form.cleaned_data)
