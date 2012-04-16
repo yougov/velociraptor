@@ -11,7 +11,7 @@ from mongoengine.django.storage import GridFSStorage
 import yaml
 
 from deployment.models import Release, App, Build
-from yg.deploy.fabric.system import deploy_parcel
+from yg.deploy.fabric.system import deploy_parcel, delete_proc as fab_delete_proc
 from yg.deploy.paver import build as paver_build
 
 
@@ -43,7 +43,7 @@ def deploy(release_id, host, proc, port, user, password):
     env.password=password
 
     deploy.update_state(state='PROGRESS', meta='Started')
-    logging.info('deploying %s:%s to %s:%s' % (release, proc, host, port))
+    logging.info('%s deploying %s:%s to %s:%s' % (user, release, proc, host, port))
 
     with tmpdir():
         f = open('settings.yaml', 'wb')
@@ -82,3 +82,12 @@ def build_hg(app_id, tag):
         # Create a record of the build in the db
         build = Build(file=filepath, app=app)
         build.save()
+
+@celery_task()
+def delete_proc(host, proc, user, password):
+    env.host_string = host
+    env.abort_on_prompts = True
+    env.user=user
+    env.password=password
+    logging.info('%s deleting %s on %s' % (user, proc, host))
+    fab_delete_proc(proc)

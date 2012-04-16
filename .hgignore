@@ -24,5 +24,5 @@ likes_*.json
 *pep8.txt
 *pylint.txt
 uploads*
-secret_settings.py
 .vagrant
+settings.yaml

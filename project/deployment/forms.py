@@ -50,3 +50,12 @@ class DeploymentForm(forms.Form):
             sorted(Release.objects.all(), key=lambda r: r.id, reverse=True)]
         self.fields['host'].choices = [(h.name, h.name) for h in
                                        Host.objects.filter(active=True)]
+
+
+class LoginForm(forms.Form):
+    username = forms.CharField()
+    password = forms.CharField(widget=forms.PasswordInput)
+
+    def clean(self):
+        raise forms.ValidationError('you are invalid!')
+        return self.cleaned_data

@@ -13,7 +13,7 @@
       }
     </style>
   <link rel="stylesheet" href="/static/css/bootstrap-responsive.css" type="text/css" media="screen">
-  
+  {% block style %}{% endblock style %}  
 </head>
 <body>
     <div class="navbar navbar-fixed-top">
@@ -27,6 +27,7 @@
           <a class="brand" href="/">Velociraptor</a>
           <div class="nav-collapse">
           {% block nav %}
+          {% if not hide_nav %}
             {% url dash as dash_url %}
             {% url build_hg as build_url %}
             {% url release as release_url %}
@@ -41,6 +42,7 @@
             </ul>
             <!--<p class="navbar-text pull-right">Logged in as <a href="#">username</a></p>-->
           </div><!--/.nav-collapse -->
+          {% endif %}
           {% endblock nav %}
         </div>
       </div>

@@ -11,8 +11,7 @@ from celery.result import AsyncResult
 from celery.task.control import inspect
 
 from deployment.models import Host, App, Release, Build, Profile, remember
-from deployment.forms import (DeploymentForm, BuildUploadForm, BuildForm,
-                              ReleaseForm)
+from deployment import forms
 from deployment import tasks
 
 
@@ -57,8 +56,13 @@ def api_host_ports(request, hostname):
     })
 
 
-def api_proc_status(request, host, proc):
+def api_host_proc(request, host, proc):
     """Display status of a single supervisord-managed process on a host, in JSON"""
+    if request.method == 'DELETE':
+        # delete the proc.  Except, we need a username/password to do that.
+        # Which means we need to implement auth.
+        pass
+
     server = xmlrpclib.Server('http://%s:%s' % (host, settings.SUPERVISOR_PORT))
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -127,7 +131,7 @@ def api_task_status(request, task_id):
 
 
 def build_hg(request):
-    form = BuildForm(request.POST or None)
+    form = forms.BuildForm(request.POST or None)
     if form.is_valid():
         job = tasks.build_hg.delay(**form.cleaned_data)
         app = App.objects.get(id=form.cleaned_data['app_id'])
@@ -138,7 +142,7 @@ def build_hg(request):
 
 
 def upload_build(request):
-    form = BuildUploadForm(request.POST or None, request.FILES or None)
+    form = forms.BuildUploadForm(request.POST or None, request.FILES or None)
     if form.is_valid():
         # process the form and redirect
         form.save()
@@ -155,7 +159,7 @@ def upload_build(request):
 
 
 def release(request):
-    form = ReleaseForm(request.POST or None)
+    form = forms.ReleaseForm(request.POST or None)
     if form.is_valid():
         build=Build.objects.get(id=form.cleaned_data['build_id'])
         r = Release(
@@ -171,7 +175,7 @@ def release(request):
 
 def deploy(request):
     # will need a form that lets you create a new deployment.
-    form = DeploymentForm(request.POST or None)
+    form = forms.DeploymentForm(request.POST or None)
 
     if form.is_valid():
         # We made the form fields exactly match the arguments to the celery
@@ -183,4 +187,14 @@ def deploy(request):
         remember('deployment', msg)
         return redirect('dash')
 
-    return render(request, 'deploy.html', locals())
+    return render(request, 'deploy.html', vars())
+
+
+def login(request):
+    form = forms.LoginForm(request.POST or None)
+    if form.is_valid():
+        print "valid!"
+        # log the person in.
+        # redirect to next or home
+    hide_nav = True
+    return render(request, 'login.html', vars())

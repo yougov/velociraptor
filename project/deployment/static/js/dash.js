@@ -3,7 +3,9 @@ dash.init = function() {
 
     dash.proc_tmpl = $('#host-procs-tmpl');
     dash.container = $('#dash-procs');
-    $.getJSON('/api/host/', dash.onHostData);
+    $.getJSON('/api/hosts/', dash.onHostData);
+    // TODO: put urls in a single place, and provide a url builder function to
+    // plug in the parts that vary.
 
     $.getJSON('/api/task/active/', dash.onActiveTaskData);
 
@@ -34,7 +36,7 @@ dash.onHostData = function(data, txtStatus, xhr) {
   _.each(data.hosts, function(el, idx, lst) {
       // for each host in the list, make a request for the procs and draw
       // a box for each.
-      $.getJSON('/api/host/' + el + '/procs/', function(data, txtStatus, xhr) {
+      $.getJSON('/api/hosts/' + el + '/procs/', function(data, txtStatus, xhr) {
           _.each(data.states, function(el, idx, lst) {
               el.host = data.host;
               // strip dots from the host so it can be used as a
@@ -80,6 +82,7 @@ dash.onHostActionClick = function() {
   // action buttons will have their action stored in the 'rel attribute.
   data.action = $(this).attr('rel');
   if (data.action === 'destroy') {
+    // show a confirmation dialog before doing proc deletions
     popup = $('#proc-modal-tmpl').goatee(data);
     popup.data(data);
     $(popup).modal();
@@ -90,12 +93,13 @@ dash.onHostActionClick = function() {
 };
 
 dash.doHostAction = function(host, proc, action) {
-  var url = '/api/host/' + host + '/procs/' + proc + '/';
+  var url = '/api/hosts/' + host + '/procs/' + proc + '/';
   data = {host:host,proc:proc,action:action};
   $.post(url, data, dash.onActionResponse);
 };
 
 dash.onActionModalClick = function() {
+  // this handler is bound using $().delegate on init.
   var btn = $(this).attr('rel');
   var modal = $(this).parents('.modal');
   if (btn === 'confirm') {
