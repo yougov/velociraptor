@@ -151,6 +151,14 @@ package {
     require => Class [yhost];
 }
 
+# Include the self-signed SSL cert that yg.ldap needs to make secure
+# connections to our domain controllers.
+file { 'ldap_cert':
+  path    => '/etc/ssl/YOUGOV-AD01-CA.rencer',
+  ensure  => file,
+  source  => 'puppet:///modules/ldap/YOUGOV-AD01-CA.rencer';
+}
+
 class {'yhost': }
 class {'pipdeps': }
 class {'py27': }
