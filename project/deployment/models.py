@@ -95,8 +95,8 @@ class DeploymentLogEntry(models.Model):
         ordering = ['-time']
 
 
-# XXX Once we require login everywhere, update this function to not be stupid.
-def remember(msg_type, msg, username='brent'):
+def remember(msg_type, msg, username):
+    # Log to DB
     logentry = DeploymentLogEntry(
         type=msg_type,
         user=User.objects.get(username=username),
@@ -106,7 +106,6 @@ def remember(msg_type, msg, username='brent'):
     # Also log it to actual python logging
     logging.info('%s %s: %s' % (msg_type, username, msg))
 
-# TODO: revamp this to look like https://paste.yougov.net/LMMml
 
 class ConfigValue(models.Model):
     label = models.CharField(max_length=50, unique=True)
@@ -123,12 +122,12 @@ class App(models.Model):
     def __unicode__(self):
         return self.name
 
+
 def rename_keys(source, translations):
     """
     Return a copy of dictionary 'source' where any keys also present in
     'translations' have been renamed according to that mapping.
     """
-    print(source)
     return {
         translations.get(key, key): source[val]
         for key in source

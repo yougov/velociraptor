@@ -82,6 +82,7 @@ def build_hg(app_id, tag):
         build = Build(file=filepath, app=app)
         build.save()
 
+
 @celery_task()
 def delete_proc(host, proc, user, password):
     env.host_string = host

@@ -1,3 +1,6 @@
+// TODO: Add a level of nesting to the dash namespace.  Consider dash.utils,
+// dash.clickhandlers, dash.datahandlers.
+
 var dash = {};
 dash.init = function() {
 
@@ -21,6 +24,8 @@ dash.init = function() {
     dash.container.delegate('.host-status .label', 'click', dash.onHostClick);
     dash.container.delegate('.host-actions .btn', 'click', dash.onHostActionClick);
     $('body').delegate('.action-dialog .btn', 'click', dash.onActionModalClick); 
+
+    $('.expandcollapse button').click(dash.onExpandCollapseClick);
 };
 
 dash.cleanName = function(host) {
@@ -150,6 +155,16 @@ dash.onActionResponse = function(data, txtStatus, xhr) {
   var proc = $('#' + dash.createID(data.host, data.name));
   dash.clearStatus(proc);
   proc.addClass('status-' + data.statename);
+};
+
+dash.onExpandCollapseClick = function() {
+    var action = $(this).attr('rel');
+    if (action === 'expand') {
+        $('.host-status').addClass('host-expanded');
+    } else if (action === 'collapse') {
+        $('.host-status').removeClass('host-expanded');
+    }
+    dash.reflow();
 };
 
 // UTILITY FUNCTIONS

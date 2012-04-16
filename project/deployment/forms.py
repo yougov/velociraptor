@@ -42,13 +42,10 @@ class DeploymentForm(forms.Form):
     host = forms.ChoiceField(choices=[])
     port = forms.IntegerField()
 
-    user = forms.CharField()
-    password = forms.CharField(widget=forms.PasswordInput)
-
     def __init__(self, *args, **kwargs):
         super(DeploymentForm, self).__init__(*args, **kwargs)
         self.fields['release_id'].choices = [(r.id, r) for r in
-            sorted(Release.objects.all(), key=lambda r: r.id, reverse=True)]
+                                             Release.objects.all().reverse()]
         self.fields['host'].choices = [(h.name, h.name) for h in
                                        Host.objects.filter(active=True)]
 

@@ -5,13 +5,13 @@
 <div id="dash-tasks"></div>
 <h1>Procs <small>as reported by supervisord </small></h1>
 <div class="proc-filters">
-  <div class="btn-group statusfilters" data-toggle="buttons-radio">
+  <div class="btn-group statusfilters procbar" data-toggle="buttons-radio">
     <button class="btn btn-mini btn-inverse procfilter" data-filter="*">All</button>
     <button class="btn btn-mini btn-success procfilter" data-filter=".status-RUNNING">Running</button>
     <button class="btn btn-mini btn-warning procfilter" data-filter=".status-STOPPED">Stopped</button>
     <button class="btn btn-mini btn-danger procfilter" data-filter=".status-FATAL">Fatal</button>
   </div>
-  <div class="btn-group hostlist">
+  <div class="btn-group hostlist procbar">
     <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
       By Host
       <span class="caret"></span>
@@ -22,7 +22,7 @@
       {% endfor %}
     </ul>
   </div>
-  <div class="btn-group applist">
+  <div class="btn-group applist procbar">
     <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
       By App
       <span class="caret"></span>
@@ -32,6 +32,10 @@
       <li><a href="#" class="procfilter" data-filter=".app-{{ app.name|stripchar:"." }}">{{ app }}</a>
       {% endfor %}
     </ul>
+  </div>
+  <div class="btn-group expandcollapse procbar">
+    <button class="btn btn-mini" rel="expand">Expand All</button>
+    <button class="btn btn-mini" rel="collapse">Collapse All</button>
   </div>
 </div>
 <div id="dash-procs">

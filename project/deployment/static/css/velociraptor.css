@@ -138,7 +138,7 @@ div.label {
   min-width: 50px;
 }
 
-.statusfilters, .hostlist, .applist {
+.procbar {
   display: inline-block;
 }
 

@@ -88,7 +88,7 @@ def api_host_proc(request, host, proc):
         except xmlrpclib.Fault as e:
             return json_response({'fault': e.faultString}, 500)
         state = server.supervisor.getProcessInfo(proc)
-    # Add the host in too for convenvience's sake
+    # Add the host in too for convenience's sake
     state['host'] = host
     return json_response(state)
 
@@ -148,7 +148,8 @@ def build_hg(request):
     if form.is_valid():
         job = tasks.build_hg.delay(**form.cleaned_data)
         app = App.objects.get(id=form.cleaned_data['app_id'])
-        remember('build', 'built %s-%s' % (app.name, form.cleaned_data['tag']))
+        remember('build', 'built %s-%s' % (app.name, form.cleaned_data['tag']),
+                request.user.username)
         return redirect('dash')
     btn_text = "Build"
     return render(request, 'basic_form.html', vars())
@@ -161,7 +162,8 @@ def upload_build(request):
         # process the form and redirect
         form.save()
         # set a message
-        remember('build', 'uploaded build %s' % str(form.instance.file))
+        remember('build', 'uploaded build %s' % str(form.instance.file),
+                 request.user.username)
         # Redirect to the 'deploy' page.
         return HttpResponseRedirect(reverse('deploy'))
     enctype = "multipart/form-data"
@@ -182,7 +184,8 @@ def release(request):
             config=Profile.objects.get(id=form.cleaned_data['profile_id']).assemble(),
         )
         r.save()
-        remember('release', 'created release %s with %s' % (r.id, str(build)))
+        remember('release', 'created release %s with %s' % (r.id, str(build)),
+                request.user.username)
         return HttpResponseRedirect(reverse('deploy'))
     btn_text = 'Save'
     return render(request, 'basic_form.html', vars())
@@ -200,7 +203,7 @@ def deploy(request):
         form.cleaned_data['release'] = str(Release.objects.get(id=form.cleaned_data['release_id']))
         msg = ('deployed %(release)s:%(proc)s to %(host)s:%(port)s'
                % form.cleaned_data)
-        remember('deployment', msg)
+        remember('deployment', msg, request.user.username)
         return redirect('dash')
 
     return render(request, 'deploy.html', vars())
