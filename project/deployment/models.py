@@ -127,10 +127,13 @@ def rename_keys(source, translations):
     """
     Return a copy of dictionary 'source' where any keys also present in
     'translations' have been renamed according to that mapping.
+
+    >>> rename_keys(dict(a=1,b=2), dict(a='c')) == dict(c=1, b=2)
+    True
     """
     print(source)
     return {
-        translations.get(key, key): source[val]
+        translations.get(key, key): source[key]
         for key in source
     }
 
@@ -147,7 +150,7 @@ class Profile(models.Model):
         out = {}
         for r in ProfileConfig.objects.filter(profile=self):
             translations = r.translations or {}
-            out.update(rename_keys(r.configvalue.value, r.translations))
+            out.update(rename_keys(r.configvalue.value, translations))
         return out
 
     def to_yaml(self):
