@@ -27,7 +27,9 @@ class ReleaseForm(forms.Form):
         # TODO: somehow ensure that profile.app == build.app.  Maybe by only
         # listing a specific app's builds/profiles here?
         self.fields['build_id'].choices = [(b.id, b) for b in
-                                           Build.objects.all().reverse()]
+                                           sorted(Build.objects.all(),
+                                                  key=lambda b: b.id,
+                                                  reverse=True)]
         self.fields['profile_id'].choices = [(p.id, p) for p in
                                              Profile.objects.all()]
 
@@ -46,7 +48,7 @@ class DeploymentForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(DeploymentForm, self).__init__(*args, **kwargs)
         self.fields['release_id'].choices = [(r.id, r) for r in
-                                             Release.objects.all().reverse()]
+            sorted(Release.objects.all(), key=lambda r: r.id, reverse=True)]
         self.fields['host'].choices = [(h.name, h.name) for h in
                                        Host.objects.filter(active=True)]
 
