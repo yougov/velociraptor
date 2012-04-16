@@ -40,7 +40,13 @@
               <li class="{% current_nav deploy_url %}"><a href="{{ deploy_url }}">Deploy</a></li>
               <li class="{% current_nav log_url %}"><a href="{{ log_url }}">Log</a></li>
             </ul>
-            <!--<p class="navbar-text pull-right">Logged in as <a href="#">username</a></p>-->
+            <p class="navbar-text pull-right">
+            {% if request.user.is_authenticated %}
+            Logged in as {{ request.user.username }}.  <a href="{% url logout %}">Log out</a>
+            {% else %}
+
+            {% endif %}
+            </p>
           </div><!--/.nav-collapse -->
           {% endif %}
           {% endblock nav %}

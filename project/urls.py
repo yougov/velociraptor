@@ -8,6 +8,7 @@ from deployment.models import DeploymentLogEntry
 admin.autodiscover()
 
 urlpatterns = patterns('',
+    # Main UI routes
     url(r'^$', 'deployment.views.dash', name='dash'),
     url(r'^deploy/$', 'deployment.views.deploy', name='deploy'),
     url(r'^build/$', 'deployment.views.build_hg', name='build_hg'),
@@ -15,8 +16,13 @@ urlpatterns = patterns('',
     url(r'^upload/$', 'deployment.views.upload_build', name='upload_build'),
     url(r'^log/$', ListView.as_view(model=DeploymentLogEntry,
                                     template_name='log.html'), name='log'),
-    url(r'^login/$', 'deployment.views.login', name='login'),
 
+    # Utility stuff
+    url(r'^login/$', 'deployment.views.login', name='login'),
+    url(r'^logout/$', 'deployment.views.logout', name='logout'),
+    url(r'^admin/', include(admin.site.urls)),
+
+    # JSON API routes
     url(r'^api/hosts/$',
         'deployment.views.api_host', name='api_host'),
     url(r'^api/hosts/(?P<hostname>[a-zA-Z0-9_.-]+)/ports/$',
@@ -29,7 +35,6 @@ urlpatterns = patterns('',
         name='api_task_list'),
     url(r'^api/task/(?P<task_id>[a-zA-Z0-9_.-]+)/$',
         'deployment.views.api_task_status', name='api_task'),
-    url(r'^admin/', include(admin.site.urls)),
 )
 
 urlpatterns += staticfiles_urlpatterns()

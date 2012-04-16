@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth import authenticate
 
 from deployment.models import Release, Host, App, Build, Profile
 
@@ -57,5 +58,7 @@ class LoginForm(forms.Form):
     password = forms.CharField(widget=forms.PasswordInput)
 
     def clean(self):
-        raise forms.ValidationError('you are invalid!')
+        self.user = authenticate(**self.cleaned_data)
+        if not self.user:
+            raise forms.ValidationError('Bad username or password')
         return self.cleaned_data

@@ -1,11 +1,13 @@
 import json
 import ast
 import xmlrpclib
-import logging
+import base64
 
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
+from django.contrib.auth import login as django_login, logout as django_logout
+from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from celery.result import AsyncResult
 from celery.task.control import inspect
@@ -15,7 +17,7 @@ from deployment import forms
 from deployment import tasks
 
 
-
+@login_required
 def dash(request):
     hosts = Host.objects.filter(active=True)
     apps = App.objects.all()
@@ -29,12 +31,16 @@ def json_response(obj, status=200):
     resp['Content-Type'] = 'application/json'
     return resp
 
+# TODO: protect these json views with a decorator that returns a 403 instead of
+# a redirect to the login page.  To be more ajax-friendly.
+@login_required
 def api_host(request):
     # list all hosts
     return json_response({'hosts': [h.name for h in
                                     Host.objects.filter(active=True)]})
 
 
+@login_required
 def api_host_status(request, hostname):
     """Display status of all supervisord-managed processes on a single host, in
     JSON"""
@@ -48,6 +54,7 @@ def api_host_status(request, hostname):
     return json_response(data)
 
 
+@login_required
 def api_host_ports(request, hostname):
     host = Host.objects.get(name=hostname)
     return json_response({
@@ -56,17 +63,20 @@ def api_host_ports(request, hostname):
     })
 
 
+@login_required
 def api_host_proc(request, host, proc):
     """Display status of a single supervisord-managed process on a host, in JSON"""
-    if request.method == 'DELETE':
-        # delete the proc.  Except, we need a username/password to do that.
-        # Which means we need to implement auth.
-        pass
-
     server = xmlrpclib.Server('http://%s:%s' % (host, settings.SUPERVISOR_PORT))
-    if request.method == 'POST':
+    if request.method == 'GET':
+        state = server.supervisor.getProcessInfo(proc)
+    elif request.method == 'DELETE':
+        # Do proc deletions syncronously instead of with Celery, since they're
+        # fast and we want instant feedback.
+        user, password = base64.b64decode(request.session['creds']).split(':')
+        tasks.delete_proc(host, proc, user, password)
+        state = {'name': proc, 'deleted': True}
+    elif request.method == 'POST':
         action = request.POST.get('action')
-        # TODO: don't try to stop an already-stopped process, and vice versa
         try:
             if action == 'start':
                 server.supervisor.startProcess(proc)
@@ -77,12 +87,13 @@ def api_host_proc(request, host, proc):
                 server.supervisor.stopProcess(proc)
         except xmlrpclib.Fault as e:
             return json_response({'fault': e.faultString}, 500)
-    state = server.supervisor.getProcessInfo(proc)
+        state = server.supervisor.getProcessInfo(proc)
     # Add the host in too for convenvience's sake
     state['host'] = host
     return json_response(state)
 
 
+@login_required
 def api_task_active(request):
     # Make a list of jobs, each one a dict with a desc and an id.
     out = []
@@ -112,6 +123,7 @@ def api_task_active(request):
     return json_response({'tasks': out})
 
 
+@login_required
 def api_task_status(request, task_id):
     task = AsyncResult(task_id)
     status = {
@@ -130,6 +142,7 @@ def api_task_status(request, task_id):
     return json_response(status)
 
 
+@login_required
 def build_hg(request):
     form = forms.BuildForm(request.POST or None)
     if form.is_valid():
@@ -141,6 +154,7 @@ def build_hg(request):
     return render(request, 'basic_form.html', vars())
 
 
+@login_required
 def upload_build(request):
     form = forms.BuildUploadForm(request.POST or None, request.FILES or None)
     if form.is_valid():
@@ -158,6 +172,7 @@ def upload_build(request):
     return render(request, 'basic_form.html', vars())
 
 
+@login_required
 def release(request):
     form = forms.ReleaseForm(request.POST or None)
     if form.is_valid():
@@ -173,6 +188,7 @@ def release(request):
     return render(request, 'basic_form.html', vars())
 
 
+@login_required
 def deploy(request):
     # will need a form that lets you create a new deployment.
     form = forms.DeploymentForm(request.POST or None)
@@ -193,8 +209,18 @@ def deploy(request):
 def login(request):
     form = forms.LoginForm(request.POST or None)
     if form.is_valid():
-        print "valid!"
         # log the person in.
+        django_login(request, form.user)
+        # remember b64-encoded creds in session so they can be used for fabric
+        # tasks
+        request.session['creds'] = base64.b64encode('%(username)s:%(password)s'
+                                                    % request.POST)
         # redirect to next or home
+        return HttpResponseRedirect(request.GET.get('next', '/'))
     hide_nav = True
     return render(request, 'login.html', vars())
+
+
+def logout(request):
+    django_logout(request)
+    return HttpResponseRedirect('/')

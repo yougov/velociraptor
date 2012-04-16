@@ -6,7 +6,6 @@ import posixpath
 
 from celery.task import task as celery_task
 from fabric.api import env
-from django.conf import settings
 from mongoengine.django.storage import GridFSStorage
 import yaml
 

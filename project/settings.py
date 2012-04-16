@@ -149,6 +149,9 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
 )
 
+SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
+LOGIN_URL = '/login/'
+
 ROOT_URLCONF = 'project.urls'
 
 TEMPLATE_DIRS = (

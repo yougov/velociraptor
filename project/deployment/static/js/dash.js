@@ -72,7 +72,6 @@ dash.onFilterClick = function() {
 };
 
 dash.onHostClick = function() {
-  // add a class to make big
   $(this).parent().toggleClass('host-expanded');
   dash.reflow();
 };
@@ -92,30 +91,57 @@ dash.onHostActionClick = function() {
   }
 };
 
-dash.doHostAction = function(host, proc, action) {
-  var url = '/api/hosts/' + host + '/procs/' + proc + '/';
-  data = {host:host,proc:proc,action:action};
-  $.post(url, data, dash.onActionResponse);
+dash.doHostAction = function(host, proc, action, method, callback) {
+    if (method === undefined) {
+        method = 'POST';
+    }
+    if (callback === undefined) {
+        callback = dash.onActionResponse;
+    }
+
+    var url = '/api/hosts/' + host + '/procs/' + proc + '/';
+    data = {host:host,proc:proc,action:action};
+    $.ajax(url, {
+        data: data,
+        dataType: 'json',
+        type: method,
+        success: callback 
+    });
+};
+
+dash.destroyProc = function(host, proc) {
+    return dash.doHostAction(host, proc, 'destroy', 'DELETE', dash.onProcDestroy);
+};
+
+dash.onProcDestroy = function(data, txtStatus, xhr) {
+    // callback for deleting a proc from the DOM when server lets us know it's
+    // been destroyed.
+    $('#' + dash.createID(data.host, data.name)).remove();
+    dash.reflow();
 };
 
 dash.onActionModalClick = function() {
   // this handler is bound using $().delegate on init.
-  var btn = $(this).attr('rel');
-  var modal = $(this).parents('.modal');
-  if (btn === 'confirm') {
-    // get the data, and make an ajax request with it.
-    var data = modal.data();
-    dash.doHostAction(data.host, data.proc, data.action);
-  } 
-  // no matter what button we got, hide and destroy the modal.
-  modal.modal('hide');
-  modal.remove();
+    var btn = $(this).attr('rel');
+    var modal = $(this).parents('.modal');
+    if (btn === 'confirm') {
+        // get the data, and make an ajax request with it.
+        var data = modal.data();
+        if (data.action === 'destroy') {
+            dash.destroyProc(data.host, data.proc);
+        } else {
+            dash.doHostAction(data.host, data.proc, data.action);
+        }
+    } 
+    // no matter what button we got, hide and destroy the modal.
+    modal.modal('hide');
+    modal.remove();
 };
 
 dash.clearStatus = function(proc) {
-  _.each(['RUNNING', 'STOPPED', 'FATAL', 'BACKOFF', 'STARTING'], function(el, idx, lst) {
-    proc.removeClass('status-' + el);
-  });
+    _.each(['RUNNING', 'STOPPED', 'FATAL', 'BACKOFF', 'STARTING'], function(el, idx, lst) {
+        proc.removeClass('status-' + el);
+    });
 };
 
 dash.onActionResponse = function(data, txtStatus, xhr) {
