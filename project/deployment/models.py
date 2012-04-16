@@ -128,7 +128,7 @@ def rename_keys(source, translations):
     Return a copy of dictionary 'source' where any keys also present in
     'translations' have been renamed according to that mapping.
     """
-    print source
+    print(source)
     return {
         translations.get(key, key): source[val]
         for key in source
@@ -146,6 +146,7 @@ class Profile(models.Model):
     def assemble(self):
         out = {}
         for r in ProfileConfig.objects.filter(profile=self):
+            if not r.translations: continue
             out.update(rename_keys(r.configvalue.value, r.translations))
         return out
 
@@ -161,7 +162,7 @@ class ProfileConfig(models.Model):
     configvalue = models.ForeignKey(ConfigValue)
     profile = models.ForeignKey(Profile)
 
-    ohelp = 'Order for merging when creating release.  Lowest to highest.'
+    ohelp = 'Order for merging when creating release. Higher number takes precedence.'
     order = models.IntegerField(blank=True, null=True,  help_text=ohelp)
 
     thelp = 'Map for renaming configvalue keys to be more app-friendly'
