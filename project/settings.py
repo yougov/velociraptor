@@ -1,3 +1,4 @@
+import warnings
 import os
 import sys
 
@@ -35,6 +36,12 @@ DATABASES = {
         'PORT': '',
     }
 }
+
+# Suppress warnings when we pass a URI to MongoDB that includes the
+#  database name.
+warnings.filterwarnings('ignore', category=UserWarning,
+    message="must provide a username",
+    module='pymongo.connection')
 
 MONGODB_URL = 'mongodb://localhost/velociraptor'
 
