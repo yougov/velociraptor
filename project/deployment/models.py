@@ -113,7 +113,7 @@ class ConfigValue(models.Model):
     value = YAMLDictField(help_text=("Must be valid YAML dict."))
 
     def __unicode__(self):
-        return self.label 
+        return self.label
 
 
 class App(models.Model):
@@ -123,21 +123,16 @@ class App(models.Model):
     def __unicode__(self):
         return self.name
 
-def rename_keys(d, translations):
+def rename_keys(source, translations):
     """
-    Return a copy of dictionary 'd' where any keys also present in
+    Return a copy of dictionary 'source' where any keys also present in
     'translations' have been renamed according to that mapping.
     """
-    print d
-    if not translations:
-        return d
-    out = {}
-    for k in d.keys():
-        if k in translations:
-            out[translations[k]] = d[k]
-        else:
-            out[k] = d[k]
-    return out
+    print source
+    return {
+        translations.get(key, key): source[val]
+        for key in source
+    }
 
 
 class Profile(models.Model):
