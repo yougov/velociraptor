@@ -74,7 +74,7 @@ def get_creds(request):
     """
     username, password = base64.b64decode(
         request.session['creds']).split(':')
-    username = yg.deploy.users.linux_username[username]
+    username = yg.deploy.users.linux_usernames[username]
     Credential = collections.namedtuple('Credential', 'username password')
     return Credential(username, password)
 
