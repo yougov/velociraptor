@@ -9,5 +9,5 @@ django-yamlfield==0.2
 gunicorn==0.13.4
 mongoengine==0.6.3
 yg.ldap==2.1
-yg.deploy>=8.0.2,<9.0
+yg.deploy>=8.1,<9.0
 South==0.7.3

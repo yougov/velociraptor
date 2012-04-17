@@ -3,6 +3,7 @@ import ast
 import xmlrpclib
 import base64
 import copy
+import collections
 
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseRedirect
@@ -12,6 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from celery.result import AsyncResult
 from celery.task.control import inspect
+import yg.deploy.users
 
 from deployment.models import Host, App, Release, Build, Profile, remember
 from deployment import forms
@@ -68,9 +70,13 @@ def get_creds(request):
     """
     Given a request made by a logged-in user, pull off the username/password
     that we saved in the session so they can be used to do some action on the
-    user's behalf.  Return a tuple of username,password.
+    user's behalf.  Return a tuple of username, password.
     """
-    return base64.b64decode(request.session['creds']).split(':')
+    username, password = base64.b64decode(
+        request.session['creds']).split(':')
+    username = yg.deploy.users.linux_username[username]
+    Credential = collections.namedtuple('Credential', 'username password')
+    return Credential(username, password)
 
 
 @login_required
@@ -138,7 +144,7 @@ def api_task_status(request, task_id):
     task = AsyncResult(task_id)
     status = {
         'successful': task.successful(),
-        'result': str(task.result), # task.result can be any picklable python object. 
+        'result': str(task.result), # task.result can be any picklable python object.
         'status': task.status,
         'ready': task.ready(),
         'failed': task.failed(),
