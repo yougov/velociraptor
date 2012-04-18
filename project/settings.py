@@ -2,8 +2,8 @@ import warnings
 import os
 import sys
 
-import mongoengine as mgo
 import djcelery
+import pymongo
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -88,7 +88,7 @@ MEDIA_ROOT = os.path.join(here, 'uploads/')
 MEDIA_URL = '/uploads/'
 
 # Store files using mongodb gridfs by default.
-DEFAULT_FILE_STORAGE = 'mongoengine.django.storage.GridFSStorage'
+DEFAULT_FILE_STORAGE = 'deployment.storages.GridFSStorage'
 
 # Absolute path to the directory static files should be collected to.
 # Don't put anything in this directory yourself; store your static files
@@ -204,8 +204,12 @@ if os.environ.get('APP_SETTINGS_YAML'):
     globals().update(yaml.safe_load(open(os.environ['APP_SETTINGS_YAML'])))
 
 
-# connect mongoengine.  Need to parse the DB name off the URI first.
-db_name = MONGODB_URL.rpartition('/')[-1]
-mgo.connect(db_name, host=MONGODB_URL)
+# Unpack the MONGODB_URL env var to provide the settings that the GridFS
+# storage wants.
+mongoparts = pymongo.uri_parser.parse_uri(MONGODB_URL)
+GRIDFS_HOST = mongoparts['nodelist'][0][0]
+GRIDFS_PORT = mongoparts['nodelist'][0][1]
+GRIDFS_DB = mongoparts['database'] or 'test'
+GRIDFS_COLLECTION = mongoparts['collection'] or 'fs'
 
 djcelery.setup_loader()
