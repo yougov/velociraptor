@@ -11,3 +11,4 @@ yg.ldap==2.1
 yg.deploy>=8.1,<9.0
 South==0.7.3
 requests==0.11.1
+pymongo==2.1.1
