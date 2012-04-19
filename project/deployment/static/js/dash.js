@@ -173,11 +173,13 @@ dash.isNumber = function(n) {
 };
 
 dash.procIsOurs = function(proc) {
-  // if we can use a "-" to split a procname into 5 parts, and the last one
-  // is a port number, then guess that this is a proc that the dashboard
-  // can control.
+    // if we can use a "-" to split a procname into 5 parts (old version) or 6
+    // parts (new version), and the last one
+    // is a port number, then guess that this is a proc that the dashboard
+    // can control.
   var parts = proc.split('-');
-  return parts.length === 5 && dash.isNumber(parts[4]);
+  var len = parts.length;
+  return (len === 5 || len === 6) && dash.isNumber(parts[len-1]);
 };
 
 dash.reflow = function() { dash.container.isotope('reLayout');};

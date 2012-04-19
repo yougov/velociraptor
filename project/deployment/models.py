@@ -144,7 +144,7 @@ class Profile(models.Model):
     app = models.ForeignKey(App)
     namehelp = ("Used in release name.  Good profile names are short and use "
                 "no spaces or dashes (underscores are OK)")
-    name = models.CharField(verbose_name="Profile Name", max_length=20, unique=True, help_text=namehelp)
+    name = models.CharField(verbose_name="Profile Name", max_length=20, help_text=namehelp)
     configvalues = models.ManyToManyField(ConfigValue, through='ProfileConfig')
 
     def __unicode__(self):
@@ -159,6 +159,9 @@ class Profile(models.Model):
 
     def to_yaml(self):
         return yaml.safe_dump(self.assemble(), default_flow_style=False)
+
+    class Meta:
+        unique_together = ('app', 'name')
 
 
 class ProfileConfig(models.Model):

@@ -32,7 +32,7 @@ class tmpdir(object):
 
 
 @celery_task()
-def deploy(release_id, host, proc, port, user, password):
+def deploy(release_id, profile, host, proc, port, user, password):
     release = Release.objects.get(id=release_id)
 
     # Set up env for Fabric
@@ -59,7 +59,7 @@ def deploy(release_id, host, proc, port, user, password):
         local_build.close()
         build.close()
 
-        result = deploy_parcel(build_name, 'settings.yaml', proc, port)
+        result = deploy_parcel(build_name, 'settings.yaml', profile, proc, port)
     return result
 
 

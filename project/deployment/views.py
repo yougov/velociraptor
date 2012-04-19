@@ -218,8 +218,11 @@ def deploy(request):
         # task, so we can just use that dict for kwargs
         data = copy.copy(form.cleaned_data)
         data['user'], data['password'] = get_creds(request)
+
+        release = Release.objects.get(id=form.cleaned_data['release_id'])
+        data['profile'] = release.profile_name
         job = tasks.deploy.delay(**data)
-        form.cleaned_data['release'] = str(Release.objects.get(id=form.cleaned_data['release_id']))
+        form.cleaned_data['release'] = str(release)
         msg = ('deployed %(release)s:%(proc)s to %(host)s:%(port)s'
                % form.cleaned_data)
         remember('deployment', msg, request.user.username)
