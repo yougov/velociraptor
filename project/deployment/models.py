@@ -227,6 +227,9 @@ class Release(models.Model):
         self.hash = self.compute_hash()
         super(Release, self).save(*args, **kwargs)
 
+    class Meta:
+        ordering = ['-id']
+
 
 class Host(models.Model):
     name = models.CharField(max_length=200, unique=True)
