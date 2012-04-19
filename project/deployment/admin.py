@@ -15,7 +15,6 @@ class ProfileAdmin(admin.ModelAdmin):
 
 admin.site.register(models.Profile, ProfileAdmin)
 
-#admin.site.register(models.App, AppAdmin)
 admin.site.register(models.App)
 admin.site.register(models.Build)
 admin.site.register(models.Release)

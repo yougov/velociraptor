@@ -24,14 +24,19 @@ class ReleaseForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(ReleaseForm, self).__init__(*args, **kwargs)
-        # TODO: somehow ensure that profile.app == build.app.  Maybe by only
-        # listing a specific app's builds/profiles here?
         self.fields['build_id'].choices = [(b.id, b) for b in
-                                           sorted(Build.objects.all(),
-                                                  key=lambda b: b.id,
-                                                  reverse=True)]
+                                           Build.objects.all()]
         self.fields['profile_id'].choices = [(p.id, p) for p in
                                              Profile.objects.all()]
+
+    def clean(self):
+        # Look up the build's app, and the profile's app, and make sure they
+        # match.
+        build = Build.objects.get(id=self.cleaned_data['build_id'])
+        profile = Profile.objects.get(id=self.cleaned_data['profile_id'])
+        if not build.app.id == profile.app.id:
+            raise forms.ValidationError("Build app doesn't match Profile app")
+        return self.cleaned_data
 
 
 class DeploymentForm(forms.Form):

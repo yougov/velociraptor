@@ -74,7 +74,6 @@ def get_creds(request):
     """
     username, password = base64.b64decode(
         request.session['creds']).split(':')
-    username = yg.deploy.users.linux_usernames[username]
     Credential = collections.namedtuple('Credential', 'username password')
     return Credential(username, password)
 
@@ -199,7 +198,7 @@ def release(request):
         r = Release(
             profile_name=profile.name,
             build=build,
-            config=profile.assemble(),
+            config=profile.to_yaml(),
         )
         r.save()
         remember('release', 'created release %s with %s' % (r.id, str(build)),

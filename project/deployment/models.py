@@ -2,16 +2,17 @@ import xmlrpclib
 import logging
 import posixpath
 import hashlib
+import datetime
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.files.storage import default_storage
 from django.conf import settings
 from django.core.serializers.pyyaml import DjangoSafeDumper
 from django.core.exceptions import ValidationError
 from south.modelsinspector import add_introspection_rules
 import yaml
 
-from deployment.storages import GridFSStorage
 
 LOG_ENTRY_TYPES = (
     ('build', 'Build'),
@@ -140,10 +141,10 @@ def rename_keys(source, translations):
 
 
 class Profile(models.Model):
+    app = models.ForeignKey(App)
     namehelp = ("Used in release name.  Good profile names are short and use "
                 "no spaces or dashes (underscores are OK)")
-    name = models.CharField(max_length=20, unique=True, help_text=namehelp)
-    app = models.ForeignKey(App)
+    name = models.CharField(verbose_name="Profile Name", max_length=20, unique=True, help_text=namehelp)
     configvalues = models.ManyToManyField(ConfigValue, through='ProfileConfig')
 
     def __unicode__(self):
@@ -179,15 +180,22 @@ class ProfileConfig(models.Model):
 
 
 class Build(models.Model):
-    file = models.FileField(upload_to='builds')
     app = models.ForeignKey(App)
+    tag = models.CharField(max_length=50)
+    file = models.FileField(upload_to='builds')
+
+    # Don't use auto_now_add, because we want to be able to override this.
+    time = models.DateTimeField(default=datetime.datetime.now)
 
     def __unicode__(self):
-        return str(self.file)
+        return self.shortname()
 
     def shortname(self):
-        # Return the app name and version, but split off the ugly timestamp
-        return '-'.join(self.file.name.split('-')[:2])
+        # Return the app name and version
+        return u'-'.join([self.app.name, self.tag])
+
+    class Meta:
+        ordering = ['-id']
 
 
 class Release(models.Model):
@@ -205,16 +213,13 @@ class Release(models.Model):
     hash = models.CharField(max_length=32)
 
     def __unicode__(self):
-        # XXX Not happy with this, but haven't been able to come up with a more
-        # intuitive way to name a 'release'.  Maybe just an app name and a
-        # counter?  Maybe include the name of the config profile once we have
-        # those?
-        return 'release %s of %s' % (self.id,
-                                     posixpath.basename(self.build.file.name))
+        return u'-'.join([self.build.app.name, self.build.tag,
+                          self.profile_name, self.hash])
 
     def compute_hash(self):
         # Compute self.hash from the config contents and build file.
-        buildcontents = GridFSStorage().open(self.build.file.name).read()
+        buildcontents = default_storage.open(self.build.file.name).read()
+
         md5chars = hashlib.md5(buildcontents + self.config).hexdigest()
         return md5chars[:8]
 

@@ -3,11 +3,12 @@ import tempfile
 import os
 import shutil
 import posixpath
+import re
+import datetime
 
 from celery.task import task as celery_task
 from fabric.api import env
-from deployment.storages import GridFSStorage
-import yaml
+from django.core.files.storage import default_storage
 
 from deployment.models import Release, App, Build
 from yg.deploy.fabric.system import deploy_parcel, delete_proc as fab_delete_proc
@@ -51,13 +52,12 @@ def deploy(release_id, host, proc, port, user, password):
         # pull the build out of gridfs, write it to a temporary location, and
         # deploy it. 
         build_name = posixpath.basename(release.build.file.name)
-        fs = GridFSStorage()
         local_build = open(build_name, 'wb')
-        gridfs_build = fs.open(release.build.file.name)
-        local_build.write(gridfs_build.read())
+        build = default_storage.open(release.build.file.name)
+        local_build.write(build.read())
 
         local_build.close()
-        gridfs_build.close()
+        build.close()
 
         result = deploy_parcel(build_name, 'settings.yaml', proc, port)
     return result
@@ -72,14 +72,18 @@ def build_hg(app_id, tag):
         build_path = paver_build.assemble_hg_raw(url)
 
         # Save the file to Mongo GridFS
-        fs = GridFSStorage()
         localfile = open(build_path, 'r')
-        filepath = 'builds/' + posixpath.basename(build_path)
-        fs.save(filepath, localfile)
+        name = posixpath.basename(build_path)
+        filepath = 'builds/' + name
+        default_storage.save(filepath, localfile)
         localfile.close()
 
         # Create a record of the build in the db
-        build = Build(file=filepath, app=app)
+        # Parse the timestamp from the name, which should look like this:
+        # 'panelcare2-1.0.3-2012-04-19T00-56.tar.bz2'
+        name = name.replace('.tar.bz2', '')
+        dts = datetime.datetime(*[int(x) for x in re.split('[-T]', name)[2:]])
+        build = Build(file=filepath, app=app, tag=tag, time=dts)
         build.save()
 
 

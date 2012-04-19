@@ -1,3 +1,5 @@
+import urlparse
+
 from django.core.files.storage import Storage
 from django.conf import settings
 
@@ -5,7 +7,8 @@ from pymongo import Connection
 from gridfs import GridFS
 
 class GridFSStorage(Storage):
-    def __init__(self, connection=None, host=None, port=None, db=None, collection=None):
+    def __init__(self, connection=None, host=None, port=None, db=None,
+                 collection=None, base_url=None):
         # All settings have defaults, which can be overridden in settings.py,
         # which can themselves be overridden with explicit arguments passed to
         # the constructor.
@@ -31,6 +34,8 @@ class GridFSStorage(Storage):
         self.db = connection[db]
         self.fs = GridFS(self.db, collection=collection)
 
+        self.base_url = base_url or settings.MEDIA_URL
+
     def _save(self, name, content):
         self.fs.put(content, filename=name)
         return name
@@ -47,3 +52,8 @@ class GridFSStorage(Storage):
 
     def size(self, name):
         return self.fs.get_last_version(filename=name).length
+
+    def url(self, name):
+        if self.base_url is None:
+            raise NotImplementedError()
+        return urlparse.urljoin(self.base_url, name).replace('\\', '/')
