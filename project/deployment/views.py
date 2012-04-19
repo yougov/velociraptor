@@ -195,9 +195,11 @@ def release(request):
     form = forms.ReleaseForm(request.POST or None)
     if form.is_valid():
         build=Build.objects.get(id=form.cleaned_data['build_id'])
+        profile = Profile.objects.get(id=form.cleaned_data['profile_id'])
         r = Release(
+            profile_name=profile.name,
             build=build,
-            config=Profile.objects.get(id=form.cleaned_data['profile_id']).assemble(),
+            config=profile.assemble(),
         )
         r.save()
         remember('release', 'created release %s with %s' % (r.id, str(build)),

@@ -1,6 +1,7 @@
 import xmlrpclib
 import logging
 import posixpath
+import hashlib
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -10,6 +11,7 @@ from django.core.exceptions import ValidationError
 from south.modelsinspector import add_introspection_rules
 import yaml
 
+from deployment.storages import GridFSStorage
 
 LOG_ENTRY_TYPES = (
     ('build', 'Build'),
@@ -138,12 +140,14 @@ def rename_keys(source, translations):
 
 
 class Profile(models.Model):
-    name = models.CharField(max_length=50, unique=True)
+    namehelp = ("Used in release name.  Good profile names are short and use "
+                "no spaces or dashes (underscores are OK)")
+    name = models.CharField(max_length=20, unique=True, help_text=namehelp)
     app = models.ForeignKey(App)
     configvalues = models.ManyToManyField(ConfigValue, through='ProfileConfig')
 
     def __unicode__(self):
-        return self.name
+        return '%s: %s' % (self.app.name, self.name)
 
     def assemble(self):
         out = {}
@@ -181,15 +185,24 @@ class Build(models.Model):
     def __unicode__(self):
         return str(self.file)
 
+    def shortname(self):
+        # Return the app name and version, but split off the ugly timestamp
+        return '-'.join(self.file.name.split('-')[:2])
+
 
 class Release(models.Model):
+    profile_name = models.CharField(max_length=20)
     build = models.ForeignKey(Build)
-    config = YAMLDictField(blank=True, null=True)
 
-    # TODO: Add a 'label' or 'profile_name' field to make for better release
-    # naming.  It could also be used in the proc names to more easily
-    # differentiate between android and chrome datamarts, for example, or
-    # between panel sites based on the same build.
+    # We used to use a YAMLDictField for release.config, but that has
+    # possibility for the config saved at release time to not have the same key
+    # ordering as the config written at deploy time, since Python dict key
+    # ordering is not reliable.  Our apps wouldn't care, but it would mean we'd
+    # get inconsistent release hashes at those two times.
+    config = models.TextField(blank=True, null=True)
+
+    # No need to set this in the admin.  We'll compute it on save.
+    hash = models.CharField(max_length=32)
 
     def __unicode__(self):
         # XXX Not happy with this, but haven't been able to come up with a more
@@ -199,10 +212,23 @@ class Release(models.Model):
         return 'release %s of %s' % (self.id,
                                      posixpath.basename(self.build.file.name))
 
+    def compute_hash(self):
+        # Compute self.hash from the config contents and build file.
+        buildcontents = GridFSStorage().open(self.build.file.name).read()
+        md5chars = hashlib.md5(buildcontents + self.config).hexdigest()
+        return md5chars[:8]
+
+    def save(self, *args, **kwargs):
+        self.hash = self.compute_hash()
+        super(Release, self).save(*args, **kwargs)
+
 
 class Host(models.Model):
     name = models.CharField(max_length=200, unique=True)
+
+    # It might be hard to delete host records if there 
     active = models.BooleanField(default=True)
+
 
     def __unicode__(self):
         return self.name
@@ -225,3 +251,5 @@ class Host(models.Model):
         # Return the first port in our configured range that's not already in
         # use.
         return next(x for x in all_ports if x not in used_ports)
+
+

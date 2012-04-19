@@ -63,13 +63,21 @@ Once your database is created, you'll need to create the tables::
     cd /vagrant/project
     ./manage.py syncdb
 
+Some of the tables are managed by South_ instead of syncdb.  To make sure
+they're created, you need to run this too::
+
+    ./manage.py migrate
+
+As Velociraptor is developed and the DB schema changes, you can run
+`./manage.py migrate` again to get your local DB schema in sync with the code.
+
 Dev Server
 ~~~~~~~~~~
 
 Velociraptor is composed of two main processes:
 
 1. The main Django web service.
-2. A Celery daemon that starts and controls one or more workers.
+2. A Celery_ daemon that starts and controls one or more workers.
 
 There is a Procfile included with Velociraptor that can be used to run a
 development environment with both of these processes. You can use Foreman_ to
@@ -78,14 +86,13 @@ read the Procfile and start the processes it lists::
     cd /vagrant
     foreman start -f Procfile.dev
 
-That will wake up the Django dev server on port 8000 and the Celery daemon. The
-Vagrantfile config automatically forwards ports 8000-8009 to the VM so in your
-browser you can go to http://localhost:8000 and you will be viewing the django
-dev server running inside the virtual host.
+That will start the Django dev server on port 8000 and the Celery daemon. 
 
-Also note that the forwarding occupies the port on you machine as long as the
-vagrant machine is running, so if you use ports 8000 to 8009 constantly you
-should shut down the machine once you are done with velociraptor testing.
+Now open your web browser and type in http://localhost:8000.  You should see
+Velociraptor.  (The Vagrantfile is configured to forward ports 8000-8009 to the
+VM.  If you need these ports back for other development, you can stop your
+Vagrant VM with a `vagrant halt`, run from the same location where you ran
+`vagrant up`.)
 
 Editing Code
 ~~~~~~~~~~~~
@@ -100,3 +107,5 @@ inside will stay in sync.
 .. _VirtualBox: http://www.virtualbox.org/wiki/Downloads
 .. _Foreman: http://ddollar.github.com/foreman/
 .. _Virtualenvwrapper: http://www.doughellmann.com/docs/virtualenvwrapper/
+.. _South: http://south.aeracode.org/
+.. _Celery: http://celeryproject.org/

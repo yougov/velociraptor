@@ -46,7 +46,7 @@ def deploy(release_id, host, proc, port, user, password):
 
     with tmpdir():
         f = open('settings.yaml', 'wb')
-        f.write(yaml.safe_dump(release.config, default_flow_style=False))
+        f.write(release.config)
         f.close()
         # pull the build out of gridfs, write it to a temporary location, and
         # deploy it. 
