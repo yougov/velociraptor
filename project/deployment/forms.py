@@ -41,7 +41,7 @@ class ReleaseForm(forms.Form):
 
 class DeploymentForm(forms.Form):
 
-    release_id = forms.ChoiceField(choices=[])
+    release_id = forms.ChoiceField(choices=[], label='Release')
     # TODO: proc should be a drop down of the procs available for a given
     # release.  But I guess we can't narrow that down until a release is
     # picked.
