@@ -12,3 +12,4 @@ yg.deploy>=10.0,<11.0
 South==0.7.3
 requests==0.11.1
 pymongo==2.1.1
+django-picklefield==0.2.0
