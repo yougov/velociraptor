@@ -132,9 +132,6 @@ def api_task_active(request):
                     desc = '%(appname)s deploy to %(host)s:%(port)s' % kwargs
                     out.append({'id': task['id'], 'desc': desc})
 
-    # XXX DEBUG
-    #out.append({'id': 'blerg', 'desc': 'fake task'})
-
     return json_response({'tasks': out})
 
 
