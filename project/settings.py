@@ -72,11 +72,11 @@ SITE_ID = 1
 
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
-USE_I18N = False # We all speak English.
+USE_I18N = False  # We all speak English.
 
 # If you set this to False, Django will not format dates, numbers and
 # calendars according to the current locale
-USE_L10N = False # U.S.A.! U.S.A.!
+USE_L10N = False  # U.S.A.! U.S.A.!
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
@@ -155,7 +155,8 @@ LOGIN_URL = '/login/'
 ROOT_URLCONF = 'project.urls'
 
 TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
+    # Put strings here, like "/home/html/django_templates" or
+    # "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
     os.path.join(here, 'templates'),
@@ -171,7 +172,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'djcelery',
     'django_extensions',
-    'deployment', # Our main velociraptor app
+    'deployment',  # Our main velociraptor app
     'south',
 )
 
@@ -197,6 +198,8 @@ LOGGING = {
         },
     }
 }
+
+SUPERVISORD_WEB_PORT = 9001
 
 # Allow production to override these settings.
 if os.environ.get('APP_SETTINGS_YAML'):

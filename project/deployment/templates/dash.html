@@ -64,7 +64,7 @@
         <a class="btn btn-mini stop" href="#" rel="stop">Stop</a>
         <% if (state.destroyable) { %><a class="btn btn-mini destroy" href="#" rel="destroy">Destroy</a><% } %>
         <span class="links">
-            <a href="http://<%= host %>:9001/logtail/<%= state.name %>" target="_blank">Log Tail</a>
+            <a href="http://<%= host %>:{{ supervisord_web_port }}/logtail/<%= state.name %>" target="_blank">Log Tail</a>
         </span>
       </div>
     </div>
