@@ -184,7 +184,7 @@ Dash.Models.Hosts = Backbone.Model.extend({
 
 
 // DASH Tasks Methods //
-Dash.Models.Tasks = Backbone.Models.extend({
+Dash.Models.Tasks = Backbone.Model.extend({
 
     initialize: function(){
 
@@ -192,6 +192,14 @@ Dash.Models.Tasks = Backbone.Models.extend({
 
     clickEvents: function(){
 
+    },
+
+    onActiveTaskData: function(data, txtStatus, xhr) {
+        // put active tasks at the top of the page
+        if (data.tasks.length) {
+          var tasks_tmpl = $('#tasks-tmpl');
+          $('#dash-tasks').append(tasks_tmpl.goatee(data));
+        }
     }
 
 });// end Dash.Models.Tasks
