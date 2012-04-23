@@ -99,6 +99,9 @@ div.label {
 .host-actions {
   margin-top: 3px;
 }
+.host-actions span.links {
+    float: right;
+}
 
 /* hide/show action buttons depending on host status */
 
