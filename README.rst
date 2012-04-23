@@ -62,6 +62,7 @@ Once your database is created, you'll need to create the tables::
 
     cd /vagrant/project
     ./manage.py syncdb
+    ./manage.py migrate
 
 Some of the tables are managed by South_ instead of syncdb.  To make sure
 they're created, you need to run this too::
