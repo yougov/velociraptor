@@ -2,7 +2,8 @@
 {% load stripchar %}
 
 {% block content %}
-<div id="dash-tasks"></div>
+<div class="row">
+<div class="proc-column">
 <h1>Procs <small>as reported by supervisord </small></h1>
 <div class="proc-filters">
   <div class="btn-group statusfilters procbar" data-toggle="buttons-radio">
@@ -40,6 +41,11 @@
 </div>
 <div id="dash-procs">
 </div>
+</div>
+<div class="tasks-column">
+  <div id="dash-tasks"></div>
+</div>
+</div>
 {% endblock content %}
 
 
@@ -76,13 +82,22 @@
 {# Goatee template for list of currently running jobs #}
 <script id="tasks-tmpl" type="text/goatee">
   <h1>Current Tasks</h1>
-  <div>
-  <ul class="host-procs-list">
-    <%#tasks%>
-      <li class="label"><%desc%></li>
-    <%/tasks%>
-    <ul class="host-procs-list">
+  <div class="tasks-list">
+  </div>
+</script>
+<!-- failed: false
+        id: "e93aec06-9280-44bb-8cc8-94a847765424"
+        ready: false
+        result: "None"
+        status: "PENDING"
+        successful: false -->
+<script id="tasks-partial" type="text/goatee">
+  <div class="task-status status-<%data.status%> <% data.id %>" data-proc="<%name%>">
+    <div class="label <%name%>">
+      <span><%name%></span>
     </div>
+
+  </div>
 </script>
 
 {# Goatee template for "are you sure you want to delete this proc?" #}
