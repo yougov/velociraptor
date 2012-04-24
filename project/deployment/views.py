@@ -4,6 +4,7 @@ import xmlrpclib
 import base64
 import copy
 import collections
+import logging
 
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseRedirect
@@ -13,7 +14,6 @@ from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from celery.result import AsyncResult
 from celery.task.control import inspect
-import yg.deploy.users
 
 from deployment.models import Host, App, Release, Build, Profile, remember
 from deployment import forms
@@ -198,8 +198,8 @@ def release(request):
             config=profile.to_yaml(),
         )
         r.save()
-        remember('release', 'created release %s with %s' % (r.id, str(build)),
-                request.user.username)
+        remember('release', 'created release %s' % r.__unicode__(),
+                 request.user.username)
         return HttpResponseRedirect(reverse('deploy'))
     btn_text = 'Save'
     return render(request, 'basic_form.html', vars())
@@ -219,9 +219,10 @@ def deploy(request):
         release = Release.objects.get(id=form.cleaned_data['release_id'])
         data['profile'] = release.profile_name
         job = tasks.deploy.delay(**data)
+        logging.info('started job %s' % str(job))
         form.cleaned_data['release'] = str(release)
-        msg = ('deployed %(release)s:%(proc)s to %(host)s:%(port)s'
-               % form.cleaned_data)
+        msg = ('deployed %(release)s-%(proc)s-%(port)s to %(host)s' %
+               form.cleaned_data)
         remember('deployment', msg, request.user.username)
         return redirect('dash')
 
