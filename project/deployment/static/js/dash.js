@@ -142,7 +142,7 @@ Dash.Models.Hosts = Backbone.Model.extend({
 
     onHostClick: function(){
         $(this).parent().toggleClass('host-expanded');
-        Dash.Utilities.reflow();
+        Dash.Utilities.reflow();      
     },
 
     onHostActionClick: function() {
@@ -151,9 +151,9 @@ Dash.Models.Hosts = Backbone.Model.extend({
         data.action = $(this).attr('rel');
         if (data.action === 'destroy') {
             // show a confirmation dialog before doing proc deletions
-            var context = {data: data};
-            var compiled = _.template($('#proc-modal-tmpl').html(), context);
-            $(compiled).modal();
+            popup = $('#proc-modal-tmpl').goatee(data);
+            popup.data(data);
+            $(popup).modal();
         } else {
             // do stops and starts automatically
             Dash.Utilities.doHostAction(data.host, data.proc, data.action);
@@ -197,9 +197,8 @@ Dash.Models.Tasks = Backbone.Model.extend({
     onActiveTaskData: function(data, txtStatus, xhr) {
         // put active tasks at the top of the page
         if (data.tasks.length) {
-          var context = {tasks: data.tasks};
-          var compiled = _.template($('#tasks-tmpl').html(), context);
-          $('#dash-tasks').append($(compiled));
+          var tasks_tmpl = $('#tasks-tmpl');
+          $('#dash-tasks').append(tasks_tmpl.goatee(data));
         }
     }
 
@@ -216,12 +215,8 @@ Dash.Views.Host = Backbone.View.extend({
     template: '#host-procs-tmpl',
 
     render: function(){
-        var context = {
-            host: this.collection.host,
-            states: this.collection.states
-        };
-        var compiled = _.template($(this.template).html(), context);
-        Dash.mainElement.isotope('insert', $(compiled));
+        var element = $(this.template).goatee(this.collection);
+        Dash.mainElement.isotope('insert', element);
     }
 
 }); // end Dash.Views.Host
@@ -231,10 +226,8 @@ Dash.Views.Task = Backbone.View.extend({
     parentEl: '#dash-tasks',
     template: '#tasks-tmpl',
 
-    render: function() {
-        var context = {tasks: this.collection.tasks};
-        var compiled = _.template($(this.template).html(), context);
-        $(this.parentEl).append($(compiled));
+    render: function(){
+        $(this.parentEl).append($(this.template).goatee(this.collection));
     }
 });
 
