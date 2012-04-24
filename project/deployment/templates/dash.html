@@ -47,50 +47,53 @@
 <script src="/static/js/jquery.isotope.js"></script>
 <script src="/static/js/dash.js"></script>
 
-{# Goatee template for list of processes inside each host block #}
-<script id="host-procs-tmpl" type="text/goatee">
-  <%#states%>
-  <div id="<%procid%>" class="host-status status-<%statename%> host-<%hostclass%> app-<%appclass%>" data-host="<%host%>" data-proc="<%name%>">
-    <div class="label <%statename%>">
-      <span class="shortname"><%shortname%></span>
-      <span class="longname"><%name%></span>
+{# Underscore template for list of processes inside each host block #}
+<script id="host-procs-tmpl" type="text/template">
+  <% _.each(states, function(state) { %>
+    <div id="<%= state.procid %>" class="host-status status-<%= state.statename %> host-<%=state.hostclass %> app-<%= state.appclass %>"
+          data-host="<%= host %>" data-proc="<%= state.name %>">
+    <div class="label <%= state.statename %>">
+      <span class="shortname"><%= state.shortname %></span>
+      <span class="longname"><%= state.name %></span>
     </div>
     <div class="host-more">
-      <%host%><br />
-      <%description%>
+      <%= state.host %><br />
+      <%= state.description %>
       <div class="host-actions">
         <a class="btn btn-mini start" href="#" rel="start">Start</a>
         <a class="btn btn-mini stop" href="#" rel="stop">Stop</a>
-        <%#destroyable%><a class="btn btn-mini destroy" href="#" rel="destroy">Destroy</a><%/destroyable%>
+        <% if (state.destroyable) { %><a class="btn btn-mini destroy" href="#" rel="destroy">Destroy</a><% } %>
+        <span class="links">
+            <a href="http://<%= host %>:{{ supervisord_web_port }}/logtail/<%= state.name %>" target="_blank">Log Tail</a>
+        </span>
       </div>
-
     </div>
   </div>
-  <%/states%>
+  <% }); %>
 </ul>
 </script>
 
-{# Goatee template for list of currently running jobs #}
-<script id="tasks-tmpl" type="text/goatee">
+{# Underscore template for list of currently running jobs #}
+<script id="tasks-tmpl" type="text/template">
   <h1>Current Tasks</h1>
   <div>
   <ul class="host-procs-list">
-    <%#tasks%>
-      <li class="label"><%desc%></li>
-    <%/tasks%>
+    <% _.each(tasks, function(task) { %>
+      <li class="label"><%= task.desc %></li>
+    <% } %>
     <ul class="host-procs-list">
     </div>
 </script>
 
-{# Goatee template for "are you sure you want to delete this proc?" #}
-<script id="proc-modal-tmpl" type="text/goatee">
+{# Underscore template for "are you sure you want to delete this proc?" #}
+<script id="proc-modal-tmpl" type="text/template">
 <div class="modal action-dialog">
   <div class="modal-header">
     <a class="close" data-dismiss="modal">×</a>
     <h3>Are you sure?</h3>
   </div>
   <div class="modal-body">
-    <p>You're about to <%action%> <%proc%> on <%host%>.  Do you really want to do this?</p>
+    <p>You're about to <%= data.action %> <%= data.proc %> on <%= data.host %>.  Do you really want to do this?</p>
   </div>
   <div class="modal-footer">
     <a href="#" class="btn" rel="cancel">No</a>

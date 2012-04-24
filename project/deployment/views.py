@@ -24,6 +24,7 @@ from deployment import tasks
 def dash(request):
     hosts = Host.objects.filter(active=True)
     apps = App.objects.all()
+    supervisord_web_port = settings.SUPERVISORD_WEB_PORT
     return render(request, 'dash.html', vars())
 
 
