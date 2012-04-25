@@ -7,8 +7,8 @@ window.Dash = {
     Utilities: {},
     init: function(){
         this.mainElement = $('#dash-procs');
-        new Dash.Models.Hosts;
-        new Dash.Models.Tasks;
+        Dash.Models.Procs.initialize();
+        Dash.Models.Tasks.initialize();
     }
 };
 
@@ -84,12 +84,11 @@ Dash.Utilities = {
 
 /////////////////// Dash Models  /////////////////// 
 
-// DASH Hosts Methods //
-// It's not a model in the traditional sense, but a structure that holds all methods related
-// to what we've defined as a "host". 
+// DASH Procs Methods //
+// It's not a model in the Backbone sense, but a structure that holds all
+// methods related to what we've defined as a "proc". 
 
-Dash.Models.Hosts = Backbone.Model.extend({
-
+Dash.Models.Procs = {
     // formerly dash.onHostData
     initialize: function(){
 
@@ -102,9 +101,10 @@ Dash.Models.Hosts = Backbone.Model.extend({
         });
 
         // Load up Click Events for this Object
-        // Because of how we're using isotope, the traditional Backbone
-        // events binding is not available to us.
-        this.clickEvents();
+        Dash.mainElement.delegate('.host-status .label', 'click', this.onProcClick);
+        Dash.mainElement.delegate('.host-actions .btn', 'click', this.onProcActionClick);
+        $('.procfilter').click(this.onFilterClick);
+        $('.expandcollapse button').click(this.onExpandCollapseClick);
 
     },
 
@@ -135,19 +135,12 @@ Dash.Models.Hosts = Backbone.Model.extend({
         });
     },
 
-    clickEvents: function(){
-        Dash.mainElement.delegate('.host-status .label', 'click', this.onHostClick);
-        Dash.mainElement.delegate('.host-actions .btn', 'click', this.onHostActionClick);
-        $('.procfilter').click(this.onFilterClick);
-        $('.expandcollapse button').click(this.onExpandCollapseClick);
-    },
-
-    onHostClick: function(){
+    onProcClick: function(){
         $(this).parent().toggleClass('host-expanded');
         Dash.Utilities.reflow();      
     },
 
-    onHostActionClick: function() {
+    onProcActionClick: function() {
         var data = $(this).parents('.host-status').data();
         // action buttons will have their action stored in the 'rel attribute.
         data.action = $(this).attr('rel');
@@ -180,13 +173,11 @@ Dash.Models.Hosts = Backbone.Model.extend({
       Dash.mainElement.isotope({ filter: selector });
       return false;
     }
-
-
-});// end Dash.Models.Hosts
+};// end Dash.Models.Procs
 
 
 // DASH Tasks Methods //
-Dash.Models.Tasks = Backbone.Model.extend({
+Dash.Models.Tasks = {
     mainElement: $('#dash-tasks'),
     taskDataQueue: '',
 
@@ -199,10 +190,6 @@ Dash.Models.Tasks = Backbone.Model.extend({
         setInterval(function(){
             that.loadTaskData();
         }, 4000);
-
-    },
-
-    clickEvents: function(){
 
     },
 
@@ -223,12 +210,12 @@ Dash.Models.Tasks = Backbone.Model.extend({
                 // update dataQueue with the most recent id. That should be all we need.
                 that.taskDataQueue = data.tasks[lastTask].id;
 
-                that.getActiveTaskInfo(data.tasks)
+                that.getActiveTaskInfo(data.tasks);
 
             } else if (data.tasks.length){
                 // update with new id once we know the array has changed.
                 that.taskDataQueue = data.tasks[lastTask].id;
-                that.getActiveTaskInfo(data.tasks)
+                that.getActiveTaskInfo(data.tasks);
             } 
             // Clean house if there's no more tasks.
             if (data.tasks.length == 0 && that.taskDataQueue != '') {
@@ -259,7 +246,7 @@ Dash.Models.Tasks = Backbone.Model.extend({
 
     }
 
-});// end Dash.Models.Tasks
+};// end Dash.Models.Tasks
 
 
 /////////////////// Dash Views /////////////////// 
