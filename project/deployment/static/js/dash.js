@@ -8,6 +8,7 @@ window.Dash = {
     init: function(){
         this.mainElement = $('#dash-procs');
         new Dash.Models.Hosts;
+        new Dash.Models.Tasks;
     }
 };
 
@@ -108,6 +109,7 @@ Dash.Models.Hosts = Backbone.Model.extend({
     },
 
     loadHostViews: function(data, txtStatus, xhr){
+        // note - scope is inside getJSON call! 
         _.each(data.hosts, function(el, idx, lst) {
             // for each host in the list, make a request for the procs and draw
             // a box for each.
@@ -185,8 +187,18 @@ Dash.Models.Hosts = Backbone.Model.extend({
 
 // DASH Tasks Methods //
 Dash.Models.Tasks = Backbone.Model.extend({
+    mainElement: $('#dash-tasks'),
+    taskDataQueue: '',
 
     initialize: function(){
+        var that = this;
+        
+        // run immediately on init
+        this.loadTaskData();
+        // then setInterval to re-check every 4 seconds.
+        setInterval(function(){
+            that.loadTaskData();
+        }, 4000);
 
     },
 
@@ -194,12 +206,57 @@ Dash.Models.Tasks = Backbone.Model.extend({
 
     },
 
-    onActiveTaskData: function(data, txtStatus, xhr) {
-        // put active tasks at the top of the page
-        if (data.tasks.length) {
-          var tasks_tmpl = $('#tasks-tmpl');
-          $('#dash-tasks').append(tasks_tmpl.goatee(data));
+    loadTaskData: function(){
+    // Since we're only chaining 2 requests, its not so bad, but we should consider:
+    // http://spin.atomicobject.com/2011/08/24/chaining-jquery-ajax-calls/
+    // if we need to expand it.
+        var that = this;
+
+        $.getJSON('/api/task/active/', function(data){
+            var lastTask = (data.tasks.length -1);
+            // check this ajax call with previous, if any.
+            if (that.taskDataQueue == '' && data.tasks.length){
+                // this is the first call if taskDataQueue is empty. Load up container.
+                var taskView = new Dash.Views.Task();
+                taskView.renderContainer();
+
+                // update dataQueue with the most recent id. That should be all we need.
+                that.taskDataQueue = data.tasks[lastTask].id;
+
+                that.getActiveTaskInfo(data.tasks)
+
+            } else if (data.tasks.length){
+                // update with new id once we know the array has changed.
+                that.taskDataQueue = data.tasks[lastTask].id;
+                that.getActiveTaskInfo(data.tasks)
+            } 
+            // Clean house if there's no more tasks.
+            if (data.tasks.length == 0 && that.taskDataQueue != '') {
+                var taskView = new Dash.Views.Task();
+                taskView.unRenderContainer();
+            }
+        });
+
+    },
+
+    getActiveTaskInfo: function(task){
+        for(t=0; t < task.length; t++){
+            var taskName = task[t].desc;
+
+            $.getJSON('/api/task/'+ task[t].id, function(data){
+                var taskData = {
+                    name: taskName,
+                    data: data
+                }
+
+                //make sure we haven't already loaded a block for this id:
+                if($('.tasks-list').find('.'+data.id).length < 1){
+                    var taskView = new Dash.Views.Task();
+                    taskView.render(taskData);
+                }
+            });
         }
+
     }
 
 });// end Dash.Models.Tasks
@@ -223,11 +280,42 @@ Dash.Views.Host = Backbone.View.extend({
 
 // The Task View //
 Dash.Views.Task = Backbone.View.extend({
-    parentEl: '#dash-tasks',
-    template: '#tasks-tmpl',
+    parentEl: '.tasks-list',
+    template: '#tasks-partial',
 
-    render: function(){
-        $(this.parentEl).append($(this.template).goatee(this.collection));
+    render: function(data){
+        var element = $(this.template).goatee(data);
+        $(this.parentEl).isotope('insert', element);
+    },
+
+    renderContainer: function(){
+    // Since the guts around the tasks are also dynamically added, we'll make them a 
+    // part of the Task view, but not rendered in a loop like the actual tasks.
+    // If I could figure out how goatee uses template partials, this could be
+    // written with that. >.>
+
+        // a lil' bit of bootstrap fanciness...
+        $('.proc-column').addClass('span8');
+        $('.tasks-column').addClass('span4');
+        Dash.Utilities.reflow();
+    
+        // the actual rendering:
+        $('#dash-tasks').html($('#tasks-tmpl').html()).show();
+        $('.tasks-list').isotope({
+            itemSelector: '.task-status',
+            layoutMode: 'masonry',
+            animationOptions: {duration: 10}
+        });
+    },
+
+    unRenderContainer: function(){
+        // a lil' bit of bootstrap fanciness...
+        $('.proc-column').removeClass('span8');
+        $('.tasks-column').removeClass('span4');
+        Dash.Utilities.reflow();
+
+        $('#dash-tasks').html('');
     }
+
 });
 
