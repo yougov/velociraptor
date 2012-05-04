@@ -5,6 +5,7 @@ import shutil
 import posixpath
 import re
 import datetime
+import contextlib
 
 import fabric.network
 from celery.task import task as celery_task
@@ -60,11 +61,9 @@ def deploy(release_id, profile, host, proc, port, user, password):
         local_build.close()
         build.close()
 
-        result = deploy_parcel(build_name, 'settings.yaml', profile, proc, port)
-
-    # to address #18366, disconnect every time. This may have performance
-    #  implications when we deploy multiple releases to the same host.
-    fabric.network.disconnect_all()
+        with always_disconnect():
+            result = deploy_parcel(build_name, 'settings.yaml', profile,
+                proc, port)
 
     return result
 
@@ -100,4 +99,15 @@ def delete_proc(host, proc, user, password):
     env.user=user
     env.password=password
     logging.info('%s deleting %s on %s' % (user, proc, host))
-    fab_delete_proc(proc)
+    with always_disconnect():
+        fab_delete_proc(proc)
+
+@contextlib.contextmanager
+def always_disconnect():
+    """
+    to address #18366, disconnect every time.
+    """
+    try:
+        yield
+    finally:
+        fabric.network.disconnect_all()
