@@ -6,6 +6,7 @@ import posixpath
 import re
 import datetime
 
+import fabric.network
 from celery.task import task as celery_task
 from fabric.api import env
 from django.core.files.storage import default_storage
@@ -50,7 +51,7 @@ def deploy(release_id, profile, host, proc, port, user, password):
         f.write(release.config)
         f.close()
         # pull the build out of gridfs, write it to a temporary location, and
-        # deploy it. 
+        # deploy it.
         build_name = posixpath.basename(release.build.file.name)
         local_build = open(build_name, 'wb')
         build = default_storage.open(release.build.file.name)
@@ -60,6 +61,11 @@ def deploy(release_id, profile, host, proc, port, user, password):
         build.close()
 
         result = deploy_parcel(build_name, 'settings.yaml', profile, proc, port)
+
+    # to address #18366, disconnect every time. This may have performance
+    #  implications when we deploy multiple releases to the same host.
+    fabric.network.disconnect_all()
+
     return result
 
 
