@@ -7,8 +7,8 @@ window.Dash = {
     Utilities: {},
     init: function(){
         this.mainElement = $('#dash-procs');
-        Dash.Models.Procs.initialize();
-        Dash.Models.Tasks.initialize();
+        Dash.Procs.initialize();
+        Dash.Tasks.initialize();
     }
 };
 
@@ -54,24 +54,6 @@ Dash.Utilities = {
         });
     },
 
-    doHostAction: function(host, proc, action, method, callback) {
-        if (method === undefined) {
-            method = 'POST';
-        }
-        if (callback === undefined) {
-            callback = this.onActionResponse;
-        }
-
-        var url = '/api/hosts/' + host + '/procs/' + proc + '/';
-        data = {host:host,proc:proc,action:action};
-        $.ajax(url, {
-            data: data,
-            dataType: 'json',
-            type: method,
-            success: callback 
-        });
-    },
-
     onActionResponse: function(data, txtStatus, xhr) {
         // find the proc
         // update its class so it changes colors
@@ -88,11 +70,11 @@ Dash.Utilities = {
 // It's not a model in the Backbone sense, but a structure that holds all
 // methods related to what we've defined as a "proc". 
 
-Dash.Models.Procs = {
+Dash.Procs = {
     // formerly dash.onHostData
     initialize: function(){
 
-        $.getJSON('api/hosts/', this.loadHostViews);
+        $.getJSON('api/hosts/', Dash.Procs.loadHostViews);
 
         Dash.mainElement.isotope({
             itemSelector: '.host-status',
@@ -101,10 +83,11 @@ Dash.Models.Procs = {
         });
 
         // Load up Click Events for this Object
-        Dash.mainElement.delegate('.host-status .label', 'click', this.onProcClick);
-        Dash.mainElement.delegate('.host-actions .btn', 'click', this.onProcActionClick);
-        $('.procfilter').click(this.onFilterClick);
-        $('.expandcollapse button').click(this.onExpandCollapseClick);
+        Dash.mainElement.delegate('.host-status .label', 'click', Dash.Procs.onProcClick);
+        Dash.mainElement.delegate('.host-actions .btn', 'click', Dash.Procs.onProcActionClick);
+        $('body').delegate('.action-dialog .btn', 'click', Dash.Procs.onActionModalClick); 
+        $('.procfilter').click(Dash.Procs.onFilterClick);
+        $('.expandcollapse button').click(Dash.Procs.onExpandCollapseClick);
 
     },
 
@@ -151,7 +134,7 @@ Dash.Models.Procs = {
             $(popup).modal();
         } else {
             // do stops and starts automatically
-            Dash.Utilities.doHostAction(data.host, data.proc, data.action);
+            Dash.Procs.doProcAction(data.host, data.proc, data.action);
         }
     },
 
@@ -172,12 +155,59 @@ Dash.Models.Procs = {
       $('.hostlist, .applist').removeClass('open');
       Dash.mainElement.isotope({ filter: selector });
       return false;
+    },
+
+    onActionModalClick: function() {
+      // this handler is bound using $().delegate on init.
+        var btn = $(this).attr('rel');
+        var modal = $(this).parents('.modal');
+        if (btn === 'confirm') {
+            // get the data, and make an ajax request with it.
+            var data = modal.data();
+            if (data.action === 'destroy') {
+                Dash.Procs.destroyProc(data.host, data.proc);
+            } else {
+                Dash.Procs.doProcAction(data.host, data.proc, data.action);
+            }
+        } 
+        // no matter what button we got, hide and destroy the modal.
+        modal.modal('hide');
+        modal.remove();
+    },
+
+    doProcAction: function(host, proc, action, method, callback) {
+        if (method === undefined) {
+            method = 'POST';
+        }
+        if (callback === undefined) {
+            callback = this.onActionResponse;
+        }
+
+        var url = '/api/hosts/' + host + '/procs/' + proc + '/';
+        data = {host:host,proc:proc,action:action};
+        $.ajax(url, {
+            data: data,
+            dataType: 'json',
+            type: method,
+            success: callback 
+        });
+    },
+
+    destroyProc: function(host, proc) {
+        return Dash.Procs.doProcAction(host, proc, 'destroy', 'DELETE', Dash.Procs.onProcDestroy);
+    },
+
+    onProcDestroy: function(data, txtStatus, xhr) {
+        // callback for deleting a proc from the DOM when server lets us know it's
+        // been destroyed.
+        $('#' + Dash.Utilities.createID(data.host, data.name)).remove();
+        Dash.Utilities.reflow();
     }
-};// end Dash.Models.Procs
+};// end Dash.Procs
 
 
 // DASH Tasks Methods //
-Dash.Models.Tasks = {
+Dash.Tasks = {
     mainElement: $('#dash-tasks'),
     taskDataQueue: '',
 
@@ -246,7 +276,7 @@ Dash.Models.Tasks = {
 
     }
 
-};// end Dash.Models.Tasks
+};// end Dash.Tasks
 
 
 /////////////////// Dash Views /////////////////// 
