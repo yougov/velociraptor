@@ -190,6 +190,14 @@ class Build(models.Model):
     start_time = models.DateTimeField(null=True)
     end_time = models.DateTimeField(null=True)
 
+    build_status_choices = (
+        ('started', 'Started'),
+        ('success', 'Success'),
+        ('failure', 'Failed'),
+    )
+
+    status = models.CharField(max_length=20, choices=build_status_choices)
+
     def __unicode__(self):
         return self.shortname()
 

@@ -74,19 +74,24 @@ def build_hg(app_id, tag):
     app = App.objects.get(id=app_id)
     url = '%s#%s' % (app.repo_url, tag)
     with tmpdir():
-        build = Build(app=app, tag=tag, start_time=datetime.datetime.now())
+        build = Build(app=app, tag=tag, start_time=datetime.datetime.now(),
+                      status='started')
         build.save()
 
-        build_path = paver_build.assemble_hg_raw(url)
+        try:
+            build_path = paver_build.assemble_hg_raw(url)
+            # Save the file to Mongo GridFS
+            localfile = open(build_path, 'r')
+            name = posixpath.basename(build_path)
+            filepath = 'builds/' + name
+            default_storage.save(filepath, localfile)
+            localfile.close()
 
-        # Save the file to Mongo GridFS
-        localfile = open(build_path, 'r')
-        name = posixpath.basename(build_path)
-        filepath = 'builds/' + name
-        default_storage.save(filepath, localfile)
-        localfile.close()
+            build.end_time = datetime.datetime.now()
+            build.status = 'success'
+        except:
+            build.status = 'failed'
 
-        build.end_time = datetime.datetime.now()
         build.save()
 
 
