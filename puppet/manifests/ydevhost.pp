@@ -32,6 +32,7 @@ class yhost {
         libldap2-dev:;
         libsasl2-dev:;
         libpcre3-dev:;
+        libjpeg62-dev:;
         git-core:;
     }
 

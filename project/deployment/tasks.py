@@ -74,6 +74,9 @@ def build_hg(app_id, tag):
     app = App.objects.get(id=app_id)
     url = '%s#%s' % (app.repo_url, tag)
     with tmpdir():
+        build = Build(app=app, tag=tag, start_time=datetime.datetime.now())
+        build.save()
+
         build_path = paver_build.assemble_hg_raw(url)
 
         # Save the file to Mongo GridFS
@@ -83,12 +86,7 @@ def build_hg(app_id, tag):
         default_storage.save(filepath, localfile)
         localfile.close()
 
-        # Create a record of the build in the db
-        # Parse the timestamp from the name, which should look like this:
-        # 'panelcare2-1.0.3-2012-04-19T00-56.tar.bz2'
-        name = name.replace('.tar.bz2', '')
-        dts = datetime.datetime(*[int(x) for x in re.split('[-T]', name)[2:]])
-        build = Build(file=filepath, app=app, tag=tag, time=dts)
+        build.end_time = datetime.datetime.now()
         build.save()
 
 

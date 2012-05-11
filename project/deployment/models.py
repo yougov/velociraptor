@@ -185,10 +185,10 @@ class ProfileConfig(models.Model):
 class Build(models.Model):
     app = models.ForeignKey(App)
     tag = models.CharField(max_length=50)
-    file = models.FileField(upload_to='builds')
+    file = models.FileField(upload_to='builds', null=True)
 
-    # Don't use auto_now_add, because we want to be able to override this.
-    time = models.DateTimeField(default=datetime.datetime.now)
+    start_time = models.DateTimeField(null=True)
+    end_time = models.DateTimeField(null=True)
 
     def __unicode__(self):
         return self.shortname()
