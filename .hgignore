@@ -26,3 +26,4 @@ likes_*.json
 uploads*
 .vagrant
 settings.yaml
+tmp/

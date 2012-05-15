@@ -37,6 +37,10 @@ DATABASES = {
     }
 }
 
+BALANCERS = {
+    'default': {}
+}
+
 # Suppress warnings when we pass a URI to MongoDB that includes the
 #  database name.
 warnings.filterwarnings('ignore', category=UserWarning,
