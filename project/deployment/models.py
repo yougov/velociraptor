@@ -144,8 +144,7 @@ class Build(models.Model):
 
 
 class Release(models.Model):
-    profile = models.ForeignKey(Profile, null=True)
-    profile_name = models.CharField(max_length=20)
+    profile = models.ForeignKey(Profile)
     build = models.ForeignKey(Build)
 
     # We used to use a YAMLDictField for release.config, but that has
@@ -160,7 +159,7 @@ class Release(models.Model):
 
     def __unicode__(self):
         return u'-'.join([self.build.app.name, self.build.tag,
-                          self.rrofile_name, self.hash])
+                          self.profile.name, self.hash])
 
     def compute_hash(self):
         # Compute self.hash from the config contents and build file.
@@ -239,9 +238,6 @@ class Swarm(models.Model):
     # in the form, and filling the others from there.
     size = models.IntegerField(help_text='The number of procs in the swarm')
 
-    # XXX Use profile name as the pool name?  That'd be neat. Would take manual
-    # steps to ensure that match though, which could be a pain.  Suggest using
-    # profile name as default in 'new swarm' form.
     pool_help = "The name of the pool in the load balancer (omit prefix)"
     pool = models.CharField(max_length=50, help_text=pool_help)
 
