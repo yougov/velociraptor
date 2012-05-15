@@ -8,10 +8,9 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.files.storage import default_storage
 from django.conf import settings
-from django.core.serializers.pyyaml import DjangoSafeDumper
-from django.core.exceptions import ValidationError
-from south.modelsinspector import add_introspection_rules
 import yaml
+
+from deployment.fields import YAMLDictField
 
 
 LOG_ENTRY_TYPES = (
@@ -19,71 +18,6 @@ LOG_ENTRY_TYPES = (
     ('release', 'Release'),
     ('deployment', 'Deployment'),
 )
-
-# Let South know how to handle our custom field type
-add_introspection_rules([], ["^deployment\.models\.YAMLDictField"])
-
-def validate_yaml_dict(value):
-    if (value is not None and
-        value != '' and
-        not isinstance(value, dict)):
-        raise ValidationError
-
-class YAMLDictField(models.TextField):
-    """
-    YAMLDictField is a TextField that serializes and deserializes YAML dicts
-    from the database.
-
-    Based on https://github.com/datadesk/django-yamlfield, but goes one step
-    further by ensuring that the data is a dict (or null), not just any valid
-    yaml.
-    """
-    # Used so to_python() is called
-    __metaclass__ = models.SubfieldBase
-
-    def __init__(self, *args, **kwargs):
-        super(YAMLDictField, self).__init__(*args, **kwargs)
-        self.validators.append(validate_yaml_dict)
-
-    def to_python(self, value):
-        """
-        Convert our YAML string to a Python dict after we load it from the DB.
-        Complain if it's not a dict.
-        """
-        if not value:
-            return None
-
-        # Seems like sometimes Django will pass a string into this function,
-        # and other times a dict.  Pass out a dict either way.
-        if isinstance(value, basestring):
-            value = yaml.safe_load(value)
-
-        return value
-
-    def get_db_prep_save(self, value, connection, prepared=False):
-        """
-        Convert our Python object to a string of YAML before we save.
-        """
-        if not value:
-            return ""
-
-        value = yaml.dump(value, Dumper=DjangoSafeDumper,
-                          default_flow_style=False)
-        return super(YAMLDictField, self).get_db_prep_save(value, connection)
-
-    def value_from_object(self, obj):
-        """
-        Returns the value of this field in the given model instance.
-
-        We need to override this so that the YAML comes out properly formatted
-        in the admin widget.
-        """
-        value = getattr(obj, self.attname)
-        if not value or value == "":
-            return value
-        return yaml.dump(value, Dumper=DjangoSafeDumper,
-            default_flow_style=False)
-
 
 class DeploymentLogEntry(models.Model):
     type = models.CharField(max_length=50, choices=LOG_ENTRY_TYPES)
@@ -148,7 +82,7 @@ class Profile(models.Model):
     configvalues = models.ManyToManyField(ConfigValue, through='ProfileConfig')
 
     def __unicode__(self):
-        return '%s: %s' % (self.app.name, self.name)
+        return '%s-%s' % (self.app.name, self.name)
 
     def assemble(self):
         out = {}
@@ -210,6 +144,7 @@ class Build(models.Model):
 
 
 class Release(models.Model):
+    profile = models.ForeignKey(Profile, null=True)
     profile_name = models.CharField(max_length=20)
     build = models.ForeignKey(Build)
 
@@ -225,7 +160,7 @@ class Release(models.Model):
 
     def __unicode__(self):
         return u'-'.join([self.build.app.name, self.build.tag,
-                          self.profile_name, self.hash])
+                          self.rrofile_name, self.hash])
 
     def compute_hash(self):
         # Compute self.hash from the config contents and build file.
@@ -247,6 +182,7 @@ class Host(models.Model):
 
     # It might be hard to delete host records if there 
     active = models.BooleanField(default=True)
+    squad = models.ForeignKey('Squad', null=True, related_name='hosts')
 
 
     def __unicode__(self):
@@ -270,5 +206,70 @@ class Host(models.Model):
         # Return the first port in our configured range that's not already in
         # use.
         return next(x for x in all_ports if x not in used_ports)
+
+
+class Squad(models.Model):
+    """
+    A group of hosts.  They should be as identical as possible.
+    """
+    name = models.CharField(max_length=50)
+
+    # Select which balancer should be used for this squad, from
+    # settings.BALANCERS
+    _balancer_choices = [(k, k) for k in settings.BALANCERS]
+    balancer = models.CharField(max_length=50, choices=_balancer_choices)
+
+    def __unicode__(self):
+        return name
+
+
+class Swarm(models.Model):
+    """
+    This is the payoff.  Save a swarm record and then you can tell Velociraptor
+    to 'make it so'.
+    """
+    app = models.ForeignKey(App)
+    tag = models.CharField(max_length=50)
+
+    replaces = models.ForeignKey('Swarm')
+    release = models.ForeignKey(Release)
+    squad = models.ForeignKey(Squad)
+    # TODO: ensure that the swarm we're replacing points to the same app and
+    # squad as we do.  Possibly do this by only exposing the 'replaces' field
+    # in the form, and filling the others from there.
+    size = models.IntegerField(help_text='The number of procs in the swarm')
+
+    # XXX Use profile name as the pool name?  That'd be neat. Would take manual
+    # steps to ensure that match though, which could be a pain.  Suggest using
+    # profile name as default in 'new swarm' form.
+    pool_help = "The name of the pool in the load balancer (omit prefix)"
+    pool = models.CharField(max_length=50, help_text=pool_help)
+
+    # The time when you first tell Velociraptor to 'go'
+    start_time = models.DateTimeField(null=True)
+
+    # The time when all the procs have been deployed and are ready for
+    # balancing
+    ready_time = models.DateTimeField(null=True)
+
+    # The time when this swarm is retired.  Typically after being replaced by a
+    # new version.
+    retire_time = models.DateTimeField(null=True)
+
+    def __unicode__(self):
+        release_name = self.release.__unicode__()
+        size = self.size
+        squad = self.squad.name
+        return u'%(release_name)s X %(size)s on %(squad)s' % vars()
+
+    def get_next_host(self):
+        """
+        Return the host that should be used for the next deployment.
+        """
+        # Query all hosts in the squad.  Sort first by number of procs from
+        # this swarm, then by total number of procs.  Return the first host in
+        # the sorted list.
+        pass
+
 
 
