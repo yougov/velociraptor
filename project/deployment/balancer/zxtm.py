@@ -31,8 +31,8 @@ class FixArrayPlugin(MessagePlugin):
 
 
 # This class implements velociraptor's Balancer Interface, which means that it
-# has add_nodes and delete_nodes functions, and can be initted with a
-# dictionary of config that can be pulled from settings.BALANCERS.
+# has add_nodes, disable_nodes, and delete_nodes functions, and can be initted
+# with a dictionary of config that can be pulled from settings.BALANCERS.
 class ZXTMBalancer(object):
     def __init__(self, config):
         self.url = config['URL']
@@ -51,22 +51,33 @@ class ZXTMBalancer(object):
         # All pool names will be prefixed with this string.
         self.pool_prefix = config.get('POOL_PREFIX', '')
 
-    def add_nodes(self, pool, nodes):
-        wrapper = self.client.factory.create('StringArrayArray')
+    def _call_node_func(self, func, pool, nodes):
+        # Generic function for calling any of the ZXTM pool functions that
+        # accept an array of pools, and an arrayarray of nodes.  This function
+        # will take a single pool and nodelist and do all the necessary
+        # wrapping.
+        nodes_wrapper = self.client.factory.create('StringArrayArray')
         nodes_array = self.client.factory.create('StringArray')
         nodes_array.item = [nodes]
-        wrapper.item = [nodes_array]
-        self.client.service.addNodes([self.pool_prefix + pool], wrapper)
+        nodes_wrapper.item = [nodes_array]
+        func([self.pool_prefix + pool], nodes_wrapper)
 
-    def delete_nodes(self, pool, nodes):
-        wrapper = self.client.factory.create('StringArrayArray')
-        nodes_array = self.client.factory.create('StringArray')
-        nodes_array.item = [nodes]
-        wrapper.item = [nodes_array]
-        self.client.service.removeNodes([self.pool_prefix + pool], wrapper)
+    def add_nodes(self, pool, nodes):
+        # this function intelligently avoids creating duplicates.
+        self._call_node_func(self.client.service.addNodes, pool, nodes)
+
+    def disable_nodes(self, pool, nodes):
+        self._call_node_func(self.client.service.disableNodes, pool, nodes)
+
+    def cleanup_nodes(self, pool, nodes):
+        # will raise WebFault if node doesn't exist.
+        self._call_node_func(self.client.service.removeNodes, pool, nodes)
+
+    # TODO: add enable_nodes?  Or make sure that add_nodes does that.
 
     def get_nodes(self, pool):
+        # get just the first item from the arrayarray
         nodes = self.client.service.getNodes([self.pool_prefix + pool])[0]
-        # TODO: convert the sax text things into real strings
+        # convert the sax text things into real strings
         return [str(n) for n in nodes]
 

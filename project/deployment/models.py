@@ -3,11 +3,13 @@ import logging
 import posixpath
 import hashlib
 import datetime
+import collections
 
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.files.storage import default_storage
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 import yaml
 
 from deployment.fields import YAMLDictField
@@ -181,11 +183,12 @@ class Host(models.Model):
 
     # It might be hard to delete host records if there 
     active = models.BooleanField(default=True)
-    squad = models.ForeignKey('Squad', null=True, related_name='hosts')
+    squad = models.ForeignKey('Squad', null=True, blank=True, related_name='hosts')
 
 
     def __unicode__(self):
-        return self.name
+        squadname = self.squad.name if self.squad else '(no squad)'
+        return '%s: %s' % (squadname, self.name)
 
     def get_used_ports(self):
         server = xmlrpclib.Server('http://%s:%s' % (self.name, settings.SUPERVISOR_PORT))
@@ -207,6 +210,36 @@ class Host(models.Model):
         return next(x for x in all_ports if x not in used_ports)
 
 
+    def get_procs(self):
+        server = xmlrpclib.Server('http://%s:%s' % (self.name, settings.SUPERVISOR_PORT))
+        states = server.supervisor.getAllProcessInfo()
+        # Query all hosts in the squad and get their list of procs.  Not quite
+        # sure what should be returned though.  We need something that's easily
+        # filterable.  So we'd really like to be able to say "how many of these
+        # are running version A of app B with config from profile C?"  So I
+        # think we want at least named tuples, with references to real objects.
+        def make_proc(name, host):
+            # Given the name of a proc like
+            # 'khartoum-0.0.7-yfiles-1427a4e2-web-8060', parse out the bits and
+            # return a named tuple.
+
+            # XXX This function will throw DoesNotExist if either the app or
+            # profile can't be looked up.  So careful with what you rename.
+            parts = name.split('-')
+            app = App.objects.get(name=parts[0])
+            return Proc(
+                app=app,
+                tag=parts[1],
+                profile=Profile.objects.get(app=app, name=parts[2]),
+                hash=parts[3],
+                proc=parts[4],
+                port=int(parts[5]),
+                host=host,
+            )
+
+        return [make_proc(p['name'], self.name) for p in states]
+
+
 class Squad(models.Model):
     """
     A group of hosts.  They should be as identical as possible.
@@ -219,7 +252,12 @@ class Squad(models.Model):
     balancer = models.CharField(max_length=50, choices=_balancer_choices)
 
     def __unicode__(self):
-        return name
+        return self.name
+
+
+# If we ever need methods here, turn this into a real class
+Proc = collections.namedtuple('Proc', ['app', 'tag', 'profile', 'hash', 'proc',
+                                      'host', 'port'])
 
 
 class Swarm(models.Model):
@@ -229,34 +267,43 @@ class Swarm(models.Model):
     """
     app = models.ForeignKey(App)
     tag = models.CharField(max_length=50)
+    proc_name = models.CharField(max_length=50)
 
-    replaces = models.ForeignKey('Swarm')
-    release = models.ForeignKey(Release)
+    replaces_help = ("Procs in this swarm will be decommissioned once the new "
+                    "one's up")
+    # XXX Forms or views that create Swarm instances must ensure that the
+    # new swarm points to the same app and squad as the one in 'replaces'
+    replaces = models.ForeignKey('Swarm', null=True, blank=True,
+                                 help_text=replaces_help)
+
+    # Release will be null until the new Swarm's build is finished.
+    release = models.ForeignKey(Release, null=True, blank=True)
+
     squad = models.ForeignKey(Squad)
-    # TODO: ensure that the swarm we're replacing points to the same app and
-    # squad as we do.  Possibly do this by only exposing the 'replaces' field
-    # in the form, and filling the others from there.
+
     size = models.IntegerField(help_text='The number of procs in the swarm')
 
     pool_help = "The name of the pool in the load balancer (omit prefix)"
     pool = models.CharField(max_length=50, help_text=pool_help)
 
     # The time when you first tell Velociraptor to 'go'
-    start_time = models.DateTimeField(null=True)
+    start_time = models.DateTimeField(null=True, blank=True)
 
     # The time when all the procs have been deployed and are ready for
     # balancing
-    ready_time = models.DateTimeField(null=True)
+    ready_time = models.DateTimeField(null=True, blank=True)
 
     # The time when this swarm is retired.  Typically after being replaced by a
     # new version.
-    retire_time = models.DateTimeField(null=True)
+    retire_time = models.DateTimeField(null=True, blank=True)
+
 
     def __unicode__(self):
-        release_name = self.release.__unicode__()
+        appname = self.app.name
+        tag = self.tag
         size = self.size
         squad = self.squad.name
-        return u'%(release_name)s X %(size)s on %(squad)s' % vars()
+        return u'%(appname)s-%(tag)s X %(size)s on %(squad)s' % vars()
 
     def get_next_host(self):
         """
@@ -267,5 +314,13 @@ class Swarm(models.Model):
         # the sorted list.
         pass
 
+    def get_procs(self):
+        if not self.release:
+            return []
 
+        procs = []
+        for host in self.squad.hosts.all():
+            procs += host.get_procs()
 
+        return [p for p in procs if p.app==self.app and
+                p.hash==self.release.hash]

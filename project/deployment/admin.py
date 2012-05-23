@@ -20,6 +20,17 @@ admin.site.register(models.Build)
 admin.site.register(models.Release)
 admin.site.register(models.Host)
 admin.site.register(models.DeploymentLogEntry)
+admin.site.register(models.Squad)
+admin.site.register(models.Swarm)
 
-# Also unregister the Django 'group' model, as I don't think we'll be using it.
+
+# Unregister the Django 'group' model, as I don't think we'll be using it.
 admin.site.unregister(Group)
+
+# Unregister the djcelery models.
+#import djcelery.models
+#admin.site.unregister(djcelery.models.TaskState)
+#admin.site.unregister(djcelery.models.WorkerState)
+#admin.site.unregister(djcelery.models.IntervalSchedule)
+#admin.site.unregister(djcelery.models.CrontabSchedule)
+#admin.site.unregister(djcelery.models.PeriodicTask)

@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth import authenticate
 
-from deployment.models import Release, Host, App, Build, Profile
+from deployment import models
 
 
 class BuildForm(forms.Form):
@@ -11,12 +11,12 @@ class BuildForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(BuildForm, self).__init__(*args, **kwargs)
-        self.fields['app_id'].choices = [(a.id, a) for a in App.objects.all()]
+        self.fields['app_id'].choices = [(a.id, a) for a in models.App.objects.all()]
 
 
 class BuildUploadForm(forms.ModelForm):
     class Meta:
-        model = Build
+        model = models.Build
 
 class ReleaseForm(forms.Form):
     build_id = forms.ChoiceField(choices=[], label='Build')
@@ -25,15 +25,15 @@ class ReleaseForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(ReleaseForm, self).__init__(*args, **kwargs)
         self.fields['build_id'].choices = [(b.id, b) for b in
-                                           Build.objects.all()]
+                                           models.Build.objects.all()]
         self.fields['profile_id'].choices = [(p.id, p) for p in
-                                             Profile.objects.all()]
+                                             models.Profile.objects.all()]
 
     def clean(self):
         # Look up the build's app, and the profile's app, and make sure they
         # match.
-        build = Build.objects.get(id=self.cleaned_data['build_id'])
-        profile = Profile.objects.get(id=self.cleaned_data['profile_id'])
+        build = models.Build.objects.get(id=self.cleaned_data['build_id'])
+        profile = models.Profile.objects.get(id=self.cleaned_data['profile_id'])
         if not build.app.id == profile.app.id:
             raise forms.ValidationError("Build app doesn't match Profile app")
         return self.cleaned_data
@@ -52,9 +52,9 @@ class DeploymentForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(DeploymentForm, self).__init__(*args, **kwargs)
-        self.fields['release_id'].choices = [(r.id, r) for r in Release.objects.all()]
+        self.fields['release_id'].choices = [(r.id, r) for r in models.Release.objects.all()]
         self.fields['host'].choices = [(h.name, h.name) for h in
-                                       Host.objects.filter(active=True)]
+                                       models.Host.objects.filter(active=True)]
 
 
 class LoginForm(forms.Form):
@@ -66,3 +66,41 @@ class LoginForm(forms.Form):
         if not self.user:
             raise forms.ValidationError('Bad username or password')
         return self.cleaned_data
+
+
+class SwarmForm(forms.Form):
+    """
+    Form for creating a new swarm.
+    """
+    release_id = forms.ChoiceField(choices=[], label='Release')
+    squad_id = forms.ChoiceField(choices=[], label='Squad')
+    size = forms.IntegerField()
+    pool = forms.CharField(max_length=50)
+
+    def __init__(self, data, *args, **kwargs):
+        super(SwarmForm, self).__init__(data, *args, **kwargs)
+
+
+
+class ReswarmForm(forms.Form):
+    """
+    Form for replacing an existing swarm with a new one; changing the size,
+    version, or config.
+    """
+    tag = forms.CharField(max_length=50)
+    profile_id = forms.ChoiceField(choices=[], label='Profile')
+    size = forms.IntegerField()
+
+    def __init__(self, data, swarm, *args, **kwargs):
+        initial = {}
+        if swarm is not None:
+            initial.update(
+                tag=swarm.tag,
+                size=swarm.size,
+            )
+            if swarm.release is not None:
+                initial['profile_id'] = swarm.release.profile.id
+        super(ReswarmForm, self).__init__(data, *args, initial=initial, **kwargs)
+
+        self.fields['profile_id'].choices = [(p.id, p) for p in
+                                             models.Profile.objects.all()]

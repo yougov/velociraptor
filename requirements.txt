@@ -1,6 +1,7 @@
 Django==1.4
 Fabric==1.4.0
 django-celery==2.5.1
+celery==2.5.1
 psycopg2==2.4.4
 django-extensions==0.7.1
 keyring==0.7.1

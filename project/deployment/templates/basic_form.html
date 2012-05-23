@@ -1,9 +1,11 @@
 {% extends 'base.html' %}
 {% block content %}
 <form method='post' class='well'{% if enctype %}enctype="{{ enctype }}"{% endif %}>{% csrf_token %}
-    {# No, we dont' have to close that <p> tag.  This is HTML5 baby! #}
-    {% if instructions %}<p>{{ instructions }}{% endif %}
-<table>
+    {% if instructions %}
+      {# No, we dont' have to close that <p> tag.  This is HTML5 baby! #}
+      <p>{{ instructions }}
+    {% endif %}
+<table class="formrows">
   {{ form.as_table }}
 </table>
 <button type="submit" class="btn btn-primary">{% if btn_text %}

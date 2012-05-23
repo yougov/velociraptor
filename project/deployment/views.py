@@ -6,7 +6,7 @@ import copy
 import collections
 import logging
 
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.contrib.auth import login as django_login, logout as django_logout
@@ -15,7 +15,8 @@ from django.conf import settings
 from celery.result import AsyncResult
 from celery.task.control import inspect
 
-from deployment.models import Host, App, Release, Build, Profile, remember
+from deployment.models import (Host, App, Release, Build, Profile, Swarm,
+                               remember)
 from deployment import forms
 from deployment import tasks
 
@@ -194,7 +195,7 @@ def release(request):
         build=Build.objects.get(id=form.cleaned_data['build_id'])
         profile = Profile.objects.get(id=form.cleaned_data['profile_id'])
         r = Release(
-            profile_name=profile.name,
+            profile=profile,
             build=build,
             config=profile.to_yaml(),
         )
@@ -218,7 +219,7 @@ def deploy(request):
         data['user'], data['password'] = get_creds(request)
 
         release = Release.objects.get(id=form.cleaned_data['release_id'])
-        data['profile'] = release.profile_name
+        data['profile'] = release.profile.name
         job = tasks.deploy.delay(**data)
         logging.info('started job %s' % str(job))
         form.cleaned_data['release'] = str(release)
@@ -227,7 +228,35 @@ def deploy(request):
         remember('deployment', msg, request.user.username)
         return redirect('dash')
 
-    return render(request, 'deploy.html', vars())
+    return render(request, 'basic_form.html', vars())
+
+
+@login_required
+def reswarm(request, swarm_id):
+    # Need to populate form from swarm
+    old_swarm = Swarm.objects.get(id=swarm_id)
+
+    form = forms.ReswarmForm(request.POST or None, swarm=old_swarm)
+    if form.is_valid():
+        # Create a new swarm record.
+        swarm = Swarm(
+            app=old_swarm.app,
+            tag=form.cleaned_data['tag'],
+            replaces=old_swarm,
+            squad=old_swarm.squad,
+            size=form.cleaned_data['size'],
+            pool=old_swarm.pool,
+        )
+        swarm.save()
+        user, password = get_creds(request)
+        tasks.unleash_swarm.delay(swarm.id, user, password)
+
+        # TODO redirect to tasks page where you can watch progress.
+        return redirect('dash')
+
+    # If we're here, and 
+    btn_text = 'Reswarm'
+    return render(request, 'basic_form.html', vars())
 
 
 def login(request):
