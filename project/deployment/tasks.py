@@ -192,14 +192,13 @@ def unleash_swarm(swarm_id, user, password):
 
     # Tell the balancer to delete any currently-routed nodes that don't map to
     # one of the current procs.
-    current_nodes = set(balancer.get_nodes(swarm.pool, swarm.squad.balancer))
+    current_nodes = set(balancer.get_nodes(swarm.squad.balancer, swarm.pool))
     stale_nodes = current_nodes.difference(p.as_node() for p in current_procs)
     if stale_nodes:
         balancer.delete_nodes(swarm.squad.balancer, swarm.pool,
                               list(stale_nodes))
 
-
-    logging.info("IT IS FINISHED")
+    logging.info(u"Swarm unleashed: %s" % swarm)
 
 
 @contextlib.contextmanager

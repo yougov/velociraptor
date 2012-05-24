@@ -26,7 +26,7 @@ class FixArrayPlugin(MessagePlugin):
         if command.name in affected:
             context.envelope.addPrefix('xsd', 'http://www.w3.org/1999/XMLSchema')
             # SO UGLY :(
-            if command.name == 'addPool':
+            if command.name in ('addPool', 'disableNodes'):
                 values = command.getChild('nodes')
             else:
                 values = command.getChild('values')
