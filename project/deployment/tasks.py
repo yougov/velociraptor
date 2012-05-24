@@ -176,9 +176,8 @@ def unleash_swarm(swarm_id, user, password):
 
         # The balancer should tolerate us telling it to add a node that it
         # already has.
-        balancer.add_nodes(swarm.pool,
-                           [p.as_node() for p in current_procs],
-                           swarm.squad.balancer)
+        balancer.add_nodes(swarm.squad.balancer,
+                           swarm.pool, [p.as_node() for p in current_procs])
 
     # TODO: add uptests
 
@@ -196,8 +195,8 @@ def unleash_swarm(swarm_id, user, password):
     current_nodes = set(balancer.get_nodes(swarm.pool, swarm.squad.balancer))
     stale_nodes = current_nodes.difference(p.as_node() for p in current_procs)
     if stale_nodes:
-        balancer.delete_nodes(swarm.pool, list(stale_nodes),
-                              swarm.squad.balancer)
+        balancer.delete_nodes(swarm.squad.balancer, swarm.pool,
+                              list(stale_nodes))
 
 
     logging.info("IT IS FINISHED")

@@ -1,4 +1,5 @@
 import os
+import time
 
 import suds.xsd.doctor
 import suds.client
@@ -11,7 +12,7 @@ from suds import WebFault
 # https://fedorahosted.org/suds/ticket/340
 class FixArrayPlugin(MessagePlugin):
     def marshalled(self, context):
-        command = context.envelope.getChild('Body').getChildren()[0].name
+        command = context.envelope.getChild('Body').getChildren()[0]
         # TODO: instead of blacklisting the affected types here, check the
         # actual WSDL and fix up any *ArrayArray types.
         affected = ('addNodes',
@@ -20,14 +21,19 @@ class FixArrayPlugin(MessagePlugin):
                     'removeDrainingNodes',
                     'disableNodes',
                     'enableNodes',
+                    'addPool',
                    )
-        if command in affected:
+        if command.name in affected:
             context.envelope.addPrefix('xsd', 'http://www.w3.org/1999/XMLSchema')
-            values = context.envelope.getChild('Body').getChild(command).getChild('values')
+            # SO UGLY :(
+            if command.name == 'addPool':
+                values = command.getChild('nodes')
+            else:
+                values = command.getChild('values')
             values.set('SOAP-ENC:arrayType', 'xsd:list[1]')
             values.set('xsi:type', 'SOAP-ENC:Array')
             item = values[0]
-            item.set('SOAP-ENC:arrayType', 'xsd:list[1]')
+            item.set('SOAP-ENC:arrayType', 'xsd:list[%s]' % len(item.children))
             item.set('xsi:type', 'SOAP-ENC:Array')
 
 
@@ -52,6 +58,12 @@ class ZXTMBalancer(object):
         # All pool names will be prefixed with this string.
         self.pool_prefix = config.get('POOL_PREFIX', '')
 
+        # ZXTM has separate calls for disableNodes and removeNodes.  The latter
+        # will interrupt current connections.  To minimize disruption, we'll
+        # call disableNodes first, wait a configurable amount of time, and then
+        # call removeNodes.
+        self.grace_period = config.get('GRACE_PERIOD', 2)
+
     def _call_node_func(self, func, pool, nodes):
         # Generic function for calling any of the ZXTM pool functions that
         # accept an array of pools, and an arrayarray of nodes.  This function
@@ -59,38 +71,45 @@ class ZXTMBalancer(object):
         # wrapping.
         nodes_wrapper = self.client.factory.create('StringArrayArray')
         nodes_array = self.client.factory.create('StringArray')
-        nodes_array.item = [nodes]
+        nodes_array.item = nodes
         nodes_wrapper.item = [nodes_array]
         func([self.pool_prefix + pool], nodes_wrapper)
 
     def add_nodes(self, pool, nodes):
-        # ZXTM will kindly avoid creating duplicates if you submit a node more
-        # than once.
+        # ZXTM will kindly avoid creating duplicates if you submit a node that
+        # is already in the pool.
         try:
             self._call_node_func(self.client.service.addNodes, pool, nodes)
-        except WebFault:
-            # If pool doesn't exist, create it.
-            # TODO: filter on WebFault message, so we only try addPool if the
-            # failure was from "no such pool", else re-raise the exception.
-            self._call_node_func(self.client.service.addPool, pool, nodes)
+        except WebFault as wf:
+            if 'Unknown pool' in wf.message:
+                # If pool doesn't exist, create it.
+                self._call_node_func(self.client.service.addPool, pool, nodes)
+            else:
+                raise
 
     def delete_nodes(self, pool, nodes):
-        # will raise WebFault if node doesn't exist.
         try:
+            self._call_node_func(self.client.service.disableNodes, pool, nodes)
+            # wait <grace_period> seconds for connections to finish before
+            # zapping nodes completely.
+            time.sleep(self.grace_period)
             self._call_node_func(self.client.service.removeNodes, pool, nodes)
-        except WebFault:
-            pass
-            # TODO: filter on message, and re-raise if it isn't the "node does
-            # not exist" message that we're expecting.
+        except WebFault as wf:
+            if 'Unknown pool' in wf.message:
+                # If you try to delete nodes from a pool, and it doesn't exist,
+                # that's fine.
+                pass
+            else:
+                raise
 
     def get_nodes(self, pool):
         try:
             # get just the first item from the arrayarray
             nodes = self.client.service.getNodes([self.pool_prefix + pool])[0]
-            # convert the sax text things into real strings
-            return [str(n) for n in nodes]
-        except WebFault:
-            # TODO: filter on WebFault message so we can re-raise anything but
-            # "pool does not exist"
-            return []
-
+        except WebFault as wf:
+            if 'Unknown pool' in wf.message:
+                return []
+            else:
+                raise
+        # convert the sax text things into real strings
+        return [str(n) for n in nodes]
