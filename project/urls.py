@@ -10,10 +10,10 @@ admin.autodiscover()
 urlpatterns = patterns('',
     # Main UI routes
     url(r'^$', 'deployment.views.dash', name='dash'),
-    #url(r'^swarm/$',
-        #'deployment.views.new_swarm', name='new_swarm'),
+    url(r'^swarm/$',
+        'deployment.views.edit_swarm', name='new_swarm'),
     url(r'^swarm/(?P<swarm_id>[a-zA-Z0-9_.-]+)/$',
-        'deployment.views.reswarm', name='reswarm'),
+        'deployment.views.edit_swarm', name='swarm'),
     url(r'^deploy/$', 'deployment.views.deploy', name='deploy'),
     url(r'^build/$', 'deployment.views.build_hg', name='build_hg'),
     url(r'^release/$', 'deployment.views.release', name='release'),

@@ -38,7 +38,9 @@ DATABASES = {
 }
 
 BALANCERS = {
-    'default': {}
+    'default': {
+        'BACKEND': 'deployment.balancer.dummy.DummyBalancer',
+    }
 }
 
 # Suppress warnings when we pass a URI to MongoDB that includes the

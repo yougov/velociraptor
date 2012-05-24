@@ -28,16 +28,24 @@ Vagrant::Config.run do |config|
     # Forward a couple ports for use in development.  So if you visit
     # localhost:8000 in your browser, you'll see whatever's running on that
     # port inside the Vagrant VM.
+    #
+    # Port for the main dashboard
     config.vm.forward_port 8000, 8000
-    config.vm.forward_port 8001, 8001
-    config.vm.forward_port 8002, 8002
-    config.vm.forward_port 8003, 8003
-    config.vm.forward_port 8004, 8004
-    config.vm.forward_port 8005, 8005
-    config.vm.forward_port 8006, 8006
-    config.vm.forward_port 8007, 8007
-    config.vm.forward_port 8008, 8008
-    config.vm.forward_port 8009, 8009
+
+    # Ports for auto-deployed procs
+    config.vm.forward_port 6000, 6000
+    config.vm.forward_port 6001, 6001
+    config.vm.forward_port 6002, 6002
+    config.vm.forward_port 6003, 6003
+    config.vm.forward_port 6004, 6004
+    config.vm.forward_port 6005, 6005
+    config.vm.forward_port 6006, 6006
+    config.vm.forward_port 6007, 6007
+    config.vm.forward_port 6008, 6008
+    config.vm.forward_port 6009, 6009
+
+    # The supervisord web interface
+    config.vm.forward_port 9001, 9001
 
     # Use Puppet to ensure that certain system packages are installed in the VM
     config.vm.provision :puppet, :module_path => "puppet/modules" do |puppet|

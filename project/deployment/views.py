@@ -15,8 +15,8 @@ from django.conf import settings
 from celery.result import AsyncResult
 from celery.task.control import inspect
 
-from deployment.models import (Host, App, Release, Build, Profile, Swarm,
-                               remember)
+from deployment.models import (Host, App, Release, Build, Profile, Squad,
+                               Swarm, remember)
 from deployment import forms
 from deployment import tasks
 
@@ -160,9 +160,11 @@ def api_task_status(request, task_id):
 def build_hg(request):
     form = forms.BuildForm(request.POST or None)
     if form.is_valid():
-        job = tasks.build_hg.delay(**form.cleaned_data)
         app = App.objects.get(id=form.cleaned_data['app_id'])
-        remember('build', 'built %s-%s' % (app.name, form.cleaned_data['tag']),
+        build = Build(app=app, tag=form.cleaned_data['tag'])
+        build.save()
+        tasks.build_hg.delay(build.id)
+        remember('build', 'built %s-%s' % (app.name, build.tag),
                 request.user.username)
         return redirect('dash')
     btn_text = "Build"
@@ -231,22 +233,62 @@ def deploy(request):
     return render(request, 'basic_form.html', vars())
 
 
-@login_required
-def reswarm(request, swarm_id):
-    # Need to populate form from swarm
-    old_swarm = Swarm.objects.get(id=swarm_id)
+def get_or_create_release(profile, tag):
+    # If there's a release linked to the given profile, that uses the given
+    # build, and has current config, then return that.  Else make a new release
+    # that satisfies those constraints, and return that.
+    releases = Release.objects.filter(profile=profile,
+                                      build__tag=tag)
 
-    form = forms.ReswarmForm(request.POST or None, swarm=old_swarm)
+    # XXX This relies on the Releases model having ordering set to '-id'
+    if releases and releases[0].parsed_config() == profile.assemble():
+        return releases[0]
+
+    # If we got here, there's no existing release with the specified profile,
+    # tag, and current config.  Is there at least a build?
+    builds = Build.objects.filter(app=profile.app, tag=tag)
+    if builds:
+        build = builds[0]
+    else:
+        # Save a build record.  The actual building will be done later.
+        build = Build(app=profile.app, tag=tag)
+        build.save()
+    release = Release(profile=profile, build=build,
+                      config=profile.to_yaml())
+    release.save()
+    return release
+
+
+@login_required
+def edit_swarm(request, swarm_id=None):
+    if swarm_id:
+        # Need to populate form from swarm
+        swarm = Swarm.objects.get(id=swarm_id)
+        initial = {
+            'profile_id': swarm.profile.id,
+            'squad_id': swarm.squad.id,
+            'tag': swarm.release.build.tag,
+            'proc_name': swarm.proc_name,
+            'size': swarm.size,
+            'pool': swarm.pool,
+            'active': swarm.active
+        }
+    else:
+        initial = None
+        swarm = Swarm()
+
+    form = forms.SwarmForm(request.POST or None, initial=initial)
     if form.is_valid():
-        # Create a new swarm record.
-        swarm = Swarm(
-            app=old_swarm.app,
-            tag=form.cleaned_data['tag'],
-            replaces=old_swarm,
-            squad=old_swarm.squad,
-            size=form.cleaned_data['size'],
-            pool=old_swarm.pool,
-        )
+        data = form.cleaned_data
+        swarm.profile = Profile.objects.get(id=data['profile_id'])
+        swarm.squad = Squad.objects.get(id=data['squad_id'])
+        swarm.proc_name = data['proc_name']
+        swarm.size = data['size']
+        swarm.pool = data['pool']
+        swarm.active = data['active']
+
+        swarm.release = get_or_create_release(swarm.profile, data['tag'])
+
         swarm.save()
         user, password = get_creds(request)
         tasks.unleash_swarm.delay(swarm.id, user, password)
@@ -255,7 +297,7 @@ def reswarm(request, swarm_id):
         return redirect('dash')
 
     # If we're here, and 
-    btn_text = 'Reswarm'
+    btn_text = 'Swarm'
     return render(request, 'basic_form.html', vars())
 
 

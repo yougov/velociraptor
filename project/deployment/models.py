@@ -121,47 +121,44 @@ class ProfileConfig(models.Model):
 class Build(models.Model):
     app = models.ForeignKey(App)
     tag = models.CharField(max_length=50)
-    file = models.FileField(upload_to='builds', null=True)
+    file = models.FileField(upload_to='builds', null=True, blank=True)
 
     start_time = models.DateTimeField(null=True)
     end_time = models.DateTimeField(null=True)
 
     build_status_choices = (
+        ('pending', 'Pending'),
         ('started', 'Started'),
         ('success', 'Success'),
-        ('failure', 'Failed'),
+        ('failed', 'Failed'),
     )
 
-    status = models.CharField(max_length=20, choices=build_status_choices)
+    status = models.CharField(max_length=20, choices=build_status_choices,
+                              default='pending')
 
     def __unicode__(self):
-        return self.shortname()
-
-    def shortname(self):
         # Return the app name and version
         return u'-'.join([self.app.name, self.tag])
 
     class Meta:
         ordering = ['-id']
 
+from django.db import IntegrityError
 
 class Release(models.Model):
     profile = models.ForeignKey(Profile)
     build = models.ForeignKey(Build)
-
-    # We used to use a YAMLDictField for release.config, but that has
-    # possibility for the config saved at release time to not have the same key
-    # ordering as the config written at deploy time, since Python dict key
-    # ordering is not reliable.  Our apps wouldn't care, but it would mean we'd
-    # get inconsistent release hashes at those two times.
     config = models.TextField(blank=True, null=True)
 
-    # No need to set this in the admin.  We'll compute it on save.
-    hash = models.CharField(max_length=32)
+    # XXX Should we set a uniqueness constraint on the hash?  If we had that,
+    # we could take any proc name from supervisord and look up the exact build
+    # and config used for it.
+    # Hash will be computed on saving the model.
+    hash = models.CharField(max_length=32, blank=True, null=True)
 
     def __unicode__(self):
         return u'-'.join([self.build.app.name, self.build.tag,
-                          self.profile.name, self.hash])
+                          self.profile.name, self.hash or 'PENDING'])
 
     def compute_hash(self):
         # Compute self.hash from the config contents and build file.
@@ -171,8 +168,17 @@ class Release(models.Model):
         return md5chars[:8]
 
     def save(self, *args, **kwargs):
-        self.hash = self.compute_hash()
+        # Refuse to save if there's already a hash set on the model.
+        if self.hash:
+            raise IntegrityError("May not re-save a release that already has "
+                                 "a hash.")
+        # If there's not a hash, and there *is* a build, then compute the hash
+        if self.build.file.name:
+            self.hash = self.compute_hash()
         super(Release, self).save(*args, **kwargs)
+
+    def parsed_config(self):
+        return yaml.safe_load(self.config or '')
 
     class Meta:
         ordering = ['-id']
@@ -202,7 +208,13 @@ class Host(models.Model):
                 ports.add(int(parts[-1]))
         return ports
 
-    def get_unused_port(self):
+    def get_next_port(self):
+        # XXX There's a race condition here if one worker starts a deploy and
+        # then another asks for a free port before the first is finished.
+        # Solution: Add a lock to the ports returned here.  Either through a
+        # field on this model (easy) or a file placed on the remote host
+        # (perhaps better, but uglier to implement).
+
         all_ports = xrange(settings.PORT_RANGE_START, settings.PORT_RANGE_END)
         used_ports = self.get_used_ports()
         # Return the first port in our configured range that's not already in
@@ -226,18 +238,25 @@ class Host(models.Model):
             # XXX This function will throw DoesNotExist if either the app or
             # profile can't be looked up.  So careful with what you rename.
             parts = name.split('-')
-            app = App.objects.get(name=parts[0])
-            return Proc(
-                app=app,
-                tag=parts[1],
-                profile=Profile.objects.get(app=app, name=parts[2]),
-                hash=parts[3],
-                proc=parts[4],
-                port=int(parts[5]),
-                host=host,
-            )
+            try:
+                app = App.objects.get(name=parts[0])
+                return Proc(
+                    name=name,
+                    app=app,
+                    tag=parts[1],
+                    profile=Profile.objects.get(app=app, name=parts[2]),
+                    hash=parts[3],
+                    proc=parts[4],
+                    port=int(parts[5]),
+                    host=host,
+                )
+            except ObjectDoesNotExist:
+                return None
 
-        return [make_proc(p['name'], self.name) for p in states]
+        # Filter out any procs for whom we couldn't look up an App or Profile
+        procs = [make_proc(p['name'], self) for p in states]
+
+        return [p for p in procs if p is not None]
 
 
 class Squad(models.Model):
@@ -255,9 +274,22 @@ class Squad(models.Model):
         return self.name
 
 
-# If we ever need methods here, turn this into a real class
-Proc = collections.namedtuple('Proc', ['app', 'tag', 'profile', 'hash', 'proc',
-                                      'host', 'port'])
+class Proc(object):
+    def __init__(self, name, app, tag, profile, hash, proc, host, port):
+        self.name = name
+        self.app = app
+        self.tag = tag
+        self.profile = profile
+        self.hash = hash
+        self.proc = proc
+        self.host = host
+        self.port = port
+
+    def as_node(self):
+        """
+        Return host:port, as needed by the balancer interface.
+        """
+        return '%s:%s' % (self.host.name, self.port)
 
 
 class Swarm(models.Model):
@@ -265,56 +297,35 @@ class Swarm(models.Model):
     This is the payoff.  Save a swarm record and then you can tell Velociraptor
     to 'make it so'.
     """
-    app = models.ForeignKey(App)
-    tag = models.CharField(max_length=50)
-    proc_name = models.CharField(max_length=50)
-
-    replaces_help = ("Procs in this swarm will be decommissioned once the new "
-                    "one's up")
-    # XXX Forms or views that create Swarm instances must ensure that the
-    # new swarm points to the same app and squad as the one in 'replaces'
-    replaces = models.ForeignKey('Swarm', null=True, blank=True,
-                                 help_text=replaces_help)
-
-    # Release will be null until the new Swarm's build is finished.
-    release = models.ForeignKey(Release, null=True, blank=True)
-
+    profile = models.ForeignKey(Profile)
     squad = models.ForeignKey(Squad)
-
-    size = models.IntegerField(help_text='The number of procs in the swarm')
+    release = models.ForeignKey(Release)
+    proc_name = models.CharField(max_length=50)
+    size = models.IntegerField(help_text='The number of procs in the swarm',
+                               default=1)
 
     pool_help = "The name of the pool in the load balancer (omit prefix)"
     pool = models.CharField(max_length=50, help_text=pool_help)
 
-    # The time when you first tell Velociraptor to 'go'
-    start_time = models.DateTimeField(null=True, blank=True)
+    # If set to true, then the workers will periodically check this swarm's
+    # status and make sure it has enough workers, running the right version,
+    # with the right config. 
+    active = models.BooleanField(default=True)
 
-    # The time when all the procs have been deployed and are ready for
-    # balancing
-    ready_time = models.DateTimeField(null=True, blank=True)
-
-    # The time when this swarm is retired.  Typically after being replaced by a
-    # new version.
-    retire_time = models.DateTimeField(null=True, blank=True)
-
+    class Meta:
+        unique_together = ('profile', 'squad', 'proc_name')
 
     def __unicode__(self):
-        appname = self.app.name
-        tag = self.tag
+        rname = self.release.__unicode__()
+        proc = self.proc_name
         size = self.size
         squad = self.squad.name
-        return u'%(appname)s-%(tag)s X %(size)s on %(squad)s' % vars()
+        return u'%(rname)s-%(proc)s X %(size)s on %(squad)s' % vars()
 
-    def get_next_host(self):
+    def all_procs(self):
         """
-        Return the host that should be used for the next deployment.
+        Return all running procs on the squad that share this swarm's profile.
         """
-        # Query all hosts in the squad.  Sort first by number of procs from
-        # this swarm, then by total number of procs.  Return the first host in
-        # the sorted list.
-        pass
-
-    def get_procs(self):
         if not self.release:
             return []
 
@@ -322,5 +333,35 @@ class Swarm(models.Model):
         for host in self.squad.hosts.all():
             procs += host.get_procs()
 
-        return [p for p in procs if p.app==self.app and
-                p.hash==self.release.hash]
+        return [p for p in procs if p.profile == self.profile]
+
+    def current_procs(self):
+        """
+        Return all running procs on the squad that share this swarm's profile
+        and release hash.
+        """
+        return [p for p in self.all_procs() if p.hash == self.release.hash]
+
+    def stale_procs(self):
+        """
+        Return all running procs on the squad that share this swarm's profile
+        but have a different release hash.
+        """
+        return [p for p in self.all_procs() if p.hash != self.release.hash]
+
+    def get_next_host(self):
+        """
+        Sort hosts in the squad first by number of procs from this swarm, then
+        by total number of procs.  Return the first host in that sorted list.
+        """
+
+        squad_hosts = list(self.squad.hosts.all())
+        # cache the proc counts for each host
+        for h in squad_hosts:
+            all_procs = h.get_procs()
+            swarm_procs = [p for p in all_procs if p.hash == self.release.hash]
+            h.sortkey = (len(swarm_procs), len(all_procs))
+
+        squad_hosts.sort(key=lambda h: h.sortkey)
+
+        return squad_hosts[0]

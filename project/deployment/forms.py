@@ -70,37 +70,17 @@ class LoginForm(forms.Form):
 
 class SwarmForm(forms.Form):
     """
-    Form for creating a new swarm.
+    Form for creating or updating a swarm.
     """
-    release_id = forms.ChoiceField(choices=[], label='Release')
+    profile_id = forms.ChoiceField(choices=[], label='Profile')
     squad_id = forms.ChoiceField(choices=[], label='Squad')
+    tag = forms.CharField(max_length=50)
+    proc_name = forms.CharField(max_length=50)
     size = forms.IntegerField()
     pool = forms.CharField(max_length=50)
+    active = forms.BooleanField(initial=True)
 
     def __init__(self, data, *args, **kwargs):
         super(SwarmForm, self).__init__(data, *args, **kwargs)
-
-
-
-class ReswarmForm(forms.Form):
-    """
-    Form for replacing an existing swarm with a new one; changing the size,
-    version, or config.
-    """
-    tag = forms.CharField(max_length=50)
-    profile_id = forms.ChoiceField(choices=[], label='Profile')
-    size = forms.IntegerField()
-
-    def __init__(self, data, swarm, *args, **kwargs):
-        initial = {}
-        if swarm is not None:
-            initial.update(
-                tag=swarm.tag,
-                size=swarm.size,
-            )
-            if swarm.release is not None:
-                initial['profile_id'] = swarm.release.profile.id
-        super(ReswarmForm, self).__init__(data, *args, initial=initial, **kwargs)
-
-        self.fields['profile_id'].choices = [(p.id, p) for p in
-                                             models.Profile.objects.all()]
+        self.fields['profile_id'].choices = [(p.id, p) for p in models.Profile.objects.all()]
+        self.fields['squad_id'].choices = [(s.id, s) for s in models.Squad.objects.all()]

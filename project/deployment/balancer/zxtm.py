@@ -3,6 +3,7 @@ import os
 import suds.xsd.doctor
 import suds.client
 from suds.plugin import MessagePlugin
+from suds import WebFault
 
 
 # Suds has broken array marshaling.  See these links:
@@ -31,8 +32,8 @@ class FixArrayPlugin(MessagePlugin):
 
 
 # This class implements velociraptor's Balancer Interface, which means that it
-# has add_nodes, disable_nodes, and delete_nodes functions, and can be initted
-# with a dictionary of config that can be pulled from settings.BALANCERS.
+# has get_nodes, add_nodes, and delete_nodes functions, and is initted with a
+# dictionary of config pulled from settings.BALANCERS.
 class ZXTMBalancer(object):
     def __init__(self, config):
         self.url = config['URL']
@@ -63,21 +64,33 @@ class ZXTMBalancer(object):
         func([self.pool_prefix + pool], nodes_wrapper)
 
     def add_nodes(self, pool, nodes):
-        # this function intelligently avoids creating duplicates.
-        self._call_node_func(self.client.service.addNodes, pool, nodes)
+        # ZXTM will kindly avoid creating duplicates if you submit a node more
+        # than once.
+        try:
+            self._call_node_func(self.client.service.addNodes, pool, nodes)
+        except WebFault:
+            # If pool doesn't exist, create it.
+            # TODO: filter on WebFault message, so we only try addPool if the
+            # failure was from "no such pool", else re-raise the exception.
+            self._call_node_func(self.client.service.addPool, pool, nodes)
 
-    def disable_nodes(self, pool, nodes):
-        self._call_node_func(self.client.service.disableNodes, pool, nodes)
-
-    def cleanup_nodes(self, pool, nodes):
+    def delete_nodes(self, pool, nodes):
         # will raise WebFault if node doesn't exist.
-        self._call_node_func(self.client.service.removeNodes, pool, nodes)
-
-    # TODO: add enable_nodes?  Or make sure that add_nodes does that.
+        try:
+            self._call_node_func(self.client.service.removeNodes, pool, nodes)
+        except WebFault:
+            pass
+            # TODO: filter on message, and re-raise if it isn't the "node does
+            # not exist" message that we're expecting.
 
     def get_nodes(self, pool):
-        # get just the first item from the arrayarray
-        nodes = self.client.service.getNodes([self.pool_prefix + pool])[0]
-        # convert the sax text things into real strings
-        return [str(n) for n in nodes]
+        try:
+            # get just the first item from the arrayarray
+            nodes = self.client.service.getNodes([self.pool_prefix + pool])[0]
+            # convert the sax text things into real strings
+            return [str(n) for n in nodes]
+        except WebFault:
+            # TODO: filter on WebFault message so we can re-raise anything but
+            # "pool does not exist"
+            return []
 

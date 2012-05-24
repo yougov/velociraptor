@@ -10,9 +10,10 @@ import fabric.network
 from celery.task import subtask, task as celery_task
 from fabric.api import env
 from django.core.files.storage import default_storage
-import yaml
 
-from deployment.models import Release, App, Build, Swarm
+from deployment.models import Release, Build, Swarm
+from deployment import balancer
+
 from yg.deploy.fabric.system import deploy_parcel, delete_proc as fab_delete_proc
 from yg.deploy.paver import build as paver_build
 
@@ -73,13 +74,13 @@ def deploy(release_id, profile, host, proc, port, user, password, callback=None)
 
 
 @celery_task()
-def build_hg(app_id, tag, callback=None):
+def build_hg(build_id, callback=None):
     # call the assemble_hg function.
-    app = App.objects.get(id=app_id)
-    url = '%s#%s' % (app.repo_url, tag)
+    build = Build.objects.get(id=build_id)
+    app = build.app
+    url = '%s#%s' % (build.app.repo_url, build.tag)
     with tmpdir():
-        build = Build(app=app, tag=tag, start_time=datetime.datetime.now(),
-                      status='started')
+        build.status = 'started'
         build.save()
 
         try:
@@ -104,7 +105,7 @@ def build_hg(app_id, tag, callback=None):
 
 
 @celery_task()
-def delete_proc(host, proc, user, password):
+def delete_proc(host, proc, user, password, callback=None):
     env.host_string = host
     env.abort_on_prompts = True
     env.user=user
@@ -113,80 +114,90 @@ def delete_proc(host, proc, user, password):
     with always_disconnect():
         fab_delete_proc(proc)
 
-
-def _new_release(profile, build):
-    new = Release(
-        profile=profile,
-        build=build,
-        config=profile.to_yaml(),
-    )
-    new.hash = new.compute_hash()
-    new.save()
-
-
-def _get_current_release(profile, build):
-    # If there's a release with app, tag, and profile's current config,
-    # then return it.  Else make one.
-    releases = Release.objects.filter(profile=profile,
-                                      build__app=build.app,
-                                      build__tag=build.tag).order_by('-id')
-
-    if not releases:
-        return _new_release(profile, build)
-
-    # There's at least one release for this profile/app/tag.  See if
-    # its config is current.  Make new release if not.
-    latest = releases[0]
-    current_config = profile.assemble()
-    last_config = yaml.safe_load(latest.config)
-    if current_config == last_config:
-        return latest
-    else:
-        return _new_release(profile, build)
+    if callback:
+        subtask(callback).delay()
 
 
 @celery_task()
 def unleash_swarm(swarm_id, user, password):
     swarm = Swarm.objects.get(id=swarm_id)
-    callback = unleash_swarm.subtask((swarm.id,))
+    callback = unleash_swarm.subtask((swarm.id, user, password))
 
     # is there a build for this app and tag?  If not, build it.
-    try:
-        build = Build.objects.get(app=swarm.app, tag=swarm.tag,
-                                  status='success', file__isnull=False)
-    except Build.DoesNotExist:
-        # TODO: once there's a django-celery version that works with celery2.6,
-        # switch to the new-style callbacks using the 'link' argument to
-        # apply_async
-        build_hg.delay(swarm.app.id, swarm.tag, callback)
+    build = swarm.release.build
+    if not build.file.name:
+        build_hg.delay(build.id, callback)
+        return
 
-    # we have a build!
-    # Now see if we have a release that uses our build and 
-    if swarm.release is None:
-        # for unleash_swarm to work, the swarm must have either:
-            # - a swarm.release, for cases when a brand new swarm is being
-            # created
-            # - or a swarm.replaces, for cases when an existing swarm is being
-            # replaced by one with new config, build, or size
-        # If we get to this point, we must be in the second situation, or a
-        # failure mode.
-        if swarm.replaces is None or swarm.replaces.release is None:
-            raise Exception("Swarm %s has neither a 'release' nor a "
-                            "'replaces' release" % swarm_id)
-
-        profile = swarm.replaces.release.profile
-        swarm.release = _get_current_release(profile, build)
+    # IF the release hasn't been frozen yet, then it was probably waiting on a
+    # build being done.  Freeze it now.
+    if not swarm.release.hash:
+        # Release has not been frozen yet, probably because we were waiting on
+        # the build.  Since there's a build file now, saving will force the
+        # release to hash itself. 
+        release = swarm.release
+        release.config = swarm.profile.to_yaml()
+        release.save()
+    elif swarm.release.parsed_config() != swarm.profile.assemble():
+        # Our frozen release doesn't have current config.  We'll need to make a
+        # new release, with the same build, and link the swarm to that.
+        release = Release(profile=swarm.profile, build=build,
+                          config=swarm.profile.to_yaml())
+        release.save()
+        swarm.release = release
         swarm.save()
 
     # OK we have a release.  Next: see if we need to do a deployment.
     # Query squad for list of procs.
-    if len(swarm.get_procs() < swarm.size):
+    # TODO: Allow this deployment step to execute in parallel instead of
+    # only serially.  Idea: For each host record, save a list of the procs it's
+    # supposed to be running.  Then just have this function check supervisord's
+    # list against that list, and create all the new procs that are necessary.
+    current_procs = swarm.current_procs()
+    if len(current_procs) < swarm.size:
         # get next target host
         host = swarm.get_next_host()
         port = host.get_next_port()
         # deploy new proc to host, and set this function as callback.
-        deploy.delay(swarm.release.id, swarm.release.profile.name, host,
-                     swarm.proc_name, port, user, password, callback=callback)
+        deploy.delay(swarm.release.id, swarm.release.profile.name, host.name,
+                     swarm.proc_name, port, user, password, callback)
+        return
+    elif len(current_procs) > swarm.size:
+        # We have too many procs in the swarm.  Delete one and call back.
+        # TODO: instead of just deleting the first proc in the list, delete one
+        # 1) from the host with the most procs from this swarm on it, or 2) if
+        # there's a tie, from the host with the most procs on it of any type.
+        p = current_procs[0]
+        delete_proc.delay(p.host.name, p.name, user, password, callback)
+        return
+    else:
+        # There's just the right number of procs.  Make sure the balancer is up
+        # to date.
+
+        # The balancer should tolerate us telling it to add a node that it
+        # already has.
+        balancer.add_nodes(swarm.pool,
+                           [p.as_node() for p in current_procs],
+                           swarm.squad.balancer)
+
+    # TODO: add uptests
+
+    # If there are live procs from our profile using something other than the
+    # current release, they should be deleted.
+    stale_procs = swarm.stale_procs()
+    if len(stale_procs):
+        # destroy the first stale proc, and call back
+        p = stale_procs[0]
+        delete_proc.delay(p.host.name, p.name, user, password, callback)
+        return
+
+    # Tell the balancer to delete any currently-routed nodes that don't map to
+    # one of the current procs.
+    current_nodes = set(balancer.get_nodes(swarm.pool, swarm.squad.balancer))
+    stale_nodes = current_nodes.difference(p.as_node() for p in current_procs)
+    if stale_nodes:
+        balancer.delete_nodes(swarm.pool, list(stale_nodes),
+                              swarm.squad.balancer)
 
 
     logging.info("IT IS FINISHED")
