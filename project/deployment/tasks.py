@@ -35,8 +35,9 @@ class tmpdir(object):
 
 
 @celery_task()
-def deploy(release_id, profile, host, proc, port, user, password, callback=None):
+def deploy(release_id, profile_name, host, proc, port, user, password, callback=None):
     release = Release.objects.get(id=release_id)
+
 
     # Set up env for Fabric
     env.host_string = host
@@ -63,8 +64,8 @@ def deploy(release_id, profile, host, proc, port, user, password, callback=None)
         build.close()
 
         with always_disconnect():
-            result = deploy_parcel(build_name, 'settings.yaml', profile,
-                proc, port)
+            result = deploy_parcel(build_name, 'settings.yaml', profile_name,
+                proc, port, 'nobody', release.hash)
 
     # start callback if there is one.
     if callback is not None:
@@ -121,6 +122,7 @@ def delete_proc(host, proc, user, password, callback=None):
 @celery_task()
 def unleash_swarm(swarm_id, user, password):
     swarm = Swarm.objects.get(id=swarm_id)
+
     callback = unleash_swarm.subtask((swarm.id, user, password))
 
     # is there a build for this app and tag?  If not, build it.
@@ -146,6 +148,7 @@ def unleash_swarm(swarm_id, user, password):
         release.save()
         swarm.release = release
         swarm.save()
+
 
     # OK we have a release.  Next: see if we need to do a deployment.
     # Query squad for list of procs.

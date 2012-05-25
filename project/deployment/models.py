@@ -162,16 +162,12 @@ class Release(models.Model):
 
     def compute_hash(self):
         # Compute self.hash from the config contents and build file.
-        buildcontents = default_storage.open(self.build.file.name).read()
+        buildcontents = default_storage.open(self.build.file.name, 'rb').read()
 
-        md5chars = hashlib.md5(buildcontents + self.config).hexdigest()
+        md5chars = hashlib.md5(buildcontents + bytes(self.config)).hexdigest()
         return md5chars[:8]
 
     def save(self, *args, **kwargs):
-        # Refuse to save if there's already a hash set on the model.
-        if self.hash:
-            raise IntegrityError("May not re-save a release that already has "
-                                 "a hash.")
         # If there's not a hash, and there *is* a build, then compute the hash
         if self.build.file.name:
             self.hash = self.compute_hash()
