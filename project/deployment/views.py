@@ -222,7 +222,7 @@ def deploy(request):
         data['user'], data['password'] = get_creds(request)
 
         release = Release.objects.get(id=form.cleaned_data['release_id'])
-        data['profile'] = release.profile.name
+        data['profile_name'] = release.profile.name
         job = tasks.deploy.delay(**data)
         logging.info('started job %s' % str(job))
         form.cleaned_data['release'] = str(release)
