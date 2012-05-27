@@ -310,7 +310,7 @@ class Swarm(models.Model):
 
     class Meta:
         unique_together = ('profile', 'squad', 'proc_name')
-        ordering = ['name']
+        ordering = ['profile__app__name']
 
     def __unicode__(self):
         rname = self.release.__unicode__()
