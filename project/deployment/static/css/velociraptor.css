@@ -1,6 +1,8 @@
 
 /* http://paulirish.com/2012/box-sizing-border-box-ftw/ */
-* { -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box; }
+/* Apparently Bootstrap isn't compatible with box-sizing; border-box :(.  It
+ * screws up a bunch of stuff */
+/** { -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box; }*/
 
 /* Some headers want to float left so we can stick some other UI on the
  * same line to the right */
@@ -156,10 +158,6 @@ div.label {
 
 .formrows br {
   display: none;
-}
-
-.formrows input[type=text] {
-  height: 28px;
 }
 
 /**** Isotope filtering ****/

@@ -125,7 +125,8 @@ def api_task_active(request):
             for task in tasklist:
                 kwargs = ast.literal_eval(task['kwargs'])
                 if task['name'] == "deployment.tasks.build_hg":
-                    app = App.objects.get(id=int(kwargs['app_id']))
+                    build = Build.objects.get(id=int(kwargs['build_id']))
+                    app = build.app
                     desc = 'hg build of ' + app.name
                     out.append({'id': task['id'], 'desc': desc})
                 elif task['name'] == 'deployment.tasks.deploy':

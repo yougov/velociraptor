@@ -318,6 +318,13 @@ class Swarm(models.Model):
         squad = self.squad.name
         return u'%(rname)s-%(proc)s X %(size)s on %(squad)s' % vars()
 
+    def shortname(self):
+        a = self.profile.app.name
+        p = self.profile.name
+        proc = self.proc_name
+        return u'%(a)s-%(p)s-%(proc)s' % vars()
+
+
     def all_procs(self):
         """
         Return all running procs on the squad that share this swarm's profile.
