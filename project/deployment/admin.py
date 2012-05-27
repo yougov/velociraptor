@@ -13,6 +13,12 @@ class ProfileConfigInline(admin.TabularInline):
 class ProfileAdmin(admin.ModelAdmin):
     inlines = [ProfileConfigInline]
 
+class HostInline(admin.TabularInline):
+    model = models.Host
+
+class SquadAdmin(admin.ModelAdmin):
+    inlines = [HostInline]
+
 admin.site.register(models.Profile, ProfileAdmin)
 
 admin.site.register(models.App)
@@ -20,7 +26,7 @@ admin.site.register(models.Build)
 admin.site.register(models.Release)
 admin.site.register(models.Host)
 admin.site.register(models.DeploymentLogEntry)
-admin.site.register(models.Squad)
+admin.site.register(models.Squad, SquadAdmin)
 admin.site.register(models.Swarm)
 
 

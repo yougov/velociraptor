@@ -189,8 +189,7 @@ class Host(models.Model):
 
 
     def __unicode__(self):
-        squadname = self.squad.name if self.squad else '(no squad)'
-        return '%s: %s' % (squadname, self.name)
+        return self.name
 
     def get_used_ports(self):
         server = xmlrpclib.Server('http://%s:%s' % (self.name, settings.SUPERVISOR_PORT))
