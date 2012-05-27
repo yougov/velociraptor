@@ -300,7 +300,8 @@ class Swarm(models.Model):
                                default=1)
 
     pool_help = "The name of the pool in the load balancer (omit prefix)"
-    pool = models.CharField(max_length=50, help_text=pool_help)
+    pool = models.CharField(max_length=50, help_text=pool_help, blank=True,
+                            null=True)
 
     # If set to true, then the workers will periodically check this swarm's
     # status and make sure it has enough workers, running the right version,
@@ -336,20 +337,6 @@ class Swarm(models.Model):
             procs += host.get_procs()
 
         return [p for p in procs if p.profile == self.profile]
-
-    def current_procs(self):
-        """
-        Return all running procs on the squad that share this swarm's profile
-        and release hash.
-        """
-        return [p for p in self.all_procs() if p.hash == self.release.hash]
-
-    def stale_procs(self):
-        """
-        Return all running procs on the squad that share this swarm's profile
-        but have a different release hash.
-        """
-        return [p for p in self.all_procs() if p.hash != self.release.hash]
 
     def get_next_host(self):
         """

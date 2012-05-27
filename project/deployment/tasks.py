@@ -156,7 +156,10 @@ def unleash_swarm(swarm_id, user, password):
     # only serially.  Idea: For each host record, save a list of the procs it's
     # supposed to be running.  Then just have this function check supervisord's
     # list against that list, and create all the new procs that are necessary.
-    current_procs = swarm.current_procs()
+    all_procs = swarm.all_procs()
+    current_procs = [p for p in all_procs if p.hash == swarm.release.hash]
+    stale_procs = [p for p in all_procs if p.hash != swarm.release.hash]
+
     if len(current_procs) < swarm.size:
         # get next target host
         host = swarm.get_next_host()
@@ -173,33 +176,38 @@ def unleash_swarm(swarm_id, user, password):
         p = current_procs[0]
         delete_proc.delay(p.host.name, p.name, user, password, callback)
         return
-    else:
+    elif swarm.pool:
         # There's just the right number of procs.  Make sure the balancer is up
-        # to date.
+        # to date, but only if the swarm has a pool specified.
 
-        # The balancer should tolerate us telling it to add a node that it
-        # already has.
-        balancer.add_nodes(swarm.squad.balancer,
-                           swarm.pool, [p.as_node() for p in current_procs])
+        # TODO: run uptests on new nodes before routing them.
 
-    # TODO: add uptests
+        current_nodes = set(balancer.get_nodes(swarm.squad.balancer,
+                                               swarm.pool))
+
+        correct_nodes = set(p.as_node() for p in current_procs)
+
+        new_nodes = correct_nodes.difference(current_nodes)
+
+        stale_nodes = current_nodes.intersection(p.as_node() for p in
+                                                      stale_procs)
+
+        if new_nodes:
+            balancer.add_nodes(swarm.squad.balancer, swarm.pool,
+                               list(new_nodes))
+
+        if stale_nodes:
+            balancer.delete_nodes(swarm.squad.balancer, swarm.pool,
+                                  list(stale_nodes))
+
 
     # If there are live procs from our profile using something other than the
     # current release, they should be deleted.
-    stale_procs = swarm.stale_procs()
     if len(stale_procs):
         # destroy the first stale proc, and call back
         p = stale_procs[0]
         delete_proc.delay(p.host.name, p.name, user, password, callback)
         return
-
-    # Tell the balancer to delete any currently-routed nodes that don't map to
-    # one of the current procs.
-    current_nodes = set(balancer.get_nodes(swarm.squad.balancer, swarm.pool))
-    stale_nodes = current_nodes.difference(p.as_node() for p in current_procs)
-    if stale_nodes:
-        balancer.delete_nodes(swarm.squad.balancer, swarm.pool,
-                              list(stale_nodes))
 
     logging.info(u"Swarm unleashed: %s" % swarm)
 
