@@ -204,31 +204,31 @@ class Host(models.Model):
         return ports
 
     def get_next_port(self):
-        # XXX There's a race condition here if one worker starts a deploy and
-        # then another asks for a free port before the first is finished.
-        # Solution: Add a lock to the ports returned here.  Either through a
-        # field on this model (easy) or a file placed on the remote host
-        # (perhaps better, but uglier to implement).
 
         all_ports = xrange(settings.PORT_RANGE_START, settings.PORT_RANGE_END)
         used_ports = self.get_used_ports()
         # Return the first port in our configured range that's not already in
         # use.
-        return next(x for x in all_ports if x not in used_ports)
+        def free(port):
+            if PortLock.objects.filter(host=self, port=port):
+                return False
+
+            return port not in used_ports
+
+        return next(x for x in all_ports if free(x))
 
 
     def get_procs(self):
+        """
+        Return a list of Proc objects, one for each supervisord process that
+        has a parseable name and whose app and profile can be found in the DB.
+        """
         server = xmlrpclib.Server('http://%s:%s' % (self.name, settings.SUPERVISOR_PORT))
         states = server.supervisor.getAllProcessInfo()
-        # Query all hosts in the squad and get their list of procs.  Not quite
-        # sure what should be returned though.  We need something that's easily
-        # filterable.  So we'd really like to be able to say "how many of these
-        # are running version A of app B with config from profile C?"  So I
-        # think we want at least named tuples, with references to real objects.
         def make_proc(name, host):
             # Given the name of a proc like
             # 'khartoum-0.0.7-yfiles-1427a4e2-web-8060', parse out the bits and
-            # return a named tuple.
+            # return a Proc object.
 
             # XXX This function will throw DoesNotExist if either the app or
             # profile can't be looked up.  So careful with what you rename.
@@ -248,9 +248,9 @@ class Host(models.Model):
             except ObjectDoesNotExist:
                 return None
 
-        # Filter out any procs for whom we couldn't look up an App or Profile
         procs = [make_proc(p['name'], self) for p in states]
 
+        # Filter out any procs for whom we couldn't look up an App or Profile
         return [p for p in procs if p is not None]
 
 
@@ -325,7 +325,6 @@ class Swarm(models.Model):
         proc = self.proc_name
         return u'%(a)s-%(p)s-%(proc)s' % vars()
 
-
     def all_procs(self):
         """
         Return all running procs on the squad that share this swarm's profile.
@@ -339,19 +338,39 @@ class Swarm(models.Model):
 
         return [p for p in procs if p.profile == self.profile]
 
-    def get_next_host(self):
+    def get_prioritized_hosts(self):
         """
-        Sort hosts in the squad first by number of procs from this swarm, then
-        by total number of procs.  Return the first host in that sorted list.
+        Return list of hosts in the squad sorted first by number of procs from
+        this swarm, then by total number of procs.
         """
-
         squad_hosts = list(self.squad.hosts.all())
         # cache the proc counts for each host
         for h in squad_hosts:
-            all_procs = h.get_procs()
-            swarm_procs = [p for p in all_procs if p.hash == self.release.hash]
-            h.sortkey = (len(swarm_procs), len(all_procs))
+            h.all_procs = h.get_procs()
+            h.swarm_procs = [p for p in h.all_procs if p.hash == self.release.hash]
+            h.sortkey = (len(h.swarm_procs), len(h.all_procs))
 
         squad_hosts.sort(key=lambda h: h.sortkey)
+        return squad_hosts
 
-        return squad_hosts[0]
+    def get_next_host(self):
+
+
+        return self.get_prioritized_hosts()[0]
+
+
+class PortLock(models.Model):
+    """
+    The presence of one of these records indicates that a port is reserved for
+    a particular proc that's probably still in the process of being deployed.
+    Port locks should be deleted when their deploys are finished.
+    """
+    host = models.ForeignKey(Host)
+    port = models.IntegerField()
+    created_time = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('host', 'port')
+
+    def __unicode__(self):
+        return '%s:%s' % (self.host, self.port)

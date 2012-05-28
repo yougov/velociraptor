@@ -5,13 +5,14 @@ import shutil
 import posixpath
 import datetime
 import contextlib
+from collections import defaultdict
 
 import fabric.network
-from celery.task import subtask, task as celery_task
+from celery.task import subtask, chord, task
 from fabric.api import env
 from django.core.files.storage import default_storage
 
-from deployment.models import Release, Build, Swarm
+from deployment.models import Release, Build, Swarm, Host, PortLock
 from deployment import balancer
 
 from yg.deploy.fabric.system import deploy_parcel, delete_proc as fab_delete_proc
@@ -19,7 +20,7 @@ from yg.deploy.paver import build as paver_build
 
 
 class tmpdir(object):
-    """Context processor for putting you into a temporary directory on enter
+    """Context manager for putting you into a temporary directory on enter
     and deleting the directory on exit
     """
     def __init__(self):
@@ -34,47 +35,66 @@ class tmpdir(object):
         shutil.rmtree(self.temp_path, ignore_errors=True)
 
 
-@celery_task()
-def deploy(release_id, profile_name, host, proc, port, user, password, callback=None):
-    release = Release.objects.get(id=release_id)
+class remove_port_lock(object):
+    """
+    Context manager for locking a port on a host.  Requires a hostname and port
+    on init.
+    """
+
+    # This used just during deployment.  In general the host itself is the
+    # source of truth about what ports are in use. But when deployments are
+    # still in flight, port locks are necessary to prevent collisions.
+
+    def __init__(self, hostname, port):
+        self.host = Host.objects.get(name=hostname)
+        self.port = int(port)
+
+    def __enter__(self):
+        self.lock = PortLock.objects.get(host=self.host, port=self.port)
+
+    def __exit__(self, type, value, traceback):
+        self.lock.delete()
 
 
-    # Set up env for Fabric
-    env.host_string = host
-    env.abort_on_prompts = True
-    env.celery_task = deploy
-    env.user=user
-    env.password=password
+@task
+def deploy(release_id, profile_name, hostname, proc, port, user, password):
 
-    deploy.update_state(state='PROGRESS', meta='Started')
-    logging.info('%s deploying %s:%s to %s:%s' % (user, release, proc, host, port))
+    with remove_port_lock(hostname, port):
+        release = Release.objects.get(id=release_id)
 
-    with tmpdir():
-        f = open('settings.yaml', 'wb')
-        f.write(release.config)
-        f.close()
-        # pull the build out of gridfs, write it to a temporary location, and
-        # deploy it.
-        build_name = posixpath.basename(release.build.file.name)
-        local_build = open(build_name, 'wb')
-        build = default_storage.open(release.build.file.name)
-        local_build.write(build.read())
+        # Set up env for Fabric
+        env.host_string = hostname
+        env.abort_on_prompts = True
+        env.task = deploy
+        env.user=user
+        env.password=password
 
-        local_build.close()
-        build.close()
+        deploy.update_state(state='PROGRESS', meta='Started')
+        logging.info('%s deploying %s:%s to %s:%s' % (user, release, proc,
+                                                      hostname, port))
 
-        with always_disconnect():
-            result = deploy_parcel(build_name, 'settings.yaml', profile_name,
-                proc, port, 'nobody', release.hash)
+        with tmpdir():
+            f = open('settings.yaml', 'wb')
+            f.write(release.config)
+            f.close()
+            # pull the build out of gridfs, write it to a temporary location, and
+            # deploy it.
+            build_name = posixpath.basename(release.build.file.name)
+            local_build = open(build_name, 'wb')
+            build = default_storage.open(release.build.file.name)
+            local_build.write(build.read())
 
-    # start callback if there is one.
-    if callback is not None:
-        subtask(callback).delay()
+            local_build.close()
+            build.close()
 
-    return result
+            with always_disconnect():
+                result = deploy_parcel(build_name, 'settings.yaml', profile_name,
+                    proc, port, 'nobody', release.hash)
+
+        #return result
 
 
-@celery_task()
+@task
 def build_hg(build_id, callback=None):
     # call the assemble_hg function.
     build = Build.objects.get(id=build_id)
@@ -105,7 +125,7 @@ def build_hg(build_id, callback=None):
         subtask(callback).delay()
 
 
-@celery_task()
+@task
 def delete_proc(host, proc, user, password, callback=None):
     env.host_string = host
     env.abort_on_prompts = True
@@ -119,18 +139,34 @@ def delete_proc(host, proc, user, password, callback=None):
         subtask(callback).delay()
 
 
-@celery_task()
-def unleash_swarm(swarm_id, user, password):
+@task
+def swarm_start(swarm_id, user, password):
+    """
+    Given a swarm_id, username, and password, kick off the chain of tasks
+    necessary to get this swarm deployed.
+    """
     swarm = Swarm.objects.get(id=swarm_id)
 
-    callback = unleash_swarm.subtask((swarm.id, user, password))
-
-    # is there a build for this app and tag?  If not, build it.
+    # is there a build for this app and tag?  If so, call next step.  If not,
+    # build it, then call next step.
     build = swarm.release.build
-    if not build.file.name:
+    if build.file.name:
+        swarm_release.delay(swarm_id, user, password)
+    else:
+        callback = swarm_release.subtask((swarm.id, user, password))
         build_hg.delay(build.id, callback)
-        return
 
+
+# This task should only be used as a callback after swarm_start
+@task
+def swarm_release(swarm_id, user, password):
+    """
+    Assuming the swarm's build is complete, this task will ensure there's a
+    release with that build + current config, and call subtasks to make sure
+    there are enough deployments.
+    """
+    swarm = Swarm.objects.get(id=swarm_id)
+    build = swarm.release.build
     # IF the release hasn't been frozen yet, then it was probably waiting on a
     # build being done.  Freeze it now.
     if not swarm.release.hash:
@@ -152,35 +188,131 @@ def unleash_swarm(swarm_id, user, password):
 
     # OK we have a release.  Next: see if we need to do a deployment.
     # Query squad for list of procs.
-    # TODO: Allow this deployment step to execute in parallel instead of
-    # only serially.  Idea: For each host record, save a list of the procs it's
-    # supposed to be running.  Then just have this function check supervisord's
-    # list against that list, and create all the new procs that are necessary.
+    all_procs = swarm.all_procs()
+    current_procs = [p for p in all_procs if p.hash == swarm.release.hash]
+
+    procs_needed = swarm.size - len(current_procs)
+
+    # set routing task as chord callback
+    callback = swarm_post_deploy.subtask((swarm.id, user, password))
+
+    if procs_needed > 0:
+        hosts = swarm.get_prioritized_hosts()
+        hostcount = len(hosts)
+
+        # Build up a dictionary where the keys are hostnames, and the
+        # values are lists of ports.
+        new_procs_by_host = defaultdict(list)
+        for x in xrange(procs_needed):
+            host = hosts[x % hostcount]
+            port = host.get_next_port()
+            new_procs_by_host[host.name].append(port)
+
+            # Ports need to be locked here in the synchronous loop, before
+            # fanning out the async subtasks, in order to prevent collisions.
+            pl = PortLock(host=host, port=port)
+            pl.save()
+
+        # Now loop over the hosts and fan out a task to each that needs it.
+        subtasks = []
+        for host in hosts:
+            if host.name in new_procs_by_host:
+                subtasks.append(
+                    swarm_deploy_to_host.subtask((
+                        swarm.id,
+                        host.id,
+                        new_procs_by_host[host.name],
+                        user,
+                        password,
+                    ))
+                )
+        chord(subtasks)(callback)
+    elif procs_needed < 0:
+        # We need to delete some procs
+
+        # reverse prioritized list so the most loaded hosts get things removed
+        # first.
+        hosts = swarm.get_prioritized_hosts()
+        hosts.reverse()
+        hostcount = len(hosts)
+        subtasks = []
+        for x in xrange(procs_needed * -1):
+            host = hosts[x % hostcount]
+            proc = host.swarm_procs.pop()
+            subtasks.append(
+                swarm_delete_proc.subtask((
+                    swarm.id, host.name, proc.name, proc.port, user, password,
+                ))
+            )
+        chord(subtasks)(callback)
+    else:
+        # We have just the right number of procs.  go ahead and route them.
+        swarm_route(swarm.id, user, password)
+
+
+@task
+def swarm_deploy_to_host(swarm_id, host_id, ports, user, password):
+    """
+    Given a swarm, a host, and a list of ports, deploy the swarm's current
+    release to the host, one instance for each port.
+    """
+    # This function allows a swarm's deployments to be parallel across
+    # different hosts, but synchronous on a per-host basis, which solves the
+    # problem of two deployments both trying to copy the release over at the
+    # same time.
+
+    swarm = Swarm.objects.get(id=swarm_id)
+    host = Host.objects.get(id=host_id)
+    for port in ports:
+        deploy(
+            swarm.release.id,
+            swarm.release.profile.name,
+            host.name,
+            swarm.proc_name,
+            port,
+            user,
+            password,
+        )
+
+    # XXX This would be a good place to do uptests.
+
+
+
+@task
+def swarm_delete_proc(swarm_id, hostname, procname, port, user, password):
+    # wrap the regular delete_proc, but first ensure the proc is removed from
+    # the routing pool.
+    swarm = Swarm.objects.get(id=swarm_id)
+    if swarm.pool:
+        node = '%s:%s' % (hostname, port)
+        if node in balancer.get_nodes(swarm.squad.balancer, swarm.pool):
+            balancer.delete_nodes(swarm.squad.balancer, swarm.pool, [node])
+
+    delete_proc(hostname, procname, user, password)
+
+
+@task
+def swarm_post_deploy(deploy_results, swarm_id, user, password):
+    # if the deploys were successful, do routing.
+    # TODO: check the results and only go ahead with routing if the deploys
+    # were successful.
+    swarm_route(swarm_id, user, password)
+
+
+@task
+def swarm_route(swarm_id, user, password):
+    """
+    Find all current procs for the given swarm, and make sure those nodes, and
+    only those nodes, are in the swarm's routing pool, if it has one.
+    """
+    swarm = Swarm.objects.get(id=swarm_id)
     all_procs = swarm.all_procs()
     current_procs = [p for p in all_procs if p.hash == swarm.release.hash]
     stale_procs = [p for p in all_procs if p.hash != swarm.release.hash]
-
-    if len(current_procs) < swarm.size:
-        # get next target host
-        host = swarm.get_next_host()
-        port = host.get_next_port()
-        # deploy new proc to host, and set this function as callback.
-        deploy.delay(swarm.release.id, swarm.release.profile.name, host.name,
-                     swarm.proc_name, port, user, password, callback)
-        return
-    elif len(current_procs) > swarm.size:
-        # We have too many procs in the swarm.  Delete one and call back.
-        # TODO: instead of just deleting the first proc in the list, delete one
-        # 1) from the host with the most procs from this swarm on it, or 2) if
-        # there's a tie, from the host with the most procs on it of any type.
-        p = current_procs[0]
-        delete_proc.delay(p.host.name, p.name, user, password, callback)
-        return
-    elif swarm.pool:
+    if swarm.pool:
         # There's just the right number of procs.  Make sure the balancer is up
         # to date, but only if the swarm has a pool specified.
 
-        # TODO: run uptests on new nodes before routing them.
 
         current_nodes = set(balancer.get_nodes(swarm.squad.balancer,
                                                swarm.pool))
@@ -200,16 +332,23 @@ def unleash_swarm(swarm_id, user, password):
             balancer.delete_nodes(swarm.squad.balancer, swarm.pool,
                                   list(stale_nodes))
 
+    swarm_cleanup.delay(swarm.id, user, password)
 
-    # If there are live procs from our profile using something other than the
-    # current release, they should be deleted.
-    if len(stale_procs):
-        # destroy the first stale proc, and call back
-        p = stale_procs[0]
-        delete_proc.delay(p.host.name, p.name, user, password, callback)
-        return
 
-    logging.info(u"Swarm unleashed: %s" % swarm)
+@task
+def swarm_cleanup(swarm_id, user, password):
+    """
+    Delete any procs in the swarm that aren't from the current release.
+    """
+    swarm = Swarm.objects.get(id=swarm_id)
+    all_procs = swarm.all_procs()
+    current_procs = [p for p in all_procs if p.hash == swarm.release.hash]
+    stale_procs = [p for p in all_procs if p.hash != swarm.release.hash]
+
+    # Only delete old procs if the deploy of the new ones was successful.
+    if stale_procs and len(current_procs) >= swarm.size:
+        for p in stale_procs:
+            delete_proc.delay(p.host.name, p.name, user, password)
 
 
 @contextlib.contextmanager

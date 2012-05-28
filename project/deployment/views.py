@@ -92,6 +92,7 @@ def api_host_proc(request, host, proc):
         user, password = get_creds(request)
         tasks.delete_proc(host, proc, user, password)
         state = {'name': proc, 'deleted': True}
+        # TODO: check for and remove port lock if present
     elif request.method == 'POST':
         action = request.POST.get('action')
         try:
@@ -292,7 +293,7 @@ def edit_swarm(request, swarm_id=None):
 
         swarm.save()
         user, password = get_creds(request)
-        tasks.unleash_swarm.delay(swarm.id, user, password)
+        tasks.swarm_start.delay(swarm.id, user, password)
 
         # TODO redirect to tasks page where you can watch progress.
         return redirect(reverse('edit_swarm', kwargs={'swarm_id':swarm.id}))
@@ -307,8 +308,9 @@ def login(request):
     if form.is_valid():
         # log the person in.
         django_login(request, form.user)
-        # remember b64-encoded creds in session so they can be used for fabric
-        # tasks
+        # remember creds in session so they can be used for fabric tasks
+        # TODO: actually use some encryption on this so an eavesdropper can't
+        # harvest creds.  (Though SSL helps already.)
         request.session['creds'] = base64.b64encode('%(username)s:%(password)s'
                                                     % request.POST)
         # redirect to next or home
