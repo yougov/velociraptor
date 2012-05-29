@@ -227,7 +227,7 @@ def deploy(request):
         job = tasks.deploy.delay(**data)
         logging.info('started job %s' % str(job))
         form.cleaned_data['release'] = str(release)
-        msg = ('deployed %(release)s-%(proc)s-%(port)s to %(host)s' %
+        msg = ('deployed %(release)s-%(proc)s-%(port)s to %(hostname)s' %
                form.cleaned_data)
         remember('deployment', msg, request.user.username)
         return redirect('dash')
