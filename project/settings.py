@@ -215,7 +215,11 @@ SUPERVISORD_WEB_PORT = 9001
 # Allow production to override these settings.
 if os.environ.get('APP_SETTINGS_YAML'):
     import yaml
-    globals().update(yaml.safe_load(open(os.environ['APP_SETTINGS_YAML'])))
+    try:
+        globals().update(yaml.safe_load(open(os.environ['APP_SETTINGS_YAML'])))
+    except IOError:
+        # Allow settings to be imported during build so we can compilestatic
+        pass
 
 
 # Unpack the MONGODB_URL env var to provide the settings that the GridFS
