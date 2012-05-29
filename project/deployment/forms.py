@@ -53,7 +53,7 @@ class DeploymentForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(DeploymentForm, self).__init__(*args, **kwargs)
         self.fields['release_id'].choices = [(r.id, r) for r in models.Release.objects.all()]
-        self.fields['host'].choices = [(h.name, h.name) for h in
+        self.fields['hostname'].choices = [(h.name, h.name) for h in
                                        models.Host.objects.filter(active=True)]
 
 
