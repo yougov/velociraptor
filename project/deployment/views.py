@@ -16,7 +16,7 @@ from celery.result import AsyncResult
 from celery.task.control import inspect
 
 from deployment.models import (Host, App, Release, Build, Profile, Squad,
-                               Swarm, remember)
+                               Swarm, PortLock, remember)
 from deployment import forms
 from deployment import tasks
 

@@ -37,8 +37,8 @@ class tmpdir(object):
 
 class remove_port_lock(object):
     """
-    Context manager for locking a port on a host.  Requires a hostname and port
-    on init.
+    Context manager for removing a port lock on a host.  Requires a hostname
+    and port on init.
     """
 
     # This used just during deployment.  In general the host itself is the
@@ -50,10 +50,14 @@ class remove_port_lock(object):
         self.port = int(port)
 
     def __enter__(self):
-        self.lock = PortLock.objects.get(host=self.host, port=self.port)
+        pass
 
     def __exit__(self, type, value, traceback):
-        self.lock.delete()
+        try:
+            self.lock = PortLock.objects.get(host=self.host, port=self.port)
+            self.lock.delete()
+        except PortLock.DoesNotExist:
+            pass
 
 
 @task
