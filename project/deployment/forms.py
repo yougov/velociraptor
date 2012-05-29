@@ -47,7 +47,7 @@ class DeploymentForm(forms.Form):
     # picked.
     proc = forms.CharField(max_length=50)
 
-    host = forms.ChoiceField(choices=[])
+    hostname = forms.ChoiceField(choices=[])
     port = forms.IntegerField()
 
     def __init__(self, *args, **kwargs):
