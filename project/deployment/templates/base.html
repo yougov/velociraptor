@@ -5,14 +5,14 @@
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>{% block title %}Velociraptor{% endblock title %}</title>
-  <link rel="stylesheet" href="/static/css/bootstrap.css" type="text/css" media="screen">
-  <link rel="stylesheet" href="/static/css/velociraptor.css" type="text/css" media="screen">
+  <link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.css" type="text/css" media="screen">
+  <link rel="stylesheet" href="{{ STATIC_URL }}css/velociraptor.css" type="text/css" media="screen">
   <style>
       body {
         padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
       }
     </style>
-  <link rel="stylesheet" href="/static/css/bootstrap-responsive.css" type="text/css" media="screen">
+  <link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap-responsive.css" type="text/css" media="screen">
   {% block style %}{% endblock style %}  
 </head>
 <body>
@@ -81,13 +81,13 @@
         {% endblock content %}
     </div>
     <!-- Javascript placed at the end of the document so the pages load faster -->
-    <script src="/static/js/jquery.min.js"></script>
-    <script src="/static/js/django-jquery.js"></script>
+    <script src="{{ STATIC_URL }}js/jquery.min.js"></script>
+    <script src="{{ STATIC_URL }}js/django-jquery.js"></script>
     {# I like underscore's more terse 'each' function #}
-    <script src="/static/js/underscore-min.js"></script>
-    <script src="/static/js/backbone.js"></script>
-    <script src="/static/js/goatee.js"></script>
-    <script src="/static/js/bootstrap.js"></script>
+    <script src="{{ STATIC_URL }}js/underscore-min.js"></script>
+    <script src="{{ STATIC_URL }}js/backbone.js"></script>
+    <script src="{{ STATIC_URL }}js/goatee.js"></script>
+    <script src="{{ STATIC_URL }}js/bootstrap.js"></script>
     {% block script %}{% endblock script %}
 </body>
 </html>
