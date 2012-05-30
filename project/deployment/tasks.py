@@ -67,6 +67,9 @@ def deploy(release_id, profile_name, hostname, proc, port, user, password):
     with remove_port_lock(hostname, port):
         release = Release.objects.get(id=release_id)
 
+        assert release.build.file, "Build %s has no file" % release.build
+        assert release.hash, "Release %s has not been hashed" % release
+
         # Set up env for Fabric
         env.host_string = hostname
         env.abort_on_prompts = True
@@ -175,6 +178,10 @@ def swarm_release(swarm_id, user, password):
     """
     swarm = Swarm.objects.get(id=swarm_id)
     build = swarm.release.build
+
+    # Bail out if the build doesn't have a file
+    assert build.file, "Build %s has no file" % build
+
     # IF the release hasn't been frozen yet, then it was probably waiting on a
     # build being done.  Freeze it now.
     if not swarm.release.hash:
@@ -302,8 +309,9 @@ def swarm_delete_proc(swarm_id, hostname, procname, port, user, password):
 @task
 def swarm_post_deploy(deploy_results, swarm_id, user, password):
     # if the deploys were successful, do routing.
-    # TODO: check the results and only go ahead with routing if the deploys
-    # were successful.
+    if any(isinstance(r, Exception) for r in deploy_results):
+        assert False, "Error in deployment. Refusing to route."
+
     swarm_route(swarm_id, user, password)
 
 

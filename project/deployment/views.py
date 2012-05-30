@@ -308,7 +308,7 @@ def edit_swarm(request, swarm_id=None):
         tasks.swarm_start.delay(swarm.id, user, password)
 
         # TODO redirect to tasks page where you can watch progress.
-        return redirect(reverse('edit_swarm', kwargs={'swarm_id':swarm.id}))
+        return redirect('dash')
 
     # If we're here, and 
     btn_text = 'Swarm'
