@@ -52,16 +52,7 @@ Dash.Utilities = {
         _.each(['RUNNING', 'STOPPED', 'FATAL', 'BACKOFF', 'STARTING'], function(el, idx, lst) {
             proc.removeClass('status-' + el);
         });
-    },
-
-    onActionResponse: function(data, txtStatus, xhr) {
-        // find the proc
-        // update its class so it changes colors
-        var proc = $('#' + Dash.Utilities.createID(data.host, data.name));
-        Dash.Utilities.clearStatus(proc);
-        proc.addClass('status-' + data.statename);
     }
-
 }; // end Utilities
 
 /////////////////// Dash Models  /////////////////// 
@@ -138,6 +129,14 @@ Dash.Procs = {
         }
     },
 
+    onActionResponse: function(data, txtStatus, xhr) {
+        // find the proc
+        // update its class so it changes colors
+        var proc = $('#' + Dash.Utilities.createID(data.host, data.name));
+        Dash.Utilities.clearStatus(proc);
+        proc.addClass('status-' + data.statename);
+    },
+
     onExpandCollapseClick: function() {
         var action = $(this).attr('rel');
         if (action === 'expand') {
@@ -180,8 +179,9 @@ Dash.Procs = {
             method = 'POST';
         }
         if (callback === undefined) {
-            callback = this.onActionResponse;
+            callback = Dash.Procs.onActionResponse;
         }
+        
 
         var url = '/api/hosts/' + host + '/procs/' + proc + '/';
         data = {host:host,proc:proc,action:action};
