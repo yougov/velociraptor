@@ -307,7 +307,6 @@ def edit_swarm(request, swarm_id=None):
         user, password = get_creds(request)
         tasks.swarm_start.delay(swarm.id, user, password)
 
-        # TODO redirect to tasks page where you can watch progress.
         return redirect('dash')
 
     # If we're here, and 
