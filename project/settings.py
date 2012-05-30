@@ -58,8 +58,8 @@ BROKER_PASSWORD = "guest"
 BROKER_VHOST = "/"
 
 SUPERVISOR_PORT = 9001
-PORT_RANGE_START = 6000
-PORT_RANGE_END = 7000
+PORT_RANGE_START = 5000
+PORT_RANGE_END = 6000
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name

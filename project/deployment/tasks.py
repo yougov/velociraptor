@@ -5,6 +5,7 @@ import shutil
 import posixpath
 import datetime
 import contextlib
+import re
 from collections import defaultdict
 
 import fabric.network
@@ -95,8 +96,6 @@ def deploy(release_id, profile_name, hostname, proc, port, user, password):
                 result = deploy_parcel(build_name, 'settings.yaml', profile_name,
                     proc, port, 'nobody', release.hash)
 
-        #return result
-
 
 @task
 def build_hg(build_id, callback=None):
@@ -113,6 +112,10 @@ def build_hg(build_id, callback=None):
             # Save the file to Mongo GridFS
             localfile = open(build_path, 'r')
             name = posixpath.basename(build_path)
+
+            # the name that comes out will start with whatever the last
+            # component in the hg repo url is.  We'd rather use the app name.
+            name = re.sub('^[^-]*', app.name, name)
             filepath = 'builds/' + name
             default_storage.save(filepath, localfile)
             localfile.close()
