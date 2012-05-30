@@ -47,26 +47,26 @@ div.label {
 }
 
 /* styles for the process lists on the homepage dashboard */
-.host-procs-list {
+.proc-list {
   list-style: none;
   margin-left: 0;
 }
 
-.host-status {
+.proc-status {
   margin: 5px;
   padding: 3px 0 0;
   width: 100px;
 }
 
-.host-status .label {
+.proc-status .label {
   overflow: hidden;
 }
 
-.host-status .host-more {
+.proc-status .host-more {
   display: none;
 }
 
-.host-status .longname {
+.proc-status .longname {
   display: none;
 }
 
@@ -98,10 +98,10 @@ div.label {
   min-height: 72px;
 }
 
-.host-actions {
+.proc-actions {
   margin-top: 3px;
 }
-.host-actions span.links {
+.proc-actions span.links {
     float: right;
 }
 

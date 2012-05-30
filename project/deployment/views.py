@@ -111,6 +111,25 @@ def api_host_proc(request, host, proc):
     return json_response(state)
 
 
+def get_task_status(task_id):
+    """
+    Given a task ID, return a dictionary with status information.
+    """
+    task = AsyncResult(task_id)
+    status = {
+        'successful': task.successful(),
+        'result': str(task.result), # task.result can be any picklable python object.
+        'status': task.status,
+        'ready': task.ready(),
+        'failed': task.failed(),
+        #'name': task.task_name, # this always seems to be empty
+    }
+
+    if task.failed():
+        status['traceback'] = task.traceback
+    return status
+
+
 @login_required
 def api_task_active(request):
     # Make a list of jobs, each one a dict with a desc and an id.
@@ -120,40 +139,28 @@ def api_task_active(request):
         for hostname, tasklist in active.items():
             # data will be formatted like
             # http://ask.github.com/celery/userguide/workers.html#dump-of-currently-executing-tasks
-
-            # XXX This is kinda ugly.  Think of a better way to get this data out
-            # in a nice format for the JS to display
             for task in tasklist:
+                args = ast.literal_eval(task['args'])
                 kwargs = ast.literal_eval(task['kwargs'])
-                if task['name'] == "deployment.tasks.build_hg":
-                    build = Build.objects.get(id=int(kwargs['build_id']))
-                    app = build.app
-                    desc = 'hg build of ' + app.name
-                    out.append({'id': task['id'], 'desc': desc})
-                elif task['name'] == 'deployment.tasks.deploy':
-                    release = Release.objects.get(id=int(kwargs['release_id']))
-                    kwargs['appname'] = release.build.app.name
-                    desc = '%(appname)s deploy to %(host)s:%(port)s' % kwargs
-                    out.append({'id': task['id'], 'desc': desc})
+                # Make sure password doesn't go back to the frontend.
+                kwargs.pop('password', None)
+
+                data = {'id': task['id'],
+                            'name': task['name'],
+                            'args': args,
+                            'kwargs': kwargs,
+                            'hostname': hostname,
+                           }
+                data.update(get_task_status(task['id']))
+                out.append(data)
 
     return json_response({'tasks': out})
 
 
 @login_required
 def api_task_status(request, task_id):
-    task = AsyncResult(task_id)
-    status = {
-        'successful': task.successful(),
-        'result': str(task.result), # task.result can be any picklable python object.
-        'status': task.status,
-        'ready': task.ready(),
-        'failed': task.failed(),
-        #'name': task.task_name, # this always seems to be empty
-        'id': task.task_id
-    }
-
-    if task.failed():
-        status['traceback'] = task.traceback
+    status = get_task_status(task_id)
+    status['id'] = task_id
 
     return json_response(status)
 
@@ -165,7 +172,7 @@ def build_hg(request):
         app = App.objects.get(id=form.cleaned_data['app_id'])
         build = Build(app=app, tag=form.cleaned_data['tag'])
         build.save()
-        tasks.build_hg.delay(build.id)
+        tasks.build_hg.delay(build_id=build.id)
         remember('build', 'built %s-%s' % (app.name, build.tag),
                 request.user.username)
         return redirect('dash')
@@ -219,12 +226,17 @@ def deploy(request):
     if form.is_valid():
         # We made the form fields exactly match the arguments to the celery
         # task, so we can just use that dict for kwargs
-        data = copy.copy(form.cleaned_data)
-        data['user'], data['password'] = get_creds(request)
+        data = form.cleaned_data
+        user, password = get_creds(request)
 
-        release = Release.objects.get(id=form.cleaned_data['release_id'])
-        data['profile_name'] = release.profile.name
-        job = tasks.deploy.delay(**data)
+        release = Release.objects.get(id=data['release_id'])
+        job = tasks.deploy.delay(release_id=data['release_id'],
+                                 profile_name=release.profile.name,
+                                 hostname=data['hostname'],
+                                 proc=data['proc'],
+                                 port=data['port'],
+                                 user=user,
+                                 password=password,)
         logging.info('started job %s' % str(job))
         form.cleaned_data['release'] = str(release)
         msg = ('deployed %(release)s-%(proc)s-%(port)s to %(hostname)s' %

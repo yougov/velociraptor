@@ -56,7 +56,7 @@
 {# Goatee template for list of processes inside each host block #}
 <script id="host-procs-tmpl" type="text/goatee">
   <%#states%>
-  <div id="<%procid%>" class="host-status status-<%statename%> host-<%hostclass%> app-<%appclass%>" data-host="<%host%>" data-proc="<%name%>">
+  <div id="<%procid%>" class="proc-status status-<%statename%> host-<%hostclass%> app-<%appclass%>" data-host="<%host%>" data-proc="<%name%>">
     <div class="label <%statename%>">
       <span class="shortname"><%shortname%></span>
       <span class="longname"><%name%></span>
@@ -64,7 +64,7 @@
     <div class="host-more">
       <%host%><br />
       <%description%>
-      <div class="host-actions">
+      <div class="proc-actions">
         <a class="btn btn-mini start" href="#" rel="start">Start</a>
         <a class="btn btn-mini stop" href="#" rel="stop">Stop</a>
         <%#destroyable%><a class="btn btn-mini destroy" href="#" rel="destroy">Destroy</a><%/destroyable%>
@@ -83,20 +83,13 @@
 <script id="tasks-tmpl" type="text/goatee">
   <h1>Current Tasks</h1>
   <div class="tasks-list">
-  </div>
-</script>
-<!-- failed: false
-        id: "e93aec06-9280-44bb-8cc8-94a847765424"
-        ready: false
-        result: "None"
-        status: "PENDING"
-        successful: false -->
-<script id="tasks-partial" type="text/goatee">
-  <div class="task-status status-<%data.status%> <% data.id %>" data-proc="<%name%>">
-    <div class="label <%name%>">
-      <span><%name%></span>
-    </div>
-
+    <%#tasks%>
+      <div class="task-status status-<%status%> <%id%>" data-proc="<%name%>">
+        <div class="label <%name%>">
+          <span><%name%></span>
+        </div>
+      </div>
+    <%/tasks%>
   </div>
 </script>
 

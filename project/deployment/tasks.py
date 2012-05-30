@@ -155,10 +155,11 @@ def swarm_start(swarm_id, user, password):
     # build it, then call next step.
     build = swarm.release.build
     if build.file.name:
-        swarm_release.delay(swarm_id, user, password)
+        swarm_release.delay(swarm_id=swarm_id, user=user, password=password)
     else:
-        callback = swarm_release.subtask((swarm.id, user, password))
-        build_hg.delay(build.id, callback)
+        callback = swarm_release.subtask(kwargs={'swarm_id': swarm.id, 'user':
+                                                 user, 'password': password})
+        build_hg.delay(build_id=build.id, callback=callback)
 
 
 # This task should only be used as a callback after swarm_start
@@ -336,7 +337,7 @@ def swarm_route(swarm_id, user, password):
             balancer.delete_nodes(swarm.squad.balancer, swarm.pool,
                                   list(stale_nodes))
 
-    swarm_cleanup.delay(swarm.id, user, password)
+    swarm_cleanup.delay(swarm_id=swarm.id, user=user, password=password)
 
 
 @task
