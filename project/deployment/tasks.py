@@ -16,7 +16,8 @@ from django.core.files.storage import default_storage
 from deployment.models import Release, Build, Swarm, Host, PortLock
 from deployment import balancer
 
-from yg.deploy.fabric.system import deploy_parcel, delete_proc as fab_delete_proc
+from yg.deploy.fabric.system import (deploy_parcel, run_uptests, delete_proc as
+                                     fab_delete_proc)
 from yg.deploy.paver import build as paver_build
 
 
@@ -289,8 +290,14 @@ def swarm_deploy_to_host(swarm_id, host_id, ports, user, password):
             password,
         )
 
-    # XXX This would be a good place to do uptests.
-
+    # Do uptests for each proc on host.
+    env.host_string = host.name
+    env.abort_on_prompts = True
+    env.user=user
+    env.password=password
+    for port in ports:
+        procname = "%s-%s-%s" % (swarm.release, swarm.proc_name, port)
+        run_uptests(procname)
 
 
 @task
