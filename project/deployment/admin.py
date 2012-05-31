@@ -3,9 +3,11 @@ from django.contrib.auth.models import Group
 
 from deployment import models
 
-# Register admin interfaces for our models.  This will be read during the
-# admin.autodiscover() call in the project's urls.py
-admin.site.register(models.ConfigValue)
+class ConfigValueAdmin(admin.ModelAdmin):
+    model = models.ConfigValue
+    search_fields = ['label', 'value']
+
+admin.site.register(models.ConfigValue, ConfigValueAdmin)
 
 class ProfileConfigInline(admin.TabularInline):
     model = models.ProfileConfig
