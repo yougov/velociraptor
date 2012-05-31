@@ -140,8 +140,14 @@ def api_task_active(request):
             # data will be formatted like
             # http://ask.github.com/celery/userguide/workers.html#dump-of-currently-executing-tasks
             for task in tasklist:
-                args = ast.literal_eval(task['args'])
-                kwargs = ast.literal_eval(task['kwargs'])
+                try:
+                    args = ast.literal_eval(task['args'])
+                except ValueError:
+                    args = []
+                try:
+                    kwargs = ast.literal_eval(task['kwargs'])
+                except ValueError:
+                    kwargs = {}
                 # Make sure password doesn't go back to the frontend.
                 kwargs.pop('password', None)
 
