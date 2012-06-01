@@ -125,16 +125,12 @@ class Build(models.Model):
     class Meta:
         ordering = ['-id']
 
-from django.db import IntegrityError
 
 class Release(models.Model):
     profile = models.ForeignKey(Profile)
     build = models.ForeignKey(Build)
     config = models.TextField(blank=True, null=True)
 
-    # XXX Should we set a uniqueness constraint on the hash?  If we had that,
-    # we could take any proc name from supervisord and look up the exact build
-    # and config used for it.
     # Hash will be computed on saving the model.
     hash = models.CharField(max_length=32, blank=True, null=True)
 
@@ -150,7 +146,7 @@ class Release(models.Model):
         return md5chars[:8]
 
     def save(self, *args, **kwargs):
-        # If there's not a hash, and there *is* a build, then compute the hash
+        # If there's a build, then compute the hash
         if self.build.file.name:
             self.hash = self.compute_hash()
         super(Release, self).save(*args, **kwargs)
