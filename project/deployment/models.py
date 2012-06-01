@@ -62,20 +62,6 @@ class App(models.Model):
         return self.name
 
 
-def rename_keys(source, translations):
-    """
-    Return a copy of dictionary 'source' where any keys also present in
-    'translations' have been renamed according to that mapping.
-
-    >>> rename_keys(dict(a=1,b=2), dict(a='c')) == dict(c=1, b=2)
-    True
-    """
-    return {
-        translations.get(key, key): source[key]
-        for key in source
-    }
-
-
 class Profile(models.Model):
     app = models.ForeignKey(App)
     namehelp = ("Used in release name.  Good profile names are short and use "
@@ -89,8 +75,7 @@ class Profile(models.Model):
     def assemble(self):
         out = {}
         for r in ProfileConfig.objects.filter(profile=self):
-            translations = r.translations or {}
-            out.update(rename_keys(r.configvalue.value, translations))
+            out.update(r.configvalue.value)
         return out
 
     def to_yaml(self):
@@ -110,9 +95,6 @@ class ProfileConfig(models.Model):
 
     ohelp = 'Order for merging when creating release. Higher number takes precedence.'
     order = models.IntegerField(blank=True, null=True,  help_text=ohelp)
-
-    thelp = 'Map for renaming configvalue keys to be more app-friendly'
-    translations = YAMLDictField(blank=True, null=True, help_text=thelp)
 
     class Meta:
         unique_together = ('configvalue', 'profile')

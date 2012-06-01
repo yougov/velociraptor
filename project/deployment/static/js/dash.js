@@ -81,7 +81,7 @@ Dash.Procs = {
                   el.hostclass = Dash.Utilities.cleanName(data.host);
                   el.appclass = el.name.split('-')[0];
                   el.destroyable = Dash.Utilities.procIsOurs(el.name); 
-                  el.shortname = el.name.split('-')[0].split('_')[0];
+                  el.shortname = el.name.split('-')[0];
                   // each proc gets a unique id of host + procname, with illegal
                   // chars stripped out.
                   el.procid = Dash.Utilities.createID(el.host, el.name);
