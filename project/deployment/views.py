@@ -2,11 +2,10 @@ import json
 import ast
 import xmlrpclib
 import base64
-import copy
 import collections
 import logging
 
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.contrib.auth import login as django_login, logout as django_logout
@@ -16,7 +15,7 @@ from celery.result import AsyncResult
 from celery.task.control import inspect
 
 from deployment.models import (Host, App, Release, Build, Profile, Squad,
-                               Swarm, PortLock, remember)
+                               Swarm, remember)
 from deployment import forms
 from deployment import tasks
 
