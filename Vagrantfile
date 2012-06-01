@@ -33,16 +33,16 @@ Vagrant::Config.run do |config|
     config.vm.forward_port 8000, 8000
 
     # Ports for auto-deployed procs
-    config.vm.forward_port 6000, 6000
-    config.vm.forward_port 6001, 6001
-    config.vm.forward_port 6002, 6002
-    config.vm.forward_port 6003, 6003
-    config.vm.forward_port 6004, 6004
-    config.vm.forward_port 6005, 6005
-    config.vm.forward_port 6006, 6006
-    config.vm.forward_port 6007, 6007
-    config.vm.forward_port 6008, 6008
-    config.vm.forward_port 6009, 6009
+    config.vm.forward_port 5000, 5000
+    config.vm.forward_port 5001, 5001
+    config.vm.forward_port 5002, 5002
+    config.vm.forward_port 5003, 5003
+    config.vm.forward_port 5004, 5004
+    config.vm.forward_port 5005, 5005
+    config.vm.forward_port 5006, 5006
+    config.vm.forward_port 5007, 5007
+    config.vm.forward_port 5008, 5008
+    config.vm.forward_port 5009, 5009
 
     # The supervisord web interface
     config.vm.forward_port 9001, 9001
