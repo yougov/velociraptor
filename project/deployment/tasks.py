@@ -21,47 +21,6 @@ from yg.deploy.fabric.system import (deploy_parcel, run_uptests, delete_proc as
 from yg.deploy.paver import build as paver_build
 
 
-class tmpdir(object):
-    """Context manager for putting you into a temporary directory on enter
-    and deleting the directory on exit
-    """
-    def __init__(self):
-        self.orig_path = os.getcwd()
-
-    def __enter__(self):
-        self.temp_path = tempfile.mkdtemp()
-        os.chdir(self.temp_path)
-
-    def __exit__(self, type, value, traceback):
-        os.chdir(self.orig_path)
-        shutil.rmtree(self.temp_path, ignore_errors=True)
-
-
-class remove_port_lock(object):
-    """
-    Context manager for removing a port lock on a host.  Requires a hostname
-    and port on init.
-    """
-
-    # This used just during deployment.  In general the host itself is the
-    # source of truth about what ports are in use. But when deployments are
-    # still in flight, port locks are necessary to prevent collisions.
-
-    def __init__(self, hostname, port):
-        self.host = Host.objects.get(name=hostname)
-        self.port = int(port)
-
-    def __enter__(self):
-        pass
-
-    def __exit__(self, type, value, traceback):
-        try:
-            self.lock = PortLock.objects.get(host=self.host, port=self.port)
-            self.lock.delete()
-        except PortLock.DoesNotExist:
-            pass
-
-
 @task
 def deploy(release_id, profile_name, hostname, proc, port, user, password):
 
@@ -452,3 +411,44 @@ def always_disconnect():
         yield
     finally:
         fabric.network.disconnect_all()
+
+
+class tmpdir(object):
+    """Context manager for putting you into a temporary directory on enter
+    and deleting the directory on exit
+    """
+    def __init__(self):
+        self.orig_path = os.getcwd()
+
+    def __enter__(self):
+        self.temp_path = tempfile.mkdtemp()
+        os.chdir(self.temp_path)
+
+    def __exit__(self, type, value, traceback):
+        os.chdir(self.orig_path)
+        shutil.rmtree(self.temp_path, ignore_errors=True)
+
+
+class remove_port_lock(object):
+    """
+    Context manager for removing a port lock on a host.  Requires a hostname
+    and port on init.
+    """
+
+    # This used just during deployment.  In general the host itself is the
+    # source of truth about what ports are in use. But when deployments are
+    # still in flight, port locks are necessary to prevent collisions.
+
+    def __init__(self, hostname, port):
+        self.host = Host.objects.get(name=hostname)
+        self.port = int(port)
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, type, value, traceback):
+        try:
+            self.lock = PortLock.objects.get(host=self.host, port=self.port)
+            self.lock.delete()
+        except PortLock.DoesNotExist:
+            pass
