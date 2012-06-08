@@ -12,6 +12,7 @@ import fabric.network
 from celery.task import subtask, chord, task
 from fabric.api import env
 from django.core.files.storage import default_storage
+from django.conf import settings
 
 from deployment.models import Release, Build, Swarm, Host, PortLock
 from deployment import balancer
@@ -22,7 +23,7 @@ from yg.deploy.paver import build as paver_build
 
 
 @task
-def deploy(release_id, profile_name, hostname, proc, port, user, password):
+def deploy(release_id, profile_name, hostname, proc, port):
 
     with remove_port_lock(hostname, port):
         release = Release.objects.get(id=release_id)
@@ -34,12 +35,12 @@ def deploy(release_id, profile_name, hostname, proc, port, user, password):
         env.host_string = hostname
         env.abort_on_prompts = True
         env.task = deploy
-        env.user=user
-        env.password=password
+        env.user=settings.DEPLOY_USER
+        env.password=settings.DEPLOY_PASSWORD
 
         deploy.update_state(state='PROGRESS', meta='Started')
-        logging.info('%s deploying %s:%s to %s:%s' % (user, release, proc,
-                                                      hostname, port))
+        logging.info('deploying %s:%s to %s:%s' % (release, proc, hostname,
+                                                   port))
 
         with tmpdir():
             f = open('settings.yaml', 'wb')
@@ -96,12 +97,12 @@ def build_hg(build_id, callback=None):
 
 
 @task
-def delete_proc(host, proc, user, password, callback=None):
+def delete_proc(host, proc, callback=None):
     env.host_string = host
     env.abort_on_prompts = True
-    env.user=user
-    env.password=password
-    logging.info('%s deleting %s on %s' % (user, proc, host))
+    env.user=settings.DEPLOY_USER
+    env.password=settings.DEPLOY_PASSWORD
+    logging.info('deleting %s on %s' % (proc, host))
     with always_disconnect():
         fab_delete_proc(proc)
 
@@ -110,10 +111,10 @@ def delete_proc(host, proc, user, password, callback=None):
 
 
 @task
-def swarm_start(swarm_id, user, password):
+def swarm_start(swarm_id):
     """
-    Given a swarm_id, username, and password, kick off the chain of tasks
-    necessary to get this swarm deployed.
+    Given a swarm_id, kick off the chain of tasks necessary to get this swarm
+    deployed.
     """
     swarm = Swarm.objects.get(id=swarm_id)
 
@@ -121,15 +122,15 @@ def swarm_start(swarm_id, user, password):
     # build it, then call next step.
     build = swarm.release.build
     if build.file.name:
-        swarm_release.delay(swarm_id, user, password)
+        swarm_release.delay(swarm_id)
     else:
-        callback = swarm_release.subtask((swarm.id, user, password))
+        callback = swarm_release.subtask((swarm.id))
         build_hg.delay(build.id, callback)
 
 
 # This task should only be used as a callback after swarm_start
 @task
-def swarm_release(swarm_id, user, password):
+def swarm_release(swarm_id):
     """
     Assuming the swarm's build is complete, this task will ensure there's a
     release with that build + current config, and call subtasks to make sure
@@ -168,7 +169,7 @@ def swarm_release(swarm_id, user, password):
     procs_needed = swarm.size - len(current_procs)
 
     # set uptest task as chord callback
-    callback = swarm_post_deploy.subtask((swarm.id, user, password))
+    callback = swarm_post_deploy.subtask((swarm.id,))
 
     if procs_needed > 0:
         hosts = swarm.get_prioritized_hosts()
@@ -196,8 +197,6 @@ def swarm_release(swarm_id, user, password):
                         swarm.id,
                         host.id,
                         new_procs_by_host[host.name],
-                        user,
-                        password,
                     ))
                 )
         chord(subtasks)(callback)
@@ -214,18 +213,17 @@ def swarm_release(swarm_id, user, password):
             host = hosts[x % hostcount]
             proc = host.swarm_procs.pop()
             subtasks.append(
-                swarm_delete_proc.subtask((
-                    swarm.id, host.name, proc.name, proc.port, user, password,
-                ))
+                swarm_delete_proc.subtask((swarm.id, host.name, proc.name,
+                                           proc.port))
             )
         chord(subtasks)(callback)
     else:
         # We have just the right number of procs.  Uptest and route them.
-        swarm_assign_uptests(swarm.id, user, password)
+        swarm_assign_uptests(swarm.id)
 
 
 @task
-def swarm_deploy_to_host(swarm_id, host_id, ports, user, password):
+def swarm_deploy_to_host(swarm_id, host_id, ports):
     """
     Given a swarm, a host, and a list of ports, deploy the swarm's current
     release to the host, one instance for each port.
@@ -244,8 +242,6 @@ def swarm_deploy_to_host(swarm_id, host_id, ports, user, password):
             host.name,
             swarm.proc_name,
             port,
-            user,
-            password,
         )
 
     procnames = ["%s-%s-%s" % (swarm.release, swarm.proc_name, port) for port
@@ -255,7 +251,7 @@ def swarm_deploy_to_host(swarm_id, host_id, ports, user, password):
 
 
 @task
-def swarm_post_deploy(deploy_results, swarm_id, user, password):
+def swarm_post_deploy(deploy_results, swarm_id):
     """
     Chord callback run after deployments.  Should check for exceptions, then
     launch uptests.
@@ -263,11 +259,11 @@ def swarm_post_deploy(deploy_results, swarm_id, user, password):
     if any(isinstance(r, Exception) for r in deploy_results):
         assert False, "Error in deployment."
 
-    swarm_assign_uptests(swarm_id, user, password)
+    swarm_assign_uptests(swarm_id)
 
 
 @task
-def swarm_assign_uptests(swarm_id, user, password):
+def swarm_assign_uptests(swarm_id):
     swarm = Swarm.objects.get(id=swarm_id)
     all_procs = swarm.all_procs()
     current_procs = [p for p in all_procs if p.hash == swarm.release.hash]
@@ -285,22 +281,20 @@ def swarm_assign_uptests(swarm_id, user, password):
             swarm_uptest_host.subtask((
                 hostname,
                 procs,
-                user,
-                password,
             ))
         )
 
-    callback = swarm_post_uptest.subtask((swarm_id, user, password))
+    callback = swarm_post_uptest.subtask((swarm_id,))
     chord(subtasks)(callback)
 
 
 @task
-def swarm_uptest_host(hostname, procs, user, password):
+def swarm_uptest_host(hostname, procs):
     # Do uptests for each proc on host.
     env.host_string = hostname
     env.abort_on_prompts = True
-    env.user=user
-    env.password=password
+    env.user=settings.DEPLOY_USER
+    env.password=settings.DEPLOY_PASSWORD
     for proc in procs:
         run_uptests(proc)
 
@@ -308,7 +302,7 @@ def swarm_uptest_host(hostname, procs, user, password):
 
 
 @task
-def swarm_post_uptest(uptest_results, swarm_id, user, password):
+def swarm_post_uptest(uptest_results, swarm_id):
     """
     Chord callback that runs after uptests have completed.  Checks that they
     were successful, and then calls routing function.
@@ -323,12 +317,12 @@ def swarm_post_uptest(uptest_results, swarm_id, user, password):
         for procname in procnames:
             correct_nodes.add('%s:%s' % (host, procname.split('-')[-1]))
 
-    callback = swarm_cleanup.subtask((swarm_id, user, password))
-    swarm_route(swarm_id, list(correct_nodes), user, password, callback)
+    callback = swarm_cleanup.subtask((swarm_id,))
+    swarm_route(swarm_id, list(correct_nodes), callback)
 
 
 @task
-def swarm_route(swarm_id, correct_nodes, user, password, callback=None):
+def swarm_route(swarm_id, correct_nodes, callback=None):
     """
     Given a list of nodes for the current swarm, make sure those nodes and
     only those nodes are in the swarm's routing pool, if it has one.
@@ -371,7 +365,7 @@ def swarm_route(swarm_id, correct_nodes, user, password, callback=None):
 
 
 @task
-def swarm_cleanup(swarm_id, user, password):
+def swarm_cleanup(swarm_id):
     """
     Delete any procs in the swarm that aren't from the current release.
     """
@@ -383,11 +377,11 @@ def swarm_cleanup(swarm_id, user, password):
     # Only delete old procs if the deploy of the new ones was successful.
     if stale_procs and len(current_procs) >= swarm.size:
         for p in stale_procs:
-            delete_proc.delay(p.host.name, p.name, user, password)
+            delete_proc.delay(p.host.name, p.name)
 
 
 @task
-def swarm_delete_proc(swarm_id, hostname, procname, port, user, password):
+def swarm_delete_proc(swarm_id, hostname, procname, port):
     # wrap the regular delete_proc, but first ensure the proc is removed from
     # the routing pool.  This is done on a per-proc basis because sometimes
     # it's called when deleting old procs, and other times it's called when we
@@ -399,7 +393,7 @@ def swarm_delete_proc(swarm_id, hostname, procname, port, user, password):
         if node in balancer.get_nodes(swarm.squad.balancer, swarm.pool):
             balancer.delete_nodes(swarm.squad.balancer, swarm.pool, [node])
 
-    delete_proc(hostname, procname, user, password)
+    delete_proc(hostname, procname)
 
 
 @contextlib.contextmanager

@@ -67,18 +67,6 @@ def api_host_ports(request, hostname):
     })
 
 
-def get_creds(request):
-    """
-    Given a request made by a logged-in user, pull off the username/password
-    that we saved in the session so they can be used to do some action on the
-    user's behalf.  Return a tuple of username, password.
-    """
-    username, password = base64.b64decode(
-        request.session['creds']).split(':')
-    Credential = collections.namedtuple('Credential', 'username password')
-    return Credential(username, password)
-
-
 @login_required
 def api_host_proc(request, host, proc):
     """Display status of a single supervisord-managed process on a host, in JSON"""
@@ -88,8 +76,7 @@ def api_host_proc(request, host, proc):
     elif request.method == 'DELETE':
         # Do proc deletions syncronously instead of with Celery, since they're
         # fast and we want instant feedback.
-        user, password = get_creds(request)
-        tasks.delete_proc(host, proc, user, password)
+        tasks.delete_proc(host, proc)
         state = {'name': proc, 'deleted': True}
         # TODO: check for and remove port lock if present
     elif request.method == 'POST':
@@ -232,16 +219,13 @@ def deploy(request):
         # We made the form fields exactly match the arguments to the celery
         # task, so we can just use that dict for kwargs
         data = form.cleaned_data
-        user, password = get_creds(request)
 
         release = Release.objects.get(id=data['release_id'])
         job = tasks.deploy.delay(release_id=data['release_id'],
                                  profile_name=release.profile.name,
                                  hostname=data['hostname'],
                                  proc=data['proc'],
-                                 port=data['port'],
-                                 user=user,
-                                 password=password,)
+                                 port=data['port'])
         logging.info('started job %s' % str(job))
         form.cleaned_data['release'] = str(release)
         msg = ('deployed %(release)s-%(proc)s-%(port)s to %(hostname)s' %
@@ -309,8 +293,7 @@ def edit_swarm(request, swarm_id=None):
         swarm.release = get_or_create_release(swarm.profile, data['tag'])
 
         swarm.save()
-        user, password = get_creds(request)
-        tasks.swarm_start.delay(swarm.id, user, password)
+        tasks.swarm_start.delay(swarm.id)
 
         return redirect('dash')
 
@@ -324,11 +307,6 @@ def login(request):
     if form.is_valid():
         # log the person in.
         django_login(request, form.user)
-        # remember creds in session so they can be used for fabric tasks
-        # TODO: actually use some encryption on this so an eavesdropper can't
-        # harvest creds.  (Though SSL helps already.)
-        request.session['creds'] = base64.b64encode('%(username)s:%(password)s'
-                                                    % request.POST)
         # redirect to next or home
         return HttpResponseRedirect(request.GET.get('next', '/'))
     hide_nav = True

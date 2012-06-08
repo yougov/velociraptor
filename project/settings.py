@@ -43,6 +43,11 @@ BALANCERS = {
     }
 }
 
+# Username and password to be used when SSHing to hosts.  Set to
+# 'vagrant/vagrant' by default for ease of development within a Vagrant VM.
+DEPLOY_USER = 'vagrant'
+DEPLOY_PASSWORD = 'vagrant'
+
 # Suppress warnings when we pass a URI to MongoDB that includes the
 #  database name.
 warnings.filterwarnings('ignore', category=UserWarning,
