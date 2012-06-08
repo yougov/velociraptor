@@ -124,7 +124,7 @@ def swarm_start(swarm_id):
     if build.file.name:
         swarm_release.delay(swarm_id)
     else:
-        callback = swarm_release.subtask((swarm.id))
+        callback = swarm_release.subtask((swarm.id,))
         build_hg.delay(build.id, callback)
 
 
