@@ -1,8 +1,6 @@
 import json
 import ast
 import xmlrpclib
-import base64
-import collections
 import logging
 
 from django.shortcuts import render, redirect
@@ -116,37 +114,31 @@ def get_task_status(task_id):
     return status
 
 
+from djcelery.models import TaskState
+
+def task_to_dict(task):
+    """
+    Given a Celery TaskState instance, return a JSONable dict with its
+    information.
+    """
+    # Make a copy of task.__dict__, leaving off any of the cached complex
+    # objects
+    out = {x:getattr(task, x) for x in task.__dict__ if not x.startswith('_')}
+    out['tstamp'] = task.tstamp.isoformat()
+    # Deserialize the arguments passed to the task, so the frontend can work
+    # with them more easily.
+    out['args'] = ast.literal_eval(task.args)
+    out['kwargs'] = ast.literal_eval(task.kwargs)
+    return out
+
+
 @login_required
 def api_task_active(request):
-    # Make a list of jobs, each one a dict with a desc and an id.
-    out = []
-    active = inspect().active()
-    if active:
-        for hostname, tasklist in active.items():
-            # data will be formatted like
-            # http://ask.github.com/celery/userguide/workers.html#dump-of-currently-executing-tasks
-            for task in tasklist:
-                try:
-                    args = ast.literal_eval(task['args'])
-                except ValueError:
-                    args = []
-                try:
-                    kwargs = ast.literal_eval(task['kwargs'])
-                except ValueError:
-                    kwargs = {}
-                # Make sure password doesn't go back to the frontend.
-                kwargs.pop('password', None)
 
-                data = {'id': task['id'],
-                            'name': task['name'],
-                            'args': args,
-                            'kwargs': kwargs,
-                            'hostname': hostname,
-                           }
-                data.update(get_task_status(task['id']))
-                out.append(data)
+    count = int(request.GET.get('count')) or 20
+    tasks = TaskState.objects.all()[:count]
 
-    return json_response({'tasks': out})
+    return json_response({'tasks': [task_to_dict(t) for t in tasks]})
 
 
 @login_required
