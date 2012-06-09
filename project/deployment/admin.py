@@ -5,15 +5,15 @@ from deployment import models
 
 class ConfigValueAdmin(admin.ModelAdmin):
     model = models.ConfigValue
-    search_fields = ['label', 'value']
 
 admin.site.register(models.ConfigValue, ConfigValueAdmin)
 
-class ProfileConfigInline(admin.TabularInline):
-    model = models.ProfileConfig
+class ConfigIngredientInline(admin.TabularInline):
+    model = models.ConfigIngredient
 
-class ProfileAdmin(admin.ModelAdmin):
-    inlines = [ProfileConfigInline]
+class ConfigRecipeAdmin(admin.ModelAdmin):
+    inlines = [ConfigIngredientInline]
+    search_fields = ['name', 'ingredients__label', 'ingredients__value']
 
 class HostInline(admin.TabularInline):
     model = models.Host
@@ -21,7 +21,7 @@ class HostInline(admin.TabularInline):
 class SquadAdmin(admin.ModelAdmin):
     inlines = [HostInline]
 
-admin.site.register(models.Profile, ProfileAdmin)
+admin.site.register(models.ConfigRecipe, ConfigRecipeAdmin)
 
 admin.site.register(models.App)
 admin.site.register(models.Build)

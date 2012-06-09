@@ -46,7 +46,7 @@ def remember(msg_type, msg, username):
     logging.info('%s %s: %s' % (msg_type, username, msg))
 
 
-class ConfigValue(models.Model):
+class ConfigIngredient(models.Model):
     label = models.CharField(max_length=50, unique=True)
     value = YAMLDictField(help_text=("Must be valid YAML dict."))
 
@@ -62,19 +62,19 @@ class App(models.Model):
         return self.name
 
 
-class Profile(models.Model):
+class ConfigRecipe(models.Model):
     app = models.ForeignKey(App)
-    namehelp = ("Used in release name.  Good profile names are short and use "
+    namehelp = ("Used in release name.  Good recipe names are short and use "
                 "no spaces or dashes (underscores are OK)")
-    name = models.CharField(verbose_name="Profile Name", max_length=20, help_text=namehelp)
-    configvalues = models.ManyToManyField(ConfigValue, through='ProfileConfig')
+    name = models.CharField(verbose_name="ConfigRecipe Name", max_length=20, help_text=namehelp)
+    ingredients = models.ManyToManyField(ConfigIngredient, through='RecipeIngredient')
 
     def __unicode__(self):
         return '%s-%s' % (self.app.name, self.name)
 
     def assemble(self):
         out = {}
-        for r in ProfileConfig.objects.filter(profile=self):
+        for r in RecipeIngredient.objects.filter(recipe=self):
             out.update(r.configvalue.value)
         return out
 
@@ -85,19 +85,19 @@ class Profile(models.Model):
         unique_together = ('app', 'name')
 
 
-class ProfileConfig(models.Model):
+class RecipeIngredient(models.Model):
     """
-    Through-table for the many:many relationship between configvalues and
-    profiles.  Managed manually so we can have some extra fields.
+    Through-table for the many:many relationship between configingredients and
+    configrecipes.  Managed manually so we can have some extra fields.
     """
-    configvalue = models.ForeignKey(ConfigValue)
-    profile = models.ForeignKey(Profile)
+    ingredient = models.ForeignKey(ConfigIngredient)
+    recipe = models.ForeignKey(ConfigRecipe)
 
     ohelp = 'Order for merging when creating release. Higher number takes precedence.'
     order = models.IntegerField(blank=True, null=True,  help_text=ohelp)
 
     class Meta:
-        unique_together = ('configvalue', 'profile')
+        unique_together = ('ingredient', 'recipe')
 
 
 class Build(models.Model):
@@ -127,7 +127,7 @@ class Build(models.Model):
 
 
 class Release(models.Model):
-    profile = models.ForeignKey(Profile)
+    recipe = models.ForeignKey(ConfigRecipe)
     build = models.ForeignKey(Build)
     config = models.TextField(blank=True, null=True)
 
@@ -136,7 +136,7 @@ class Release(models.Model):
 
     def __unicode__(self):
         return u'-'.join([self.build.app.name, self.build.tag,
-                          self.profile.name, self.hash or 'PENDING'])
+                          self.recipe.name, self.hash or 'PENDING'])
 
     def compute_hash(self):
         # Compute self.hash from the config contents and build file.
@@ -199,7 +199,7 @@ class Host(models.Model):
     def get_procs(self):
         """
         Return a list of Proc objects, one for each supervisord process that
-        has a parseable name and whose app and profile can be found in the DB.
+        has a parseable name and whose app and recipe can be found in the DB.
         """
         server = xmlrpclib.Server('http://%s:%s' % (self.name, settings.SUPERVISOR_PORT))
         states = server.supervisor.getAllProcessInfo()
@@ -209,7 +209,7 @@ class Host(models.Model):
             # return a Proc object.
 
             # XXX This function will throw DoesNotExist if either the app or
-            # profile can't be looked up.  So careful with what you rename.
+            # recipe can't be looked up.  So careful with what you rename.
             parts = name.split('-')
             try:
                 app = App.objects.get(name=parts[0])
@@ -217,7 +217,7 @@ class Host(models.Model):
                     name=name,
                     app=app,
                     tag=parts[1],
-                    profile=Profile.objects.get(app=app, name=parts[2]),
+                    recipe=ConfigRecipe.objects.get(app=app, name=parts[2]),
                     hash=parts[3],
                     proc=parts[4],
                     port=int(parts[5]),
@@ -228,7 +228,7 @@ class Host(models.Model):
 
         procs = [make_proc(p['name'], self) for p in states]
 
-        # Filter out any procs for whom we couldn't look up an App or Profile
+        # Filter out any procs for whom we couldn't look up an App or ConfigRecipe
         return [p for p in procs if p is not None]
 
 
@@ -248,11 +248,11 @@ class Squad(models.Model):
 
 
 class Proc(object):
-    def __init__(self, name, app, tag, profile, hash, proc, host, port):
+    def __init__(self, name, app, tag, recipe, hash, proc, host, port):
         self.name = name
         self.app = app
         self.tag = tag
-        self.profile = profile
+        self.recipe = recipe
         self.hash = hash
         self.proc = proc
         self.host = host
@@ -270,7 +270,7 @@ class Swarm(models.Model):
     This is the payoff.  Save a swarm record and then you can tell Velociraptor
     to 'make it so'.
     """
-    profile = models.ForeignKey(Profile)
+    recipe = models.ForeignKey(ConfigRecipe)
     squad = models.ForeignKey(Squad)
     release = models.ForeignKey(Release)
     proc_name = models.CharField(max_length=50)
@@ -287,8 +287,8 @@ class Swarm(models.Model):
     active = models.BooleanField(default=True)
 
     class Meta:
-        unique_together = ('profile', 'squad', 'proc_name')
-        ordering = ['profile__app__name']
+        unique_together = ('recipe', 'squad', 'proc_name')
+        ordering = ['recipe__app__name']
 
     def __unicode__(self):
         rname = self.release.__unicode__()
@@ -298,14 +298,14 @@ class Swarm(models.Model):
         return u'%(rname)s-%(proc)s X %(size)s on %(squad)s' % vars()
 
     def shortname(self):
-        a = self.profile.app.name
-        p = self.profile.name
+        a = self.recipe.app.name
+        p = self.recipe.name
         proc = self.proc_name
         return u'%(a)s-%(p)s-%(proc)s' % vars()
 
     def all_procs(self):
         """
-        Return all running procs on the squad that share this swarm's profile.
+        Return all running procs on the squad that share this swarm's recipe.
         """
         if not self.release:
             return []
@@ -314,7 +314,7 @@ class Swarm(models.Model):
         for host in self.squad.hosts.all():
             procs += host.get_procs()
 
-        return [p for p in procs if p.profile == self.profile]
+        return [p for p in procs if p.recipe == self.recipe]
 
     def get_prioritized_hosts(self):
         """
