@@ -64,11 +64,6 @@ Once your database is created, you'll need to create the tables::
     ./manage.py syncdb
     ./manage.py migrate
 
-Some of the tables are managed by South_ instead of syncdb.  To make sure
-they're created, you need to run this too::
-
-    ./manage.py migrate
-
 As Velociraptor is developed and the DB schema changes, you can run
 `./manage.py migrate` again to get your local DB schema in sync with the code.
 

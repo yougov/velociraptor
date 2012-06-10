@@ -12,7 +12,7 @@ from django.conf import settings
 from celery.result import AsyncResult
 from celery.task.control import inspect
 
-from deployment.models import (Host, App, Release, Build, Profile, Squad,
+from deployment.models import (Host, App, Release, Build, ConfigRecipe, Squad,
                                Swarm, remember)
 from deployment import forms
 from deployment import tasks
@@ -188,11 +188,11 @@ def release(request):
     form = forms.ReleaseForm(request.POST or None)
     if form.is_valid():
         build=Build.objects.get(id=form.cleaned_data['build_id'])
-        profile = Profile.objects.get(id=form.cleaned_data['profile_id'])
+        recipe = ConfigRecipe.objects.get(id=form.cleaned_data['recipe_id'])
         r = Release(
-            profile=profile,
+            recipe=recipe,
             build=build,
-            config=profile.to_yaml(),
+            config=recipe.to_yaml(),
         )
         r.save()
         remember('release', 'created release %s' % r.__unicode__(),
@@ -214,7 +214,7 @@ def deploy(request):
 
         release = Release.objects.get(id=data['release_id'])
         job = tasks.deploy.delay(release_id=data['release_id'],
-                                 profile_name=release.profile.name,
+                                 recipe_name=release.recipe.name,
                                  hostname=data['hostname'],
                                  proc=data['proc'],
                                  port=data['port'])
@@ -228,28 +228,28 @@ def deploy(request):
     return render(request, 'basic_form.html', vars())
 
 
-def get_or_create_release(profile, tag):
-    # If there's a release linked to the given profile, that uses the given
+def get_or_create_release(recipe, tag):
+    # If there's a release linked to the given recipe, that uses the given
     # build, and has current config, then return that.  Else make a new release
     # that satisfies those constraints, and return that.
-    releases = Release.objects.filter(profile=profile,
+    releases = Release.objects.filter(recipe=recipe,
                                       build__tag=tag)
 
     # XXX This relies on the Releases model having ordering set to '-id'
-    if releases and releases[0].parsed_config() == profile.assemble():
+    if releases and releases[0].parsed_config() == recipe.assemble():
         return releases[0]
 
-    # If we got here, there's no existing release with the specified profile,
+    # If we got here, there's no existing release with the specified recipe,
     # tag, and current config.  Is there at least a build?
-    builds = Build.objects.filter(app=profile.app, tag=tag)
+    builds = Build.objects.filter(app=recipe.app, tag=tag)
     if builds:
         build = builds[0]
     else:
         # Save a build record.  The actual building will be done later.
-        build = Build(app=profile.app, tag=tag)
+        build = Build(app=recipe.app, tag=tag)
         build.save()
-    release = Release(profile=profile, build=build,
-                      config=profile.to_yaml())
+    release = Release(recipe=recipe, build=build,
+                      config=recipe.to_yaml())
     release.save()
     return release
 
@@ -260,7 +260,7 @@ def edit_swarm(request, swarm_id=None):
         # Need to populate form from swarm
         swarm = Swarm.objects.get(id=swarm_id)
         initial = {
-            'profile_id': swarm.profile.id,
+            'recipe_id': swarm.recipe.id,
             'squad_id': swarm.squad.id,
             'tag': swarm.release.build.tag,
             'proc_name': swarm.proc_name,
@@ -275,14 +275,14 @@ def edit_swarm(request, swarm_id=None):
     form = forms.SwarmForm(request.POST or None, initial=initial)
     if form.is_valid():
         data = form.cleaned_data
-        swarm.profile = Profile.objects.get(id=data['profile_id'])
+        swarm.recipe = ConfigRecipe.objects.get(id=data['recipe_id'])
         swarm.squad = Squad.objects.get(id=data['squad_id'])
         swarm.proc_name = data['proc_name']
         swarm.size = data['size']
         swarm.pool = data['pool']
         swarm.active = data['active']
 
-        swarm.release = get_or_create_release(swarm.profile, data['tag'])
+        swarm.release = get_or_create_release(swarm.recipe, data['tag'])
 
         swarm.save()
         tasks.swarm_start.delay(swarm.id)

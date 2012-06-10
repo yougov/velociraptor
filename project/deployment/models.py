@@ -74,8 +74,8 @@ class ConfigRecipe(models.Model):
 
     def assemble(self):
         out = {}
-        for r in RecipeIngredient.objects.filter(recipe=self):
-            out.update(r.configvalue.value)
+        for i in RecipeIngredient.objects.filter(recipe=self):
+            out.update(i.ingredient.value)
         return out
 
     def to_yaml(self):

@@ -20,22 +20,22 @@ class BuildUploadForm(forms.ModelForm):
 
 class ReleaseForm(forms.Form):
     build_id = forms.ChoiceField(choices=[], label='Build')
-    profile_id = forms.ChoiceField(choices=[], label='Profile')
+    recipe_id = forms.ChoiceField(choices=[], label='Recipe')
 
     def __init__(self, *args, **kwargs):
         super(ReleaseForm, self).__init__(*args, **kwargs)
         self.fields['build_id'].choices = [(b.id, b) for b in
                                            models.Build.objects.all()]
-        self.fields['profile_id'].choices = [(p.id, p) for p in
-                                             models.Profile.objects.all()]
+        self.fields['recipe_id'].choices = [(p.id, p) for p in
+                                             models.ConfigRecipe.objects.all()]
 
     def clean(self):
-        # Look up the build's app, and the profile's app, and make sure they
+        # Look up the build's app, and the recipe's app, and make sure they
         # match.
         build = models.Build.objects.get(id=self.cleaned_data['build_id'])
-        profile = models.Profile.objects.get(id=self.cleaned_data['profile_id'])
-        if not build.app.id == profile.app.id:
-            raise forms.ValidationError("Build app doesn't match Profile app")
+        recipe = models.ConfigRecipe.objects.get(id=self.cleaned_data['recipe_id'])
+        if not build.app.id == recipe.app.id:
+            raise forms.ValidationError("Build app doesn't match Recipe app")
         return self.cleaned_data
 
 
@@ -72,7 +72,7 @@ class SwarmForm(forms.Form):
     """
     Form for creating or updating a swarm.
     """
-    profile_id = forms.ChoiceField(choices=[], label='Profile')
+    recipe_id = forms.ChoiceField(choices=[], label='Recipe')
     squad_id = forms.ChoiceField(choices=[], label='Squad')
     tag = forms.CharField(max_length=50)
     proc_name = forms.CharField(max_length=50)
@@ -82,5 +82,6 @@ class SwarmForm(forms.Form):
 
     def __init__(self, data, *args, **kwargs):
         super(SwarmForm, self).__init__(data, *args, **kwargs)
-        self.fields['profile_id'].choices = [(p.id, p) for p in models.Profile.objects.all()]
+        self.fields['recipe_id'].choices = [(p.id, p) for p in
+                                            models.ConfigRecipe.objects.all()]
         self.fields['squad_id'].choices = [(s.id, s) for s in models.Squad.objects.all()]

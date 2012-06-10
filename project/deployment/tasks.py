@@ -23,7 +23,7 @@ from yg.deploy.paver import build as paver_build
 
 
 @task
-def deploy(release_id, profile_name, hostname, proc, port):
+def deploy(release_id, recipe_name, hostname, proc, port):
 
     with remove_port_lock(hostname, port):
         release = Release.objects.get(id=release_id)
@@ -57,7 +57,7 @@ def deploy(release_id, profile_name, hostname, proc, port):
             build.close()
 
             with always_disconnect():
-                result = deploy_parcel(build_name, 'settings.yaml', profile_name,
+                result = deploy_parcel(build_name, 'settings.yaml', recipe_name,
                     proc, port, 'nobody', release.hash)
 
 
@@ -149,13 +149,13 @@ def swarm_release(swarm_id):
         # the build.  Since there's a build file now, saving will force the
         # release to hash itself. 
         release = swarm.release
-        release.config = swarm.profile.to_yaml()
+        release.config = swarm.recipe.to_yaml()
         release.save()
-    elif swarm.release.parsed_config() != swarm.profile.assemble():
+    elif swarm.release.parsed_config() != swarm.recipe.assemble():
         # Our frozen release doesn't have current config.  We'll need to make a
         # new release, with the same build, and link the swarm to that.
-        release = Release(profile=swarm.profile, build=build,
-                          config=swarm.profile.to_yaml())
+        release = Release(recipe=swarm.recipe, build=build,
+                          config=swarm.recipe.to_yaml())
         release.save()
         swarm.release = release
         swarm.save()
@@ -238,7 +238,7 @@ def swarm_deploy_to_host(swarm_id, host_id, ports):
     for port in ports:
         deploy(
             swarm.release.id,
-            swarm.release.profile.name,
+            swarm.release.recipe.name,
             host.name,
             swarm.proc_name,
             port,
