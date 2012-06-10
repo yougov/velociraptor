@@ -17,9 +17,11 @@ class Migration(SchemaMigration):
         db.rename_table('deployment_profileconfig',
                         'deployment_recipeingredient')
 
-
         db.rename_column('deployment_release', 'profile_id', 'recipe_id')
         db.rename_column('deployment_swarm', 'profile_id', 'recipe_id')
+        db.rename_column('deployment_recipeingredient', 'profile_id', 'recipe_id')
+        db.rename_column('deployment_recipeingredient', 'configvalue_id',
+                         'ingredient_id')
 
         db.create_unique('deployment_swarm', ['squad_id', 'recipe_id', 'proc_name'])
         db.create_unique('deployment_configrecipe', ['app_id', 'name'])
@@ -28,9 +30,9 @@ class Migration(SchemaMigration):
 
     def backwards(self, orm):
 
+        db.delete_unique('deployment_swarm', ['squad_id', 'recipe_id', 'proc_name'])
         db.delete_unique('deployment_configrecipe', ['app_id', 'name'])
         db.delete_unique('deployment_recipeingredient', ['ingredient_id', 'recipe_id'])
-        db.delete_unique('deployment_swarm', ['squad_id', 'recipe_id', 'proc_name'])
 
         db.rename_table('deployment_configrecipe', 'deployment_profile')
         db.rename_table('deployment_configingredient', 'deployment_configvalue')
@@ -40,6 +42,9 @@ class Migration(SchemaMigration):
 
         db.rename_column('deployment_release', 'recipe_id', 'profile_id')
         db.rename_column('deployment_swarm', 'recipe_id', 'profile_id')
+        db.rename_column('deployment_profileconfig', 'ingredient_id' ,
+                         'configvalue_id',)
+        db.rename_column('deployment_profileconfig', 'recipe_id','profile_id')
 
         db.create_unique('deployment_swarm', ['profile_id', 'squad_id', 'proc_name'])
         db.create_unique('deployment_profileconfig', ['configvalue_id', 'profile_id'])
