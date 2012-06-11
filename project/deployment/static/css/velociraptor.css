@@ -148,6 +148,30 @@ div.label {
 }
 
 
+/* TASKS */
+
+.task-wrapper {
+  margin-bottom: 5px;
+}
+
+.task-status a {
+  text-decoration: underline;
+}
+
+.task-status.SUCCESS a {
+  color: #468847;
+}
+
+.task-status.FAILURE a {
+  color: #b94a48;
+}
+
+.task-status.STARTED a {
+  color: #3A87AD;
+}
+
+/* FORMS */
+
 .formrows .helptext {
   color: #999;
   font-size: 10px;

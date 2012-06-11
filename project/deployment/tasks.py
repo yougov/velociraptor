@@ -88,8 +88,9 @@ def build_hg(build_id, callback=None):
             build.status = 'success'
         except:
             build.status = 'failed'
-
-        build.save()
+            raise
+        finally:
+            build.save()
 
     # start callback if there is one.
     if callback is not None:

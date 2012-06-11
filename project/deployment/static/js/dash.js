@@ -1,7 +1,6 @@
 // Set up our namespacing. //
 window.Dash = {
     init: function(){
-        this.mainElement = $('#dash-procs');
         Dash.Procs.init();
         Dash.Tasks.init();
     }
@@ -50,18 +49,19 @@ Dash.Utilities = {
 Dash.Procs = {
     // formerly dash.onHostData
     init: function(){
+        Dash.Procs.el = $('#dash-procs');
 
         $.getJSON('api/hosts/', Dash.Procs.getHostProcs);
 
-        Dash.mainElement.isotope({
+        Dash.Procs.el.isotope({
             itemSelector: '.proc-status',
             layoutMode: 'masonry',
             animationOptions: {duration: 10}
         });
 
         // Load up Click Events for this Object
-        Dash.mainElement.delegate('.proc-status .label', 'click', Dash.Procs.onProcClick);
-        Dash.mainElement.delegate('.proc-actions .btn', 'click', Dash.Procs.onProcActionClick);
+        Dash.Procs.el.delegate('.proc-status .label', 'click', Dash.Procs.onProcClick);
+        Dash.Procs.el.delegate('.proc-actions .btn', 'click', Dash.Procs.onProcActionClick);
         $('body').delegate('.action-dialog .btn', 'click', Dash.Procs.onActionModalClick); 
         $('.procfilter').click(Dash.Procs.onFilterClick);
         $('.expandcollapse button').click(Dash.Procs.onExpandCollapseClick);
@@ -90,7 +90,7 @@ Dash.Procs = {
               // Load up our host object based on the View we made.
               // 'collection' is a Backbone.View data storage object already set for us.
               var element = $('#host-procs-tmpl').goatee(data);
-              Dash.mainElement.isotope('insert', element);
+              Dash.Procs.el.isotope('insert', element);
             });
         });
     },
@@ -106,7 +106,7 @@ Dash.Procs = {
         data.action = $(this).attr('rel');
         if (data.action === 'destroy') {
             // show a confirmation dialog before doing proc deletions
-            popup = $('#proc-modal-tmpl').goatee(data);
+            var popup = $('#proc-modal-tmpl').goatee(data);
             popup.data(data);
             $(popup).modal();
         } else {
@@ -138,7 +138,7 @@ Dash.Procs = {
       $(this).button('toggle');
       // hide the host dropdown
       $('.hostlist, .applist').removeClass('open');
-      Dash.mainElement.isotope({ filter: selector });
+      Dash.Procs.el.isotope({ filter: selector });
       return false;
     },
 
@@ -164,10 +164,10 @@ Dash.Procs = {
         if (method === undefined) {
             method = 'POST';
         }
+
         if (callback === undefined) {
             callback = Dash.Procs.onActionResponse;
         }
-        
 
         var url = '/api/hosts/' + host + '/procs/' + proc + '/';
         data = {host:host,proc:proc,action:action};
@@ -191,7 +191,7 @@ Dash.Procs = {
     },
 
     reflow: function(host){
-        Dash.mainElement.isotope('reLayout');
+        Dash.Procs.el.isotope('reLayout');
     }
 
 };// end Dash.Procs
@@ -199,37 +199,75 @@ Dash.Procs = {
 
 // DASH Tasks Methods //
 Dash.Tasks = {
-    mainElement: $('#dash-tasks'),
     taskDataQueue: '',
 
     init: function(){
-        var that = this;
-        
-        // run immediately on init
-        this.loadTaskData();
+        Dash.Tasks.tmpl = $('#task-tmpl');
+        Dash.Tasks.el = $('#tasks-list');
+
+        Dash.Tasks.el.delegate('.task-wrapper', 'click', Dash.Tasks.onTaskClick);
+
+        Dash.Tasks.getTaskData();
         // then setInterval to re-check every 4 seconds.
         setInterval(function(){
-            that.loadTaskData();
+            Dash.Tasks.getTaskData();
         }, 4000);
 
     },
 
-    loadTaskData: function(){
+    getTaskData: function(){
         var that = this;
 
-        $.getJSON('/api/task/active/', function(data){
-            if (data.tasks.length) {
-                $('.proc-column').addClass('span8');
-                $('.tasks-column').addClass('span4');
-                Dash.Procs.reflow();
-                $('#dash-tasks').html($('#tasks-tmpl').goatee(data));
-            } else {
-                // unRender container
-                $('.proc-column').removeClass('span8');
-                $('.tasks-column').removeClass('span4');
-                Dash.Procs.reflow();
-                $('#dash-tasks').html('');
-            }
+        $.getJSON('/api/task/', function(data){
+            // the data comes back with the most recent first, but it's
+            // actually simpler to do most recent last and always use
+            // $().prepend.  So reverse it.
+            data.tasks.reverse();
+            _.each(data.tasks, Dash.Tasks.doItem);
+
+            // Now remove any tasks that are in the DOM but not in the data.
+            var ids = _.map(data.tasks, function(task) {return 'task-' + task.task_id;});
+            _.each($('.task-wrapper'), function(el, idx, lst) {
+                el = $(el);
+                if (!_.include(ids, el.attr('id'))) {
+                    el.remove();
+                }
+            });
         });
+    },
+
+    // doItem should be called for each task returned from the API, each time.
+    // It will check whether the item already exists in the list, and only add
+    // it if necessary.
+    doItem: function(taskdata, idx, lst) {
+        taskdata.shortname = taskdata.name.split('.').pop();
+
+        // Set a nicer date for humans.  Assumes all browsers we care about can
+        // accept an iso datetime on Date init.
+        var date = new Date(taskdata.tstamp);
+        taskdata.prettydate = date.toString();
+
+        var task = $('#task-' + taskdata.task_id);
+        if (task.length === 0) {
+            // add new one
+            task = Dash.Tasks.tmpl.goatee(taskdata);
+            Dash.Tasks.el.prepend(task);
+        } else {
+            // update existing one.
+            if (!_.isEqual(task.data('taskdata'), taskdata)) {
+                var newtask = Dash.Tasks.tmpl.goatee(taskdata);
+                // update existing item with contents of new one.
+                task.html(newtask.html());
+            } 
+        }
+
+        // remember taskdata for comparing later.  Also for rendering details
+        // in a modal.
+        task.data('taskdata', taskdata);
+    },
+
+    onTaskClick: function(ev) {
+        var popup = $('#task-modal-tmpl').goatee($(this).data('taskdata'));
+        $(popup).modal();
     }
 };// end Dash.Tasks

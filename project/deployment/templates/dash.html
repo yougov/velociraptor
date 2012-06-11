@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="row-fluid">
-<div class="proc-column">
+<div class="proc-column span9">
 <h1>Procs <small>as reported by supervisord </small></h1>
 <div class="proc-filters">
   <div class="btn-group statusfilters procbar" data-toggle="buttons-radio">
@@ -42,8 +42,12 @@
 <div id="dash-procs">
 </div>
 </div>
-<div class="tasks-column">
-  <div id="dash-tasks"></div>
+<div class="tasks-column span3">
+    <div id="dash-tasks">
+      <h1>Tasks</h1>
+      <div id="tasks-list">
+      </div>
+    </div>
 </div>
 </div>
 {% endblock content %}
@@ -79,18 +83,75 @@
 </ul>
 </script>
 
-{# Goatee template for list of currently running jobs #}
-<script id="tasks-tmpl" type="text/goatee">
-  <h1>Current Tasks</h1>
-  <div class="tasks-list">
-    <%#tasks%>
-      <div class="task-status status-<%status%> <%id%>" data-proc="<%name%>">
-        <div class="label <%name%>">
-          <span><%name%></span>
-        </div>
-      </div>
-    <%/tasks%>
+{# Goatee template for task item summary#}
+<script id="task-tmpl" type="text/goatee">
+<div id="task-<%task_id%>" class="task-wrapper">
+  <div class="task-status <%state%>" data-proc="<%name%>">
+    <a href="#"><%shortname%></a>
   </div>
+</div>
+</script>
+
+{# Goatee template for task item details modal#}
+<script id="task-modal-tmpl" type="text/goatee">
+    <div id="task-details-<%task_id%>" class="modal task-details">
+    <div class="modal-header">
+        <a class="close" data-dismiss="modal">×</a>
+        <h3>Task Details</h3>
+    </div>
+    <div class="modal-body">
+        <table class="table table-condensed">
+            <dl>
+                <dt>Name
+                <dd><%name%>
+
+                <dt>Task ID
+                <dd><%task_id%>
+
+                <dt>Args
+                <dd><%args%>
+
+                <dt>Kwargs
+                <dd><%kwargs%>
+
+                <dt>Finished At
+                <dd><%prettydate%>
+
+                <%#runtime%>
+                <dt>Run time
+                <dd><%runtime%>
+                <%/runtime%>
+
+                <%#eta%>
+                    <dt>ETA
+                    <dd><%eta%>
+                <%/eta%>
+
+                <%#expires%>
+                    <dt>Expires
+                    <dd><%expires%>
+                <%/expires%>
+
+                <dt>State
+                <dd><%state%>
+
+                <%#retries%>
+                    <dt>Retries
+                    <dd><%retries%>
+                <%/retries%>
+
+                <dt>Result
+                <dd><%result%>
+
+                <%#traceback%>
+                    <dt>Traceback
+                    <dd><pre><%traceback%></pre>
+                <%/traceback%>
+            </dl>
+        </table>
+
+    </div>
+    </div>
 </script>
 
 {# Goatee template for "are you sure you want to delete this proc?" #}

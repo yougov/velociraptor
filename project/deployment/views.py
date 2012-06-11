@@ -2,6 +2,7 @@ import json
 import ast
 import xmlrpclib
 import logging
+import datetime
 
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseRedirect
@@ -11,6 +12,7 @@ from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from celery.result import AsyncResult
 from celery.task.control import inspect
+from djcelery.models import TaskState
 
 from deployment.models import (Host, App, Release, Build, ConfigRecipe, Squad,
                                Swarm, remember)
@@ -114,7 +116,14 @@ def get_task_status(task_id):
     return status
 
 
-from djcelery.models import TaskState
+
+def clean_task_value(v):
+    if isinstance(v, (datetime.datetime, datetime.date)):
+        return v.isoformat()
+    elif isinstance(v, (basestring, int, float, tuple, list, dict, bool,
+                        type(None))):
+        return v
+
 
 def task_to_dict(task):
     """
@@ -123,19 +132,14 @@ def task_to_dict(task):
     """
     # Make a copy of task.__dict__, leaving off any of the cached complex
     # objects
-    out = {x:getattr(task, x) for x in task.__dict__ if not x.startswith('_')}
-    out['tstamp'] = task.tstamp.isoformat()
-    # Deserialize the arguments passed to the task, so the frontend can work
-    # with them more easily.
-    out['args'] = ast.literal_eval(task.args)
-    out['kwargs'] = ast.literal_eval(task.kwargs)
-    return out
+    return {k:clean_task_value(v) for k, v in task.__dict__.items() if not
+           k.startswith('_')}
 
 
 @login_required
-def api_task_active(request):
+def api_task_recent(request):
 
-    count = int(request.GET.get('count')) or 20
+    count = int(request.GET.get('count') or 20)
     tasks = TaskState.objects.all()[:count]
 
     return json_response({'tasks': [task_to_dict(t) for t in tasks]})

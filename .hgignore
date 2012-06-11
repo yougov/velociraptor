@@ -27,3 +27,4 @@ uploads*
 .vagrant
 settings.yaml
 tmp/
+celeryev.pid
