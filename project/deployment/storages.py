@@ -57,3 +57,12 @@ class GridFSStorage(Storage):
         if self.base_url is None:
             raise NotImplementedError()
         return urlparse.urljoin(self.base_url, name).replace('\\', '/')
+
+    # Most Django storage backends will use this get_available_name method to
+    # append a _1, _2, etc if a filename already exists.  Here we don't really
+    # care about that, since GridFS is going to save a new version of the file
+    # anyway.  So we'll dispense with that underscore ugliness and just pretend
+    # that the new file has overwritten the old one.  If we ever need the old
+    # one, we can pull it out of GridFS manually.
+    def get_available_name(self, name):
+        return name
