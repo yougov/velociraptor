@@ -125,11 +125,28 @@ class currentmongo {
   }
 }
 
+class rubygems_src {
+    exec {
+      install_rubygems_src:
+        command => "/tmp/install_gems.sh",
+        require => File ["install_gems.sh"];
+    }
+
+    file {
+      "install_gems.sh":
+        path => '/tmp/install_gems.sh',
+        ensure => file,
+        mode => 755,
+        source => 'puppet:///modules/gems_src/install_gems.sh';
+
+    }
+}
+
 package { 
   foreman:
     ensure => present,
     provider => gem,
-    require => Class [yhost];
+    require => Class [yhost, rubygems_src];
 }
 
 # Include the self-signed SSL cert that yg.ldap needs to make secure
