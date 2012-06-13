@@ -82,6 +82,29 @@ class pg91 {
     }
 }
 
+class py27 {
+    exec {
+      pythonppa:
+        command => "add-apt-repository ppa:fkrull/deadsnakes",
+        require => Class [yhost];
+      pyaptupdate:
+        command => "apt-get update",
+        timeout => "300",
+        require => Exec [pythonppa];
+      pip27:
+        command => "easy_install-2.7 pip",
+        require => Package ["python-distribute-deadsnakes"];
+    }
+
+    Package {ensure => present, require => Exec [pyaptupdate]}
+
+    package {
+      "python2.7":;
+      "python2.7-dev":;
+      "python-distribute-deadsnakes":;
+    }
+}
+
 class currentmongo {
   exec {
     tengenkey:
@@ -119,5 +142,6 @@ file { 'ldap_cert':
 
 class {'yhost': }
 class {'pipdeps': }
+class {'py27': }
 class {'pg91': }
 class {'currentmongo': }
