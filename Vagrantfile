@@ -50,7 +50,7 @@ Vagrant::Config.run do |config|
     # Use Puppet to ensure that certain system packages are installed in the VM
     config.vm.provision :puppet, :module_path => "puppet/modules" do |puppet|
         puppet.manifests_path = "puppet/manifests"
-        puppet.manifest_file  = "ydevhost.pp"
+        puppet.manifest_file  = "yvagranthost.pp"
     end
 
     # Make the guest use the host for name resolution, so names on the VPN will

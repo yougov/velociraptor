@@ -12,11 +12,15 @@ class yhost {
       firstupdate:
         command => "apt-get update",
         timeout => "300";
+      supervisor_reload:
+        command => "supervisorctl reload",
+        require => File ['supervisord.conf'];
     }
     
     Package {ensure => present, require => Exec [firstupdate]}
 
     package {
+        supervisor:; 
         ruby:;
         libevent-dev:;
         vim:;
@@ -29,6 +33,15 @@ class yhost {
         libpcre3-dev:;
         libjpeg62-dev:;
         git-core:;
+    }
+
+    # ensure that supervisord's config has the line to include
+    # /opt/yg/procs/*/proc.conf
+    file { 'supervisord.conf':
+      path    => '/etc/supervisor/supervisord.conf',
+      ensure  => file,
+      require => Package['supervisor'],
+      source  => 'puppet:///modules/supervisor/supervisord.conf';
     }
 }
 
