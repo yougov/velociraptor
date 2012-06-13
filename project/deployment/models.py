@@ -314,7 +314,8 @@ class Swarm(models.Model):
         for host in self.squad.hosts.all():
             procs += host.get_procs()
 
-        return [p for p in procs if p.recipe == self.recipe]
+        return [p for p in procs if p.recipe == self.recipe and p.name ==
+                self.proc_name]
 
     def get_prioritized_hosts(self):
         """
@@ -332,8 +333,6 @@ class Swarm(models.Model):
         return squad_hosts
 
     def get_next_host(self):
-
-
         return self.get_prioritized_hosts()[0]
 
 
