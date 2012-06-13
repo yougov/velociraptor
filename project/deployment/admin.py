@@ -6,6 +6,10 @@ from deployment import models
 class RecipeIngredientInline(admin.TabularInline):
     model = models.RecipeIngredient
 
+
+class ConfigIngredientAdmin(admin.ModelAdmin):
+    search_fields = ['label', 'value']
+
 class ConfigRecipeAdmin(admin.ModelAdmin):
     inlines = [RecipeIngredientInline]
     search_fields = ['name', 'ingredients__label', 'ingredients__value']
@@ -20,7 +24,7 @@ admin.site.register(models.ConfigRecipe, ConfigRecipeAdmin)
 admin.site.register(models.Squad, SquadAdmin)
 
 
-admin.site.register(models.ConfigIngredient)
+admin.site.register(models.ConfigIngredient, ConfigIngredientAdmin)
 admin.site.register(models.App)
 admin.site.register(models.Build)
 admin.site.register(models.Release)
