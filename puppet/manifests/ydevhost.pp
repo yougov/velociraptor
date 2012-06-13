@@ -20,7 +20,6 @@ class yhost {
     Package {ensure => present, require => Exec [firstupdate]}
 
     package {
-        nginx:; 
         supervisor:; 
         ruby:;
         libevent-dev:;
