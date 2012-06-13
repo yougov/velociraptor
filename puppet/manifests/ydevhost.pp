@@ -43,12 +43,6 @@ class pipdeps {
       virtualenv:;
       virtualenvwrapper:;
     }
-
-    file { '.bashrc':
-        path => '/home/vagrant/.bashrc',
-        ensure => file,
-        source => 'puppet:///modules/home/bashrc';
-    }
 }
 
 # TODO: Make a ygpip provider that pulls from our cheeseshop.  Modify this:
@@ -85,29 +79,6 @@ class pg91 {
       ensure  => file,
       require => Package['postgresql-9.1'],
       source  => 'puppet:///modules/postgres/pg_hba.conf';
-    }
-}
-
-class py27 {
-    exec {
-      pythonppa:
-        command => "add-apt-repository ppa:fkrull/deadsnakes",
-        require => Class [yhost];
-      pyaptupdate:
-        command => "apt-get update",
-        timeout => "300",
-        require => Exec [pythonppa];
-      pip27:
-        command => "easy_install-2.7 pip",
-        require => Package ["python-distribute-deadsnakes"];
-    }
-
-    Package {ensure => present, require => Exec [pyaptupdate]}
-
-    package {
-      "python2.7":;
-      "python2.7-dev":;
-      "python-distribute-deadsnakes":;
     }
 }
 
@@ -148,6 +119,5 @@ file { 'ldap_cert':
 
 class {'yhost': }
 class {'pipdeps': }
-class {'py27': }
 class {'pg91': }
 class {'currentmongo': }

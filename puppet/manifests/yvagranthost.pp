@@ -1,3 +1,6 @@
+# TODO: Use includes for all the stuff that's common between this and the
+# ydevhost manifest, instead of repeating here.
+
 group { "puppet": 
     ensure => "present", 
 }
