@@ -156,6 +156,7 @@ file { 'ldap_cert':
 }
 
 class {'yhost': }
+class {'gemsrc': }
 class {'pipdeps': }
 class {'py27': }
 class {'pg91': }
