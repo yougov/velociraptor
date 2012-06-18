@@ -35,8 +35,9 @@ def deploy(release_id, recipe_name, hostname, proc, port):
         env.host_string = hostname
         env.abort_on_prompts = True
         env.task = deploy
-        env.user=settings.DEPLOY_USER
-        env.password=settings.DEPLOY_PASSWORD
+        env.user = settings.DEPLOY_USER
+        env.password = settings.DEPLOY_PASSWORD
+        env.linewise = True
 
         deploy.update_state(state='PROGRESS', meta='Started')
         logging.info('deploying %s:%s to %s:%s' % (release, proc, hostname,
@@ -101,8 +102,9 @@ def build_hg(build_id, callback=None):
 def delete_proc(host, proc, callback=None):
     env.host_string = host
     env.abort_on_prompts = True
-    env.user=settings.DEPLOY_USER
-    env.password=settings.DEPLOY_PASSWORD
+    env.user = settings.DEPLOY_USER
+    env.password = settings.DEPLOY_PASSWORD
+    env.linewise = True
     logging.info('deleting %s on %s' % (proc, host))
     with always_disconnect():
         fab_delete_proc(proc)
@@ -294,8 +296,9 @@ def swarm_uptest_host(hostname, procs):
     # Do uptests for each proc on host.
     env.host_string = hostname
     env.abort_on_prompts = True
-    env.user=settings.DEPLOY_USER
-    env.password=settings.DEPLOY_PASSWORD
+    env.user = settings.DEPLOY_USER
+    env.password = settings.DEPLOY_PASSWORD
+    env.linewise = True
     for proc in procs:
         run_uptests(proc)
 
@@ -328,11 +331,11 @@ def swarm_route(swarm_id, correct_nodes, callback=None):
     Given a list of nodes for the current swarm, make sure those nodes and
     only those nodes are in the swarm's routing pool, if it has one.
     """
-    # It's important that the node list be passed to this function from the
-    # uptest finisher, rather than having this function build that list itself,
-    # because if it built the list itself it couldn't be sure that all the
-    # nodes had been uptested.  It's possible that one could have crept in
-    # throuh a non-swarm deployment, for example.
+    # It's important that the correct_nodes list be passed to this function
+    # from the uptest finisher, rather than having this function build that
+    # list itself, because if it built the list itself it couldn't be sure that
+    # all the nodes had been uptested.  It's possible that one could have crept
+    # in throuh a non-swarm deployment, for example.
 
     swarm = Swarm.objects.get(id=swarm_id)
     all_procs = swarm.all_procs()

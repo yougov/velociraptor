@@ -87,8 +87,6 @@ Dash.Procs = {
                   el.procid = Dash.Utilities.createID(el.host, el.name);
               });
 
-              // Load up our host object based on the View we made.
-              // 'collection' is a Backbone.View data storage object already set for us.
               var element = $('#host-procs-tmpl').goatee(data);
               Dash.Procs.el.isotope('insert', element);
             });
