@@ -54,8 +54,8 @@
 
 
 {% block script %}
-<script src="{{ STATIC_URL }}js/jquery.isotope.js"></script>
-<script src="{{ STATIC_URL }}js/dash.js"></script>
+<script src="{% static 'js/jquery.isotope.js' %}"></script>
+<script src="{% static 'js/dash.js' %}"></script>
 
 {# Goatee template for list of processes inside each host block #}
 <script id="host-procs-tmpl" type="text/goatee">

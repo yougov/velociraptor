@@ -100,6 +100,7 @@ MEDIA_URL = '/uploads/'
 
 # Store files using mongodb gridfs by default.
 DEFAULT_FILE_STORAGE = 'deployment.storages.GridFSStorage'
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.CachedStaticFilesStorage'
 
 # Absolute path to the directory static files should be collected to.
 # Don't put anything in this directory yourself; store your static files
