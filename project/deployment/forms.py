@@ -77,7 +77,7 @@ class SwarmForm(forms.Form):
     tag = forms.CharField(max_length=50)
     proc_name = forms.CharField(max_length=50)
     size = forms.IntegerField()
-    pool = forms.CharField(max_length=50)
+    pool = forms.CharField(max_length=50, required=False)
     active = forms.BooleanField(initial=True)
 
     def __init__(self, data, *args, **kwargs):

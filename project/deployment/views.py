@@ -269,7 +269,7 @@ def edit_swarm(request, swarm_id=None):
             'tag': swarm.release.build.tag,
             'proc_name': swarm.proc_name,
             'size': swarm.size,
-            'pool': swarm.pool,
+            'pool': swarm.pool or '',
             'active': swarm.active
         }
     else:
@@ -283,7 +283,7 @@ def edit_swarm(request, swarm_id=None):
         swarm.squad = Squad.objects.get(id=data['squad_id'])
         swarm.proc_name = data['proc_name']
         swarm.size = data['size']
-        swarm.pool = data['pool']
+        swarm.pool = data['pool'] or None
         swarm.active = data['active']
 
         swarm.release = get_or_create_release(swarm.recipe, data['tag'])
