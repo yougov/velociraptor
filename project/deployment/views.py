@@ -1,23 +1,25 @@
-import json
 import ast
-import xmlrpclib
-import logging
 import datetime
+import json
+import logging
+import xmlrpclib
 
-from django.shortcuts import render, redirect
-from django.http import HttpResponse, HttpResponseRedirect
-from django.core.urlresolvers import reverse
+from django.conf import settings
 from django.contrib.auth import login as django_login, logout as django_logout
 from django.contrib.auth.decorators import login_required
-from django.conf import settings
+from django.core.urlresolvers import reverse
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import render, redirect, get_object_or_404
+
 from celery.result import AsyncResult
 from celery.task.control import inspect
+
 from djcelery.models import TaskState
 
-from deployment.models import (Host, App, Release, Build, ConfigRecipe, Squad,
-                               Swarm, remember)
 from deployment import forms
 from deployment import tasks
+from deployment.models import (Host, App, Release, Build, ConfigRecipe, Squad,
+                               Swarm, remember)
 
 
 @login_required
@@ -293,7 +295,7 @@ def edit_swarm(request, swarm_id=None):
 
         return redirect('dash')
 
-    # If we're here, and 
+    # If we're here, and
     btn_text = 'Swarm'
     return render(request, 'basic_form.html', vars())
 
@@ -312,3 +314,38 @@ def login(request):
 def logout(request):
     django_logout(request)
     return HttpResponseRedirect('/')
+
+def preview_recipe(request, recipe_id):
+    """ Preview a settings.yaml generated from a recipe as it is stored in
+    the db.
+    """
+    recipe = get_object_or_404(ConfigRecipe, pk=recipe_id)
+    return HttpResponse(recipe.to_yaml())
+
+def preview_recipe_addchange(request, recipe_id):
+    """ Preview a recipe from the add/change view which will use the currently
+    selected ingredients from the inline form (respecting the ones marked for
+    delete!)
+    """
+    recipe = get_object_or_404(ConfigRecipe, pk=recipe_id)
+    custom_ingredients = []
+    # TODO: Collect the custom ingredients from request.GET
+    custom_dict = recipe.assemble(custom_ingredients=custom_ingredients)
+    return HttpResponse(recipe.to_yaml(custom_dict=custom_dict))
+
+def preview_recipe_from_ingredient(request, recipe_id, ingredient_id):
+    """ Preview a recipe from an ingredient change view which will use a
+    given recipe ingredients except for the ingredient that is being edited,
+    for that it will use the current form value.
+    """
+    recipe = get_object_or_404(ConfigRecipe, pk=recipe_id)
+    # Get the current ingredients except for the one we are editing now
+    custom_ingredients = [i.ingredient for i in
+            RecipeIngredient.objects.filter(recipe=recipe).exclude(
+                ingredient__id=ingredient_id)]
+    custom_dict = recipe.assemble(custom_ingredients=custom_ingredients)
+    # Add to the custom dict the values that are being edited
+    # TODO: add the logic to get the custom value from request.GET
+    custom_value = None
+    custom_dict.update(custom_value)
+    return HttpResponse(recipe.to_yaml(custom_dict=custom_dict))
