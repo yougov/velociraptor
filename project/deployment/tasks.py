@@ -17,7 +17,8 @@ from django.conf import settings
 from deployment.models import Release, Build, Swarm, Host, PortLock
 from deployment import balancer
 
-from yg.deploy.fabric.system import (deploy_parcel, run_uptests, delete_proc as
+from yg.deploy.fabric.system import (deploy_parcel, run_uptests,
+                                     clean_releases, delete_proc as
                                      fab_delete_proc)
 from yg.deploy.paver import build as paver_build
 
@@ -398,6 +399,21 @@ def swarm_delete_proc(swarm_id, hostname, procname, port):
             balancer.delete_nodes(swarm.squad.balancer, swarm.pool, [node])
 
     delete_proc(hostname, procname)
+
+@task
+def clean_host_releases(hostname):
+    env.host_string = hostname
+    env.abort_on_prompts = True
+    env.user = settings.DEPLOY_USER
+    env.password = settings.DEPLOY_PASSWORD
+    env.linewise = True
+    clean_releases(execute=True)
+
+@task
+def scooper():
+    # Clean up all active hosts
+    for host in Host.objects.filter(active=True):
+        clean_host_releases.delay(host.name)
 
 
 @contextlib.contextmanager

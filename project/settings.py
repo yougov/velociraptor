@@ -1,6 +1,7 @@
-import warnings
+from datetime import timedelta
 import os
 import sys
+import warnings
 
 import djcelery
 import pymongo
@@ -61,6 +62,13 @@ BROKER_PORT = 5672
 BROKER_USER = "guest"
 BROKER_PASSWORD = "guest"
 BROKER_VHOST = "/"
+
+CELERYBEAT_SCHEDULE = {
+    'scooper': {
+        'task': 'deployment.tasks.scooper',
+        'schedule': timedelta(minutes=30),
+    }
+}
 
 SUPERVISOR_PORT = 9001
 PORT_RANGE_START = 5000
