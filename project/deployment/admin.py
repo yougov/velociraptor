@@ -23,8 +23,8 @@ class ConfigIngredientAdmin(admin.ModelAdmin):
 class ConfigRecipeAdmin(admin.ModelAdmin):
     inlines = [RecipeIngredientInline]
     search_fields = ['name', 'ingredients__label', 'ingredients__value']
-    ordering = ['name', ]
-    list_display = ('name', 'show_ingredients', 'used_in')
+    ordering = ['app__name', 'name']
+    list_display = ('__unicode__', 'show_ingredients', 'used_in')
 
     def show_ingredients(self, obj):
         if obj.ingredients.all().count():
