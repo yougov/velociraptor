@@ -66,20 +66,38 @@ class ConfigRecipe(models.Model):
     app = models.ForeignKey(App)
     namehelp = ("Used in release name.  Good recipe names are short and use "
                 "no spaces or dashes (underscores are OK)")
-    name = models.CharField(verbose_name="ConfigRecipe Name", max_length=20, help_text=namehelp)
-    ingredients = models.ManyToManyField(ConfigIngredient, through='RecipeIngredient')
+    name = models.CharField(verbose_name="ConfigRecipe Name", max_length=20,
+                            help_text=namehelp)
+    ingredients = models.ManyToManyField(ConfigIngredient,
+                                         through='RecipeIngredient')
 
     def __unicode__(self):
         return '%s-%s' % (self.app.name, self.name)
 
-    def assemble(self):
+    def assemble(self, custom_ingredients=None):
+        """ Use current RecipeIngredients objects to assemble a dict of
+        options, or use a custom list of ConfigIngredient ids that might
+        be generated from a preview view. """
         out = {}
-        for i in RecipeIngredient.objects.filter(recipe=self):
-            out.update(i.ingredient.value)
+        if custom_ingredients is None:
+            ingredients = [i.ingredient for i in
+                           RecipeIngredient.objects.filter(recipe=self)]
+        else:
+            ingredients = ConfigIngredient.objects.filter(
+                id__in=custom_ingredients)
+
+        for i in ingredients:
+            out.update(i.value)
+
         return out
 
-    def to_yaml(self):
-        return yaml.safe_dump(self.assemble(), default_flow_style=False)
+    def to_yaml(self, custom_dict=None):
+        """ Use assemble method to build a yaml file, or use a custom_dict
+        that might be constructed from a preview view """
+        if custom_dict is None:
+            return yaml.safe_dump(self.assemble(), default_flow_style=False)
+        else:
+            return yaml.safe_dump(custom_dict, default_flow_style=False)
 
     class Meta:
         unique_together = ('app', 'name')
@@ -93,7 +111,8 @@ class RecipeIngredient(models.Model):
     ingredient = models.ForeignKey(ConfigIngredient)
     recipe = models.ForeignKey(ConfigRecipe)
 
-    ohelp = 'Order for merging when creating release. Higher number takes precedence.'
+    ohelp = "Order for merging when creating release. Higher number takes "\
+            "precedence."
     order = models.IntegerField(blank=True, null=True,  help_text=ohelp)
 
     class Meta:
@@ -161,7 +180,7 @@ class Release(models.Model):
 class Host(models.Model):
     name = models.CharField(max_length=200, unique=True)
 
-    # It might be hard to delete host records if there 
+    # It might be hard to delete host records if there
     active = models.BooleanField(default=True)
     squad = models.ForeignKey('Squad', null=True, blank=True, related_name='hosts')
 
@@ -283,7 +302,7 @@ class Swarm(models.Model):
 
     # If set to true, then the workers will periodically check this swarm's
     # status and make sure it has enough workers, running the right version,
-    # with the right config. 
+    # with the right config.
     active = models.BooleanField(default=True)
 
     class Meta:

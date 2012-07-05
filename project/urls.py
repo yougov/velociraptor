@@ -20,6 +20,14 @@ urlpatterns = patterns('',
     url(r'^upload/$', 'deployment.views.upload_build', name='upload_build'),
     url(r'^log/$', ListView.as_view(model=DeploymentLogEntry,
                                     template_name='log.html'), name='log'),
+    # Preview for Recipes configs
+    url(r'^preview_recipe/(?P<recipe_id>\d+)/$',
+        'deployment.views.preview_recipe', name='preview_recipe'),
+    url(r'^preview_recipe_addchange/$',
+        'deployment.views.preview_recipe_addchange',
+        name='preview_recipe_addchange'),
+    url(r'^preview_ingredient/(?P<recipe_id>\d+)/(?P<ingredient_id>\d+)/$',
+        'deployment.views.preview_ingredient', name='preview_ingredient'),
 
     # Utility stuff
     url(r'^login/$', 'deployment.views.login', name='login'),

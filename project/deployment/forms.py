@@ -52,7 +52,8 @@ class DeploymentForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(DeploymentForm, self).__init__(*args, **kwargs)
-        self.fields['release_id'].choices = [(r.id, r) for r in models.Release.objects.all()]
+        self.fields['release_id'].choices = [(r.id, r) for r in
+            models.Release.objects.all()]
         self.fields['hostname'].choices = [(h.name, h.name) for h in
                                        models.Host.objects.filter(active=True)]
 
@@ -84,4 +85,8 @@ class SwarmForm(forms.Form):
         super(SwarmForm, self).__init__(data, *args, **kwargs)
         self.fields['recipe_id'].choices = [(p.id, p) for p in
                                             models.ConfigRecipe.objects.all()]
-        self.fields['squad_id'].choices = [(s.id, s) for s in models.Squad.objects.all()]
+        self.fields['squad_id'].choices = [(s.id, s) for s in
+                                            models.Squad.objects.all()]
+
+    class Media:
+        js = ('js/dash_preview_recipe.js', )
