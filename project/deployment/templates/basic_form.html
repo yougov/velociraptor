@@ -1,4 +1,10 @@
 {% extends 'base.html' %}
+
+{% block script %}
+{{ block.super }}
+{% if form.media %}{{ form.media }}{% endif %}
+{% endblock script %}
+
 {% block content %}
 <form method='post' class='well'{% if enctype %}enctype="{{ enctype }}"{% endif %}>{% csrf_token %}
     {% if instructions %}

@@ -322,18 +322,20 @@ def preview_recipe(request, recipe_id):
     recipe = get_object_or_404(ConfigRecipe, pk=recipe_id)
     return HttpResponse(recipe.to_yaml())
 
-def preview_recipe_addchange(request, recipe_id):
+def preview_recipe_addchange(request):
     """ Preview a recipe from the add/change view which will use the currently
     selected ingredients from the inline form (respecting the ones marked for
     delete!)
     """
-    recipe = get_object_or_404(ConfigRecipe, pk=recipe_id)
+    # We use a new empty ConfigRecipe to build this preview since we could be
+    # adding a new one.
+    recipe = ConfigRecipe()
     custom_ingredients = []
     # TODO: Collect the custom ingredients from request.GET
     custom_dict = recipe.assemble(custom_ingredients=custom_ingredients)
     return HttpResponse(recipe.to_yaml(custom_dict=custom_dict))
 
-def preview_recipe_from_ingredient(request, recipe_id, ingredient_id):
+def preview_ingredient(request, recipe_id, ingredient_id):
     """ Preview a recipe from an ingredient change view which will use a
     given recipe ingredients except for the ingredient that is being edited,
     for that it will use the current form value.
