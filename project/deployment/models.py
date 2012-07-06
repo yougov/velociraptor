@@ -1,9 +1,6 @@
 import xmlrpclib
 import logging
-import posixpath
 import hashlib
-import datetime
-import collections
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -20,6 +17,7 @@ LOG_ENTRY_TYPES = (
     ('release', 'Release'),
     ('deployment', 'Deployment'),
 )
+
 
 class DeploymentLogEntry(models.Model):
     type = models.CharField(max_length=50, choices=LOG_ENTRY_TYPES)
@@ -52,6 +50,9 @@ class ConfigIngredient(models.Model):
 
     def __unicode__(self):
         return self.label
+
+    class Meta:
+        ordering = ['label']
 
 
 class App(models.Model):
@@ -182,14 +183,15 @@ class Host(models.Model):
 
     # It might be hard to delete host records if there
     active = models.BooleanField(default=True)
-    squad = models.ForeignKey('Squad', null=True, blank=True, related_name='hosts')
-
+    squad = models.ForeignKey('Squad', null=True, blank=True,
+                              related_name='hosts')
 
     def __unicode__(self):
         return self.name
 
     def get_used_ports(self):
-        server = xmlrpclib.Server('http://%s:%s' % (self.name, settings.SUPERVISOR_PORT))
+        server = xmlrpclib.Server('http://%s:%s' % (self.name,
+                                                    settings.SUPERVISOR_PORT))
         states = server.supervisor.getAllProcessInfo()
         # names will look like 'thumpy-0.0.1-9585c1f8-web-8001'
         # split off the port at the end.
@@ -204,6 +206,7 @@ class Host(models.Model):
 
         all_ports = xrange(settings.PORT_RANGE_START, settings.PORT_RANGE_END)
         used_ports = self.get_used_ports()
+
         # Return the first port in our configured range that's not already in
         # use.
         def free(port):
@@ -214,14 +217,15 @@ class Host(models.Model):
 
         return next(x for x in all_ports if free(x))
 
-
     def get_procs(self):
         """
         Return a list of Proc objects, one for each supervisord process that
         has a parseable name and whose app and recipe can be found in the DB.
         """
-        server = xmlrpclib.Server('http://%s:%s' % (self.name, settings.SUPERVISOR_PORT))
+        server = xmlrpclib.Server('http://%s:%s' % (self.name,
+                                                    settings.SUPERVISOR_PORT))
         states = server.supervisor.getAllProcessInfo()
+
         def make_proc(name, host):
             # Given the name of a proc like
             # 'khartoum-0.0.7-yfiles-1427a4e2-web-8060', parse out the bits and
@@ -247,7 +251,8 @@ class Host(models.Model):
 
         procs = [make_proc(p['name'], self) for p in states]
 
-        # Filter out any procs for whom we couldn't look up an App or ConfigRecipe
+        # Filter out any procs for whom we couldn't look up an App or
+        # ConfigRecipe
         return [p for p in procs if p is not None]
 
 
@@ -345,7 +350,8 @@ class Swarm(models.Model):
         # cache the proc counts for each host
         for h in squad_hosts:
             h.all_procs = h.get_procs()
-            h.swarm_procs = [p for p in h.all_procs if p.hash == self.release.hash]
+            h.swarm_procs = [p for p in h.all_procs if p.hash ==
+                             self.release.hash]
             h.sortkey = (len(h.swarm_procs), len(h.all_procs))
 
         squad_hosts.sort(key=lambda h: h.sortkey)

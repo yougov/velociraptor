@@ -6,6 +6,7 @@ from django.conf import settings
 from pymongo import Connection
 from gridfs import GridFS
 
+
 class GridFSStorage(Storage):
     def __init__(self, connection=None, host=None, port=None, db=None,
                  collection=None, base_url=None):

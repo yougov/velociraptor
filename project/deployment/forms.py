@@ -11,12 +11,14 @@ class BuildForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(BuildForm, self).__init__(*args, **kwargs)
-        self.fields['app_id'].choices = [(a.id, a) for a in models.App.objects.all()]
+        self.fields['app_id'].choices = [(a.id, a) for a in
+                                         models.App.objects.all()]
 
 
 class BuildUploadForm(forms.ModelForm):
     class Meta:
         model = models.Build
+
 
 class ReleaseForm(forms.Form):
     build_id = forms.ChoiceField(choices=[], label='Build')
@@ -33,7 +35,8 @@ class ReleaseForm(forms.Form):
         # Look up the build's app, and the recipe's app, and make sure they
         # match.
         build = models.Build.objects.get(id=self.cleaned_data['build_id'])
-        recipe = models.ConfigRecipe.objects.get(id=self.cleaned_data['recipe_id'])
+        recipe = models.ConfigRecipe.objects.get(
+            id=self.cleaned_data['recipe_id'])
         if not build.app.id == recipe.app.id:
             raise forms.ValidationError("Build app doesn't match Recipe app")
         return self.cleaned_data
