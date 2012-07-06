@@ -15,3 +15,4 @@ requests==0.11.1
 pymongo==2.1.1
 django-picklefield==0.2.0
 suds==0.4
+django-reversion==1.6.1

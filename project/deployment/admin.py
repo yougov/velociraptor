@@ -1,3 +1,5 @@
+import reversion
+
 from django.contrib import admin
 from django.contrib.auth.models import Group
 
@@ -7,21 +9,21 @@ class RecipeIngredientInline(admin.TabularInline):
     model = models.RecipeIngredient
 
 
-class ConfigIngredientAdmin(admin.ModelAdmin):
+class ConfigIngredientAdmin(reversion.VersionAdmin):
     search_fields = ['label', 'value']
     ordering = ['label', ]
     list_display = ('label', 'used_in')
 
     def used_in(self, obj):
         if obj.configrecipe_set.all().count():
-            return ",".join([recipe.__unicode__() 
+            return ",".join([recipe.__unicode__()
                              for recipe in obj.configrecipe_set.all()])
         return "No recipes"
     used_in.short_description = 'Included in'
 
 
-class ConfigRecipeAdmin(admin.ModelAdmin):
-    inlines = [RecipeIngredientInline]
+class ConfigRecipeAdmin(reversion.VersionAdmin):
+    inlines = [RecipeIngredientInline, ]
     search_fields = ['name', 'ingredients__label', 'ingredients__value']
     ordering = ['app__name', 'name']
     list_display = ('__unicode__', 'show_ingredients', 'used_in')
