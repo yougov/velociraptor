@@ -199,6 +199,7 @@ INSTALLED_APPS = (
     'django_extensions',
     'deployment',  # Our main velociraptor app
     'south',
+    'reversion'
 )
 
 # A sample logging configuration. The only tangible logging
