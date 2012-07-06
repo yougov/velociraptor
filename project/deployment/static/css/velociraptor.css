@@ -184,6 +184,21 @@ div.label {
   display: none;
 }
 
+/* NAV */
+
+.nav .chzn-container {
+  margin: 9px 0 0 10px;
+  width: auto;
+}
+
+.nav .chzn-container .chzn-single{ 
+  border: none;
+}
+
+.nav .chzn-container .chzn-single span { 
+  background-color: transparent;
+}
+
 /**** Isotope filtering ****/
 
 .isotope-item {

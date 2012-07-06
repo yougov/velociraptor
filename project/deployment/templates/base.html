@@ -7,6 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>{% block title %}Velociraptor{% endblock title %}</title>
   <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}" type="text/css" media="screen">
+  <link rel="stylesheet" href="{% static 'chosen/chosen.css' %}" type="text/css" media="screen">
   <link rel="stylesheet" href="{% static 'css/velociraptor.css' %}" type="text/css" media="screen">
   <style>
       body {
@@ -36,23 +37,23 @@
             {% url log as log_url %}
             <ul class="nav">
               <li class="{% current_nav dash_url %}"><a href="{{ dash_url }}">Dash</a></li>
-              <li class="dropdown">
-                  <a class="dropdown-toggle" data-toggle="dropdown" href="#">
-                      Swarm
-                      <b class="caret"></b>
-                  </a>
-                  <ul class="dropdown-menu">
-                      <li><a href="/swarm/">New</a></li>
-                      <li class="divider"></li>
-                      {% for swarm in swarms %}
-                      <li><a href="{% url edit_swarm swarm.id %}">{{ swarm.shortname }}</a></li>
-                      {% endfor %}
-                  </ul>
-              </li>
               <li class="{% current_nav build_url %}"><a href="{{ build_url }}">Build</a></li>
               <li class="{% current_nav release_url %}"><a href="{{ release_url }}">Release</a></li>
               <li class="{% current_nav deploy_url %}"><a href="{{ deploy_url }}">Deploy</a></li>
               <li class="{% current_nav log_url %}"><a href="{{ log_url }}">Log</a></li>
+              <li class="dropdown">
+                  <!--<a class="dropdown-toggle" data-toggle="dropdown" href="#">-->
+                      <!--Swarm-->
+                      <!--<b class="caret"></b>-->
+                  <!--</a>-->
+                  <select id="swarm-list" class="chzn-select" data-placeholder="Swarm">
+                      <option></option>
+                      <option value="/swarm/">New</option>
+                      {% for swarm in swarms %}
+                      <option value="{% url edit_swarm swarm.id %}">{{ swarm.shortname }}</option>
+                      {% endfor %}
+                  </select>
+              </li>
             </ul>
             <p class="navbar-text pull-right">
             {% if request.user.is_authenticated %}
@@ -83,13 +84,13 @@
         {% endblock content %}
         </div>
     </div>
-    <!-- Javascript placed at the end of the document so the pages load faster -->
     <script src="{% static 'js/jquery.min.js' %}"></script>
     <script src="{% static 'js/django-jquery.js' %}"></script>
-    {# I like underscore's more terse 'each' function #}
     <script src="{% static 'js/underscore-min.js' %}"></script>
     <script src="{% static 'js/goatee.js' %}"></script>
     <script src="{% static 'js/bootstrap.js' %}"></script>
+    <script src="{% static 'chosen/chosen.jquery.min.js' %}"></script>
+    <script src="{% static 'js/base.js' %}"></script>
     {% block script %}{% endblock script %}
 </body>
 </html>
