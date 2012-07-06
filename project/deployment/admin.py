@@ -14,7 +14,7 @@ class ConfigIngredientAdmin(admin.ModelAdmin):
 
     def used_in(self, obj):
         if obj.configrecipe_set.all().count():
-            return ",".join([recipe.name
+            return ",".join([recipe.__unicode__() 
                              for recipe in obj.configrecipe_set.all()])
         return "No recipes"
     used_in.short_description = 'Included in'
