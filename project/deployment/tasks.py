@@ -403,7 +403,9 @@ def clean_host_releases(hostname):
     env.user = settings.DEPLOY_USER
     env.password = settings.DEPLOY_PASSWORD
     env.linewise = True
-    clean_releases(execute=True)
+
+    with always_disconnect():
+        clean_releases(execute=True)
 
 
 @task
