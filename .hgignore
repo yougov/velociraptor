@@ -28,3 +28,5 @@ uploads*
 settings.yaml
 tmp/
 celeryev.pid
+celerybeat-schedule
+celerybeat.pid

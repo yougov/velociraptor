@@ -5,6 +5,7 @@ from django.contrib.auth.models import Group
 
 from deployment import models
 
+
 class RecipeIngredientInline(admin.TabularInline):
     model = models.RecipeIngredient
 
@@ -42,8 +43,10 @@ class ConfigRecipeAdmin(reversion.VersionAdmin):
         return "No Swarms"
     used_in.short_description = "Used in"
 
+
 class HostInline(admin.TabularInline):
     model = models.Host
+
 
 class SquadAdmin(admin.ModelAdmin):
     inlines = [HostInline]

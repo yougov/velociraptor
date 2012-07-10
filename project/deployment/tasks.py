@@ -48,8 +48,8 @@ def deploy(release_id, recipe_name, hostname, proc, port):
             f = open('settings.yaml', 'wb')
             f.write(release.config)
             f.close()
-            # pull the build out of gridfs, write it to a temporary location, and
-            # deploy it.
+            # pull the build out of gridfs, write it to a temporary location,
+            # and deploy it.
             build_name = posixpath.basename(release.build.file.name)
             local_build = open(build_name, 'wb')
             build = default_storage.open(release.build.file.name)
@@ -59,8 +59,8 @@ def deploy(release_id, recipe_name, hostname, proc, port):
             build.close()
 
             with always_disconnect():
-                result = deploy_parcel(build_name, 'settings.yaml', recipe_name,
-                    proc, port, 'nobody', release.hash)
+                deploy_parcel(build_name, 'settings.yaml', recipe_name, proc,
+                              port, 'nobody', release.hash)
 
 
 @task
@@ -151,7 +151,7 @@ def swarm_release(swarm_id):
     if not swarm.release.hash:
         # Release has not been frozen yet, probably because we were waiting on
         # the build.  Since there's a build file now, saving will force the
-        # release to hash itself. 
+        # release to hash itself.
         release = swarm.release
         release.config = swarm.recipe.to_yaml()
         release.save()
@@ -163,7 +163,6 @@ def swarm_release(swarm_id):
         release.save()
         swarm.release = release
         swarm.save()
-
 
     # OK we have a release.  Next: see if we need to do a deployment.
     # Query squad for list of procs.
@@ -277,7 +276,6 @@ def swarm_assign_uptests(swarm_id):
     for proc in current_procs:
         host_procs[proc.host.name].append(proc.name)
 
-
     subtasks = []
     for hostname, procs in host_procs.items():
 
@@ -316,7 +314,6 @@ def swarm_post_uptest(uptest_results, swarm_id):
     if any(isinstance(r, Exception) for r in uptest_results):
         assert False, "Error in uptests."
 
-    procnames_by_host = uptest_results
     correct_nodes = set()
     for host, procnames in uptest_results:
         for procname in procnames:
@@ -340,12 +337,10 @@ def swarm_route(swarm_id, correct_nodes, callback=None):
 
     swarm = Swarm.objects.get(id=swarm_id)
     all_procs = swarm.all_procs()
-    current_procs = [p for p in all_procs if p.hash == swarm.release.hash]
     stale_procs = [p for p in all_procs if p.hash != swarm.release.hash]
     if swarm.pool:
         # There's just the right number of procs.  Make sure the balancer is up
         # to date, but only if the swarm has a pool specified.
-
 
         current_nodes = set(balancer.get_nodes(swarm.squad.balancer,
                                                swarm.pool))
@@ -400,6 +395,7 @@ def swarm_delete_proc(swarm_id, hostname, procname, port):
 
     delete_proc(hostname, procname)
 
+
 @task
 def clean_host_releases(hostname):
     env.host_string = hostname
@@ -407,7 +403,10 @@ def clean_host_releases(hostname):
     env.user = settings.DEPLOY_USER
     env.password = settings.DEPLOY_PASSWORD
     env.linewise = True
-    clean_releases(execute=True)
+
+    with always_disconnect():
+        clean_releases(execute=True)
+
 
 @task
 def scooper():

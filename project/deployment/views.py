@@ -1,4 +1,3 @@
-import ast
 import datetime
 import json
 import logging
@@ -12,7 +11,6 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
 
 from celery.result import AsyncResult
-from celery.task.control import inspect
 
 from djcelery.models import TaskState
 
@@ -36,6 +34,7 @@ def json_response(obj, status=200):
     resp = HttpResponse(json.dumps(obj), status=status)
     resp['Content-Type'] = 'application/json'
     return resp
+
 
 # TODO: protect these json views with a decorator that returns a 403 instead of
 # a redirect to the login page.  To be more ajax-friendly.
@@ -106,7 +105,7 @@ def get_task_status(task_id):
     task = AsyncResult(task_id)
     status = {
         'successful': task.successful(),
-        'result': str(task.result), # task.result can be any picklable python object.
+        'result': str(task.result),  # result can be any picklable object
         'status': task.status,
         'ready': task.ready(),
         'failed': task.failed(),
@@ -116,7 +115,6 @@ def get_task_status(task_id):
     if task.failed():
         status['traceback'] = task.traceback
     return status
-
 
 
 def clean_task_value(v):
@@ -134,7 +132,7 @@ def task_to_dict(task):
     """
     # Make a copy of task.__dict__, leaving off any of the cached complex
     # objects
-    return {k:clean_task_value(v) for k, v in task.__dict__.items() if not
+    return {k: clean_task_value(v) for k, v in task.__dict__.items() if not
            k.startswith('_')}
 
 

@@ -238,7 +238,11 @@ Dash.Tasks = {
     // It will check whether the item already exists in the list, and only add
     // it if necessary.
     doItem: function(taskdata, idx, lst) {
-        taskdata.shortname = taskdata.name.split('.').pop();
+        if (_.isNull(taskdata.name)) {
+            taskdata.shortname = taskdata.task_id; 
+        } else {
+            taskdata.shortname = taskdata.name.split('.').pop();
+        }
 
         // Set a nicer date for humans.  Assumes all browsers we care about can
         // accept an iso datetime on Date init.
