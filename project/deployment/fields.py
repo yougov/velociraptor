@@ -15,7 +15,6 @@ def validate_yaml_dict(value):
         not isinstance(value, dict)):
         raise ValidationError
 
-
 class YAMLDictField(models.TextField):
     """
     YAMLDictField is a TextField that serializes and deserializes YAML dicts

@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.contrib.auth.models import Group
 
 from deployment import models
+from deployment.forms import ConfigIngredientForm
 
 
 class RecipeIngredientInline(admin.TabularInline):
@@ -14,6 +15,7 @@ class ConfigIngredientAdmin(reversion.VersionAdmin):
     search_fields = ['label', 'value']
     ordering = ['label', ]
     list_display = ('label', 'used_in')
+    form = ConfigIngredientForm
 
     def used_in(self, obj):
         if obj.configrecipe_set.all().count():

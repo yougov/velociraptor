@@ -51,18 +51,6 @@ class ConfigIngredient(models.Model):
     def __unicode__(self):
         return self.label
 
-    def clean(self):
-        """ Custom validation. So it not necessary to create a custom modelform
-        for the admin and overwrite validation there. It can be done by
-        the model itself.
-        https://docs.djangoproject.com/en/dev/ref/models/instances/
-        """
-        value = self.value
-        try:
-            yaml.safe_load(value)
-        except:
-            raise ValidationError("This is not valid yaml")
-
     class Meta:
         ordering = ['label', ]
 
