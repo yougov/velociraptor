@@ -9,7 +9,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.files.storage import default_storage
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 import yaml
 
 from deployment.fields import YAMLDictField
@@ -45,13 +45,25 @@ def remember(msg_type, msg, username):
     # Also log it to actual python logging
     logging.info('%s %s: %s' % (msg_type, username, msg))
 
-
 class ConfigIngredient(models.Model):
     label = models.CharField(max_length=50, unique=True)
     value = YAMLDictField(help_text=("Must be valid YAML dict."))
 
     def __unicode__(self):
         return self.label
+
+    def clean(self):
+        """ Custom validation. So it not necessary to create a custom modelform
+        for the admin and overwrite validation there. It can be done by
+        the model itself.
+
+        https://docs.djangoproject.com/en/dev/ref/models/instances/
+        """
+        value = self.value
+        try:
+            yaml.safe_load(value)
+        except:
+            raise ValidationError("This is not valid yaml")
 
 
 class App(models.Model):
