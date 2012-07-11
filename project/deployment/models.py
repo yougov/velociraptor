@@ -55,7 +55,9 @@ class ConfigIngredient(models.Model):
         ordering = ['label', ]
 
 class App(models.Model):
-    name = models.CharField(max_length=50)
+    namehelp = ("Used in release name.  Good app names are short and use "
+                "no spaces or dashes (underscores are OK).")
+    name = models.CharField(max_length=50, help_text=namehelp)
     repo_url = models.CharField(max_length=200, blank=True, null=True)
 
     def __unicode__(self):
