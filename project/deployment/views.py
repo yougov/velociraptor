@@ -49,7 +49,8 @@ def api_host(request):
 def api_host_status(request, hostname):
     """Display status of all supervisord-managed processes on a single host, in
     JSON"""
-    server = xmlrpclib.Server('http://%s:%s' % (hostname, settings.SUPERVISOR_PORT))
+    server = xmlrpclib.Server('http://%s:%s' % (hostname,
+                                                settings.SUPERVISOR_PORT))
     states = server.supervisor.getAllProcessInfo()
 
     data = {
@@ -70,7 +71,8 @@ def api_host_ports(request, hostname):
 
 @login_required
 def api_host_proc(request, host, proc):
-    """Display status of a single supervisord-managed process on a host, in JSON"""
+    """Display status of a single supervisord-managed process on a host, in
+    JSON """
     server = xmlrpclib.Server('http://%s:%s' % (host, settings.SUPERVISOR_PORT))
     if request.method == 'GET':
         state = server.supervisor.getProcessInfo(proc)

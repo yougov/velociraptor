@@ -13,11 +13,11 @@ $(document).ready(function(){
 
 
 ///////////////////  Dash Utilities  ///////////////////
-// Generic-use things that didn't seem to fit in a specific model. 
+// Generic-use things that didn't seem to fit in a specific model.
 
 Dash.Utilities = {
     isNumber: function(n){
-       return !isNaN(parseFloat(n)) && isFinite(n);   
+       return !isNaN(parseFloat(n)) && isFinite(n);
     },
 
     procIsOurs: function(proc){
@@ -26,7 +26,7 @@ Dash.Utilities = {
         // dashboard can control.
         var parts = proc.split('-');
         var len = parts.length;
-        return len === 6 && this.isNumber(parts[len-1]);       
+        return len === 6 && this.isNumber(parts[len-1]);
     },
 
     cleanName: function(host){
@@ -62,14 +62,14 @@ Dash.Procs = {
         // Load up Click Events for this Object
         Dash.Procs.el.delegate('.proc-status .label', 'click', Dash.Procs.onProcClick);
         Dash.Procs.el.delegate('.proc-actions .btn', 'click', Dash.Procs.onProcActionClick);
-        $('body').delegate('.action-dialog .btn', 'click', Dash.Procs.onActionModalClick); 
+        $('body').delegate('.action-dialog .btn', 'click', Dash.Procs.onActionModalClick);
         $('.procfilter').click(Dash.Procs.onFilterClick);
         $('.expandcollapse button').click(Dash.Procs.onExpandCollapseClick);
 
     },
 
     getHostProcs: function(data, txtStatus, xhr){
-        // note - scope is inside getJSON call! 
+        // note - scope is inside getJSON call!
         _.each(data.hosts, function(el, idx, lst) {
             // for each host in the list, make a request for the procs and draw
             // a box for each.
@@ -78,10 +78,19 @@ Dash.Procs = {
                   el.host = data.host;
                   // strip dots from the host so it can be used as a
                   // classname
+                  var splitresult = el.name.split('-');
                   el.hostclass = Dash.Utilities.cleanName(data.host);
-                  el.appclass = el.name.split('-')[0];
-                  el.destroyable = Dash.Utilities.procIsOurs(el.name); 
-                  el.shortname = el.name.split('-')[0];
+                  el.appclass = splitresult[0];
+                  el.destroyable = Dash.Utilities.procIsOurs(el.name);
+                  el.shortname = splitresult[0];
+                  // If it is destroyable it is ours, if it ours it should
+                  // have a port number as the [5] element.
+                  el.port = false;
+                  if(el.destroyable) {
+                    if(Dash.Utilities.isNumber(splitresult[5])){
+                      el.port = splitresult[5];
+                    }
+                  }
                   // each proc gets a unique id of host + procname, with illegal
                   // chars stripped out.
                   el.procid = Dash.Utilities.createID(el.host, el.name);
@@ -95,7 +104,7 @@ Dash.Procs = {
 
     onProcClick: function(){
         $(this).parent().toggleClass('host-expanded');
-        Dash.Procs.reflow();      
+        Dash.Procs.reflow();
     },
 
     onProcActionClick: function() {
@@ -152,7 +161,7 @@ Dash.Procs = {
             } else {
                 Dash.Procs.doProcAction(data.host, data.proc, data.action);
             }
-        } 
+        }
         // no matter what button we got, hide and destroy the modal.
         modal.modal('hide');
         modal.remove();
@@ -173,7 +182,7 @@ Dash.Procs = {
             data: data,
             dataType: 'json',
             type: method,
-            success: callback 
+            success: callback
         });
     },
 
@@ -239,7 +248,7 @@ Dash.Tasks = {
     // it if necessary.
     doItem: function(taskdata, idx, lst) {
         if (_.isNull(taskdata.name)) {
-            taskdata.shortname = taskdata.task_id; 
+            taskdata.shortname = taskdata.task_id;
         } else {
             taskdata.shortname = taskdata.name.split('.').pop();
         }
@@ -260,7 +269,7 @@ Dash.Tasks = {
                 var newtask = Dash.Tasks.tmpl.goatee(taskdata);
                 // update existing item with contents of new one.
                 task.html(newtask.html());
-            } 
+            }
         }
 
         // remember taskdata for comparing later.  Also for rendering details

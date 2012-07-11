@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.contrib.auth.models import Group
 
 from deployment import models
+from deployment.forms import ConfigIngredientForm
 
 
 class RecipeIngredientInline(admin.TabularInline):
@@ -14,10 +15,11 @@ class ConfigIngredientAdmin(reversion.VersionAdmin):
     search_fields = ['label', 'value']
     ordering = ['label', ]
     list_display = ('label', 'used_in')
+    form = ConfigIngredientForm
 
     def used_in(self, obj):
         if obj.configrecipe_set.all().count():
-            return ",".join([recipe.__unicode__()
+            return ", ".join([recipe.__unicode__()
                              for recipe in obj.configrecipe_set.all()])
         return "No recipes"
     used_in.short_description = 'Included in'
@@ -31,7 +33,7 @@ class ConfigRecipeAdmin(reversion.VersionAdmin):
 
     def show_ingredients(self, obj):
         if obj.ingredients.all().count():
-            return ",".join([ing.label
+            return ", ".join([ing.label
                              for ing in obj.ingredients.all()])
         return "No Ingredients"
     show_ingredients.short_description = "Ingredients"
@@ -39,7 +41,7 @@ class ConfigRecipeAdmin(reversion.VersionAdmin):
     def used_in(self, obj):
         swarms = obj.swarm_set.all()
         if swarms.count():
-            return ",".join([swarm.shortname() for swarm in swarms])
+            return ", ".join([swarm.shortname() for swarm in swarms])
         return "No Swarms"
     used_in.short_description = "Used in"
 

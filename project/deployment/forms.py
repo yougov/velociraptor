@@ -1,8 +1,22 @@
 from django import forms
 from django.contrib.auth import authenticate
 
+import yaml
+
 from deployment import models
 
+class ConfigIngredientForm(forms.ModelForm):
+    class Meta:
+        model = models.ConfigIngredient
+
+    def clean_value(self):
+        value = self.cleaned_data.get('value', None)
+        if value:
+            try:
+                yaml.safe_load(value)
+            except:
+                raise forms.ValidationError("Invalid YAML")
+        return value
 
 class BuildForm(forms.Form):
 

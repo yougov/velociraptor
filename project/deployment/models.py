@@ -4,9 +4,10 @@ import hashlib
 
 from django.db import models
 from django.contrib.auth.models import User
-from django.core.files.storage import default_storage
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.files.storage import default_storage
+
 import yaml
 
 from deployment.fields import YAMLDictField
@@ -43,7 +44,6 @@ def remember(msg_type, msg, username):
     # Also log it to actual python logging
     logging.info('%s %s: %s' % (msg_type, username, msg))
 
-
 class ConfigIngredient(models.Model):
     label = models.CharField(max_length=50, unique=True)
     value = YAMLDictField(help_text=("Must be valid YAML dict."))
@@ -52,15 +52,19 @@ class ConfigIngredient(models.Model):
         return self.label
 
     class Meta:
-        ordering = ['label']
-
+        ordering = ['label', ]
 
 class App(models.Model):
-    name = models.CharField(max_length=50)
+    namehelp = ("Used in release name.  Good app names are short and use "
+                "no spaces or dashes (underscores are OK).")
+    name = models.CharField(max_length=50, help_text=namehelp)
     repo_url = models.CharField(max_length=200, blank=True, null=True)
 
     def __unicode__(self):
         return self.name
+
+    class Meta:
+        ordering = ['name', ]
 
 
 class ConfigRecipe(models.Model):
@@ -254,6 +258,9 @@ class Host(models.Model):
         # Filter out any procs for whom we couldn't look up an App or
         # ConfigRecipe
         return [p for p in procs if p is not None]
+
+    class Meta:
+        ordering = ['name', ]
 
 
 class Squad(models.Model):
