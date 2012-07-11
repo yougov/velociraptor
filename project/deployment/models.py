@@ -259,6 +259,9 @@ class Host(models.Model):
         # ConfigRecipe
         return [p for p in procs if p is not None]
 
+    class Meta:
+        ordering = ['name', ]
+
 
 class Squad(models.Model):
     """
