@@ -61,6 +61,9 @@ class App(models.Model):
     def __unicode__(self):
         return self.name
 
+    class Meta:
+        ordering = ['name', ]
+
 
 class ConfigRecipe(models.Model):
     app = models.ForeignKey(App)

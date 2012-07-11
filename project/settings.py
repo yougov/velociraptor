@@ -23,6 +23,7 @@ TEMPLATE_DEBUG = DEBUG
 ADMINS = (
     # Change this to the devops group email when we deploy this for real.
     ('Brent Tubbs', 'brent.tubbs@yougov.com'),
+    ('Fernando Gutierrez', 'fernando.gutierrez@yougov.com'),
 )
 
 MANAGERS = ADMINS
