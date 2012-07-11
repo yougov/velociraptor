@@ -6,11 +6,6 @@ window.Dash = {
     }
 };
 
-function IsNumeric(input)
-{
-    return (input - 0) == input && input.length > 0;
-}
-
 //// Fire in the hole! ////
 $(document).ready(function(){
     Dash.init();
@@ -88,14 +83,13 @@ Dash.Procs = {
                   el.appclass = splitresult[0];
                   el.destroyable = Dash.Utilities.procIsOurs(el.name);
                   el.shortname = splitresult[0];
-                  if(splitresult.length > 4) {
-                    if(IsNumeric(el.name.split('-')[5])){
-                      el.port = el.name.split('-')[5];
-                    }else{
-                      el.port = false;
+                  // If it is destroyable it is ours, if it ours it should
+                  // have a port number as the [5] element.
+                  el.port = false;
+                  if(el.destroyable) {
+                    if(Dash.Utilities.isNumber(splitresult[5])){
+                      el.port = splitresult[5];
                     }
-                  }else{
-                    el.port = false;
                   }
                   // each proc gets a unique id of host + procname, with illegal
                   // chars stripped out.
