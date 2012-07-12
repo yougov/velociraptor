@@ -58,9 +58,11 @@ def deploy(release_id, recipe_name, hostname, proc, port):
             local_build.close()
             build.close()
 
+            proc_user = getattr(settings, 'PROC_USER', 'nobody')
+
             with always_disconnect():
                 deploy_parcel(build_name, 'settings.yaml', recipe_name, proc,
-                              port, 'nobody', release.hash)
+                              port, proc_user, release.hash)
 
 
 @task
