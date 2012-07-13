@@ -358,7 +358,7 @@ class Swarm(models.Model):
         for h in squad_hosts:
             h.all_procs = h.get_procs()
             h.swarm_procs = [p for p in h.all_procs if p.hash ==
-                             self.release.hash]
+                             self.release.hash and p.proc == self.proc_name]
             h.sortkey = (len(h.swarm_procs), len(h.all_procs))
 
         squad_hosts.sort(key=lambda h: h.sortkey)
