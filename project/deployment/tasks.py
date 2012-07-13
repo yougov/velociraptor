@@ -338,8 +338,6 @@ def swarm_route(swarm_id, correct_nodes, callback=None):
     # in throuh a non-swarm deployment, for example.
 
     swarm = Swarm.objects.get(id=swarm_id)
-    all_procs = swarm.all_procs()
-    stale_procs = [p for p in all_procs if p.hash != swarm.release.hash]
     if swarm.pool:
         # There's just the right number of procs.  Make sure the balancer is up
         # to date, but only if the swarm has a pool specified.
@@ -351,8 +349,7 @@ def swarm_route(swarm_id, correct_nodes, callback=None):
 
         new_nodes = correct_nodes.difference(current_nodes)
 
-        stale_nodes = current_nodes.intersection(p.as_node() for p in
-                                                      stale_procs)
+        stale_nodes = current_nodes.difference(correct_nodes)
 
         if new_nodes:
             balancer.add_nodes(swarm.squad.balancer, swarm.pool,
