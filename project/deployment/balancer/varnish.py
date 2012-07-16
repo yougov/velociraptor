@@ -84,7 +84,7 @@ class VarnishBalancer(SshBasedBalancer):
         return set(nodes)
 
     def _get_include_line(self, pool):
-        return 'include "%s%s.vcl";' % (self.pool_file_prefix, pool)
+        return 'include "%s";' % self._get_poolfile(pool)
 
     def _set_host_nodes(self, host, pool, nodes):
         # Write the pool file
