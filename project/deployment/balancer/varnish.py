@@ -95,7 +95,13 @@ class VarnishBalancer(SshBasedBalancer):
         # Also ensure that there's a root include file that includes the one we
         # just wrote.
         main_file = posixpath.join(self.include_dir, self.main_pool_file)
-        main_contents = self._read_file(host, main_file)
+        try:
+            main_contents = self._read_file(host, main_file)
+        except IOError as e:
+            if e.errno == errno.ENOENT:
+                main_contents = ''
+            else:
+                raise
         include_line = self._get_include_line(pool)
         if not include_line in main_contents:
             self._write_file(host, main_file, main_contents + '\n' +
