@@ -17,6 +17,7 @@ if not 'balancers' in globals():
     for name, config in settings.BALANCERS.items():
         balancers[name] = import_class(config['BACKEND'])(config)
 
+
 def add_nodes(balancer, pool_name, nodes):
     """
     Given the name of a pool, and a list of nodes, add the nodes to the pool.
@@ -24,12 +25,14 @@ def add_nodes(balancer, pool_name, nodes):
     """
     balancers[balancer].add_nodes(pool_name, nodes)
 
+
 def delete_nodes(balancer, pool_name, nodes):
     """
     Given the name of a pool and a list of nodes, remove the nodes from the
     pool, if present.
     """
     balancers[balancer].delete_nodes(pool_name, nodes)
+
 
 def get_nodes(balancer, pool_name):
     return balancers[balancer].get_nodes(pool_name)
