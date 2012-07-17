@@ -45,6 +45,9 @@ div.label {
 .label-release:hover {
   background-color: #2d6987;
 }
+.label-swarm {
+  background-color: #333
+}
 
 /* styles for the process lists on the homepage dashboard */
 .proc-list {

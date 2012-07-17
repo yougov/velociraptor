@@ -293,6 +293,9 @@ def edit_swarm(request, swarm_id=None):
         swarm.save()
         tasks.swarm_start.delay(swarm.id)
 
+        remember('swarm', 'swarmed %s' % swarm,
+                request.user.username)
+
         return redirect('dash')
 
     # If we're here, and
