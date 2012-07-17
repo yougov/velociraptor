@@ -58,6 +58,10 @@ warnings.filterwarnings('ignore', category=UserWarning,
 
 MONGODB_URL = 'mongodb://localhost/velociraptor'
 
+CELERY_ENABLE_UTC = True
+CELERYBEAT_SCHEDULER = 'mongoscheduler.MongoScheduler'
+CELERY_MONGO_SCHEDULER_URI = 'mongodb://localhost:27017/velociraptor.scheduler'
+
 BROKER_HOST = "localhost"
 BROKER_PORT = 5672
 BROKER_USER = "guest"
