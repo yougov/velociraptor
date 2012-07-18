@@ -5,6 +5,7 @@ import yaml
 
 from deployment import models
 
+
 class ConfigIngredientForm(forms.ModelForm):
     class Meta:
         model = models.ConfigIngredient
@@ -17,6 +18,7 @@ class ConfigIngredientForm(forms.ModelForm):
             except:
                 raise forms.ValidationError("Invalid YAML")
         return value
+
 
 class BuildForm(forms.Form):
 
@@ -32,6 +34,16 @@ class BuildForm(forms.Form):
 class BuildUploadForm(forms.ModelForm):
     class Meta:
         model = models.Build
+
+
+class SquadForm(forms.ModelForm):
+    class Meta:
+        model = models.Squad
+
+
+class HostForm(forms.ModelForm):
+    class Meta:
+        model = models.Host
 
 
 class ReleaseForm(forms.Form):

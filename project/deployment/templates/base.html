@@ -37,20 +37,34 @@
             {% url log as log_url %}
             <ul class="nav">
               <li class="{% current_nav dash_url %}"><a href="{{ dash_url }}">Dash</a></li>
-              <li class="{% current_nav build_url %}"><a href="{{ build_url }}">Build</a></li>
-              <li class="{% current_nav release_url %}"><a href="{{ release_url }}">Release</a></li>
-              <li class="{% current_nav deploy_url %}"><a href="{{ deploy_url }}">Deploy</a></li>
               <li class="{% current_nav log_url %}"><a href="{{ log_url }}">Log</a></li>
               <li class="dropdown">
-                  <!--<a class="dropdown-toggle" data-toggle="dropdown" href="#">-->
-                      <!--Swarm-->
-                      <!--<b class="caret"></b>-->
-                  <!--</a>-->
-                  <select id="swarm-list" class="chzn-select" data-placeholder="Swarm">
+
+                  <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                      Actions
+                      <b class="caret"></b>
+                  </a>
+                  <ul class="dropdown-menu">
+                      <li class="{% current_nav build_url %}"><a href="{{ build_url }}">Build</a></li>
+                      <li class="{% current_nav release_url %}"><a href="{{ release_url }}">Release</a></li>
+                      <li class="{% current_nav deploy_url %}"><a href="{{ deploy_url }}">Deploy</a></li>
+                  </ul>
+              </li>
+              <li class="dropdown">
+                  <select class="chzn-select nav-select" data-placeholder="Swarms">
                       <option></option>
                       <option value="/swarm/">New</option>
                       {% for swarm in swarms %}
                       <option value="{% url edit_swarm swarm.id %}">{{ swarm.shortname }}</option>
+                      {% endfor %}
+                  </select>
+              </li>
+              <li class="dropdown">
+                  <select class="chzn-select nav-select" data-placeholder="Squads">
+                      <option></option>
+                      <option value="/squad/">New</option>
+                      {% for squad in squads %}
+                      <option value="{% url edit_squad squad.id %}">{{ squad.name }}</option>
                       {% endfor %}
                   </select>
               </li>
@@ -79,18 +93,16 @@
         </div>
     {% endif %}
     <div class="container-fluid">
-        <div class="row-fluid">
         {% block content %}
         {% endblock content %}
-        </div>
     </div>
     <script src="{% static 'js/jquery.min.js' %}"></script>
+    <script src="{% static 'chosen/chosen.jquery.min.js' %}"></script>
     <script src="{% static 'js/django-jquery.js' %}"></script>
     <script src="{% static 'js/underscore-min.js' %}"></script>
     <script src="{% static 'js/goatee.js' %}"></script>
     <script src="{% static 'js/bootstrap.js' %}"></script>
-    <script src="{% static 'chosen/chosen.jquery.min.js' %}"></script>
-    <script src="{% static 'js/base.js' %}"></script>
+    <script src="{% static 'js/velociraptor.js' %}"></script>
     {% block script %}{% endblock script %}
 </body>
 </html>

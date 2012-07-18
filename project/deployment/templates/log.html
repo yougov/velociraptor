@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Deployment Log{% endblock title %}
 {% block content %}
+<div class="row-fluid">
 
 <h1 class="float">Deployment Log <small>who can I blame?</small></h1>
 
@@ -16,5 +17,5 @@
 <li><span class="label label-{{entry.type}}">{{ entry.time|date:"D M j, g:i A T"}}</span> {{ entry.user.username }} {{ entry.message }}</li>
 {% endfor %}
 </ul>
-  
+</div> 
 {% endblock content %}

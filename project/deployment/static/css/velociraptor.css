@@ -150,6 +150,32 @@ div.label {
   display: inline-block;
 }
 
+/* MODALS */
+
+th.rowlabel {
+  font-weight: normal;
+  color: #888;
+  text-align: right;
+  padding-right: 10px;
+}
+
+/* MINI PROC VIEW */
+.procgrid {
+  margin-top: 5px;
+  clear: both;
+}
+
+.procbox {
+  height: 15px;
+  width: 15px;
+  float: left;
+  margin: 0 4px 4px 0;
+}
+
+.procbox.RUNNING {
+  background-color: #468847;
+}
+
 
 /* TASKS */
 
@@ -175,12 +201,29 @@ div.label {
 
 /* FORMS */
 
+.raptorform {
+  margin-top: 10px;
+}
+
 .formrows .helptext {
   color: #999;
   font-size: 10px;
   margin-left: 3px;
   position: relative;
   bottom: 3px;
+}
+
+.formrows td {
+  padding: 2px;
+  min-width: 50px;
+}
+
+.checkcell {
+  text-align: center;
+}
+
+.buttoncell {
+  text-align: right;
 }
 
 .formrows br {

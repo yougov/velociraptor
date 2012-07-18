@@ -61,8 +61,15 @@ def deploy(release_id, recipe_name, hostname, proc, port):
             proc_user = getattr(settings, 'PROC_USER', 'nobody')
 
             with always_disconnect():
-                deploy_parcel(build_name, 'settings.yaml', recipe_name, proc,
-                              port, proc_user, release.hash)
+                deploy_parcel(build_name,
+                              'settings.yaml',
+                              recipe_name,
+                              proc,
+                              port,
+                              proc_user,
+                              release.hash,
+                              use_syslog=getattr(settings, 'PROC_SYSLOG',
+                                                 False))
 
 
 @task

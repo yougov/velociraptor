@@ -1,11 +1,13 @@
 import xmlrpclib
 import logging
 import hashlib
+import json
+from copy import copy
 
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.storage import default_storage
 
 import yaml
@@ -44,6 +46,7 @@ def remember(msg_type, msg, username):
     # Also log it to actual python logging
     logging.info('%s %s: %s' % (msg_type, username, msg))
 
+
 class ConfigIngredient(models.Model):
     label = models.CharField(max_length=50, unique=True)
     value = YAMLDictField(help_text=("Must be valid YAML dict."))
@@ -53,6 +56,7 @@ class ConfigIngredient(models.Model):
 
     class Meta:
         ordering = ['label', ]
+
 
 class App(models.Model):
     namehelp = ("Used in release name.  Good app names are short and use "
@@ -64,7 +68,7 @@ class App(models.Model):
         return self.name
 
     class Meta:
-        ordering = ['name', ]
+        ordering = ('name',)
 
 
 class ConfigRecipe(models.Model):
@@ -106,6 +110,7 @@ class ConfigRecipe(models.Model):
 
     class Meta:
         unique_together = ('app', 'name')
+        ordering = ('app__name',)
 
 
 class RecipeIngredient(models.Model):
@@ -182,6 +187,31 @@ class Release(models.Model):
         ordering = ['-id']
 
 
+def make_proc(name, host, data):
+    # Given the name of a proc like
+    # 'khartoum-0.0.7-yfiles-1427a4e2-web-8060', parse out the bits and
+    # return a Proc object.
+
+    # XXX This function will throw DoesNotExist if either the app or
+    # recipe can't be looked up.  So careful with what you rename.
+    parts = name.split('-')
+    try:
+        app = App.objects.get(name=parts[0])
+        return Proc(
+            name=name,
+            app=app,
+            tag=parts[1],
+            recipe=ConfigRecipe.objects.get(app=app, name=parts[2]),
+            hash=parts[3],
+            proc=parts[4],
+            port=int(parts[5]),
+            host=host,
+            data=data,
+        )
+    except ObjectDoesNotExist:
+        return None
+
+
 class Host(models.Model):
     name = models.CharField(max_length=200, unique=True)
 
@@ -229,43 +259,21 @@ class Host(models.Model):
         server = xmlrpclib.Server('http://%s:%s' % (self.name,
                                                     settings.SUPERVISOR_PORT))
         states = server.supervisor.getAllProcessInfo()
-
-        def make_proc(name, host):
-            # Given the name of a proc like
-            # 'khartoum-0.0.7-yfiles-1427a4e2-web-8060', parse out the bits and
-            # return a Proc object.
-
-            # XXX This function will throw DoesNotExist if either the app or
-            # recipe can't be looked up.  So careful with what you rename.
-            parts = name.split('-')
-            try:
-                app = App.objects.get(name=parts[0])
-                return Proc(
-                    name=name,
-                    app=app,
-                    tag=parts[1],
-                    recipe=ConfigRecipe.objects.get(app=app, name=parts[2]),
-                    hash=parts[3],
-                    proc=parts[4],
-                    port=int(parts[5]),
-                    host=host,
-                )
-            except ObjectDoesNotExist:
-                return None
-
-        procs = [make_proc(p['name'], self) for p in states]
+        procs = [make_proc(p['name'], self, p) for p in states]
 
         # Filter out any procs for whom we couldn't look up an App or
         # ConfigRecipe
         return [p for p in procs if p is not None]
 
     class Meta:
-        ordering = ['name', ]
+        ordering = ('name',)
 
 
 class Squad(models.Model):
     """
-    A group of hosts.  They should be as identical as possible.
+    A Squad is a group of identical hosts.  When deploying a swarm, its procs
+    will be load balanced across the specified squad.  A host may only be in
+    one squad.
     """
     name = models.CharField(max_length=50)
 
@@ -277,9 +285,12 @@ class Squad(models.Model):
     def __unicode__(self):
         return self.name
 
+    class Meta:
+        ordering = ('name',)
+
 
 class Proc(object):
-    def __init__(self, name, app, tag, recipe, hash, proc, host, port):
+    def __init__(self, name, app, tag, recipe, hash, proc, host, port, data):
         self.name = name
         self.app = app
         self.tag = tag
@@ -288,6 +299,24 @@ class Proc(object):
         self.proc = proc
         self.host = host
         self.port = port
+        self.data = data  # raw dict returned from supervisord
+
+    def as_dict(self):
+        data = copy(self.data)
+        data.update(
+            name=self.name,
+            tag=self.tag,
+            hash=self.hash,
+            proc=self.proc,
+            host=self.host.name,
+            app=self.app.name,
+            recipe=self.recipe.name,
+            port=self.port,
+        )
+        return data
+
+    def as_json(self):
+        return json.dumps(self.as_dict)
 
     def as_node(self):
         """

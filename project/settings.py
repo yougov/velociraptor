@@ -79,6 +79,10 @@ SUPERVISOR_PORT = 9001
 PORT_RANGE_START = 5000
 PORT_RANGE_END = 6000
 
+# Settings used when writing the proc.conf includes for supervisord
+PROC_USER = 'nobody'
+PROC_SYSLOG = False
+
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
@@ -168,7 +172,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.static',
     'django.core.context_processors.request',
     'django.contrib.messages.context_processors.messages',
-    'deployment.context_processors.swarms',
+    'deployment.context_processors.navdata',
 )
 
 MIDDLEWARE_CLASSES = (

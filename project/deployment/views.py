@@ -9,6 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
+from django.forms.models import inlineformset_factory
 
 from celery.result import AsyncResult
 
@@ -17,7 +18,7 @@ from djcelery.models import TaskState
 from deployment import forms
 from deployment import tasks
 from deployment.models import (Host, App, Release, Build, ConfigRecipe, Squad,
-                               Swarm, remember)
+                               Swarm, remember, make_proc)
 
 
 @login_required
@@ -45,16 +46,28 @@ def api_host(request):
                                     Host.objects.filter(active=True)]})
 
 
+def enhance_proc(hostname, data):
+    proc = make_proc(data['name'], hostname, data)
+    if not proc:
+        # Could not parse or objects don't exist.  just return limited data
+        data['host'] = hostname
+        return data
+    return proc.as_dict()
+
+
 @login_required
 def api_host_status(request, hostname):
     """Display status of all supervisord-managed processes on a single host, in
     JSON"""
     server = xmlrpclib.Server('http://%s:%s' % (hostname,
                                                 settings.SUPERVISOR_PORT))
-    states = server.supervisor.getAllProcessInfo()
+
+    host = Host.objects.get(name=hostname)
+    procs = [enhance_proc(host, p) for p in
+             server.supervisor.getAllProcessInfo()]
 
     data = {
-        'states': states,
+        'states': procs,
         'host': hostname,
     }
     return json_response(data)
@@ -298,9 +311,34 @@ def edit_swarm(request, swarm_id=None):
 
         return redirect('dash')
 
-    # If we're here, and
     btn_text = 'Swarm'
     return render(request, 'basic_form.html', vars())
+
+
+@login_required
+def edit_squad(request, squad_id=None):
+    if squad_id:
+        squad = Squad.objects.get(id=squad_id)
+        # Look up all hosts in the squad
+        initial = {
+            'name': squad.name,
+            'balancer': squad.balancer,
+        }
+    else:
+        squad = Squad()
+        initial = {}
+    form = forms.SquadForm(request.POST or None, initial=initial)
+    if form.is_valid():
+        # Save the squad
+        data = form.cleaned_data
+        squad.name = data['name']
+        squad.balancer = data['balancer']
+        squad.save()
+        remember('squad', 'saved squad %s' % squad.name, request.user.username)
+        redirect('edit_squad', squad_id=squad.id)
+    btn_text = 'Save'
+    docstring = Squad.__doc__
+    return render(request, 'squad.html', vars())
 
 
 def login(request):
