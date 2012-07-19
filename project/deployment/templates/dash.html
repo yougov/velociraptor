@@ -56,7 +56,6 @@
 
 {% block script %}
 <script src="{% static 'js/jquery.isotope.js' %}"></script>
-<script src="{% static 'js/dash.js' %}"></script>
 
 {# Goatee template for list of processes inside each host block #}
 <script id="host-procs-tmpl" type="text/goatee">
@@ -171,5 +170,12 @@
     <a href="#" class="btn btn-primary" rel="confirm">Do it!</a>
   </div>
 </div>
+</script>
+
+<script>
+//// Fire in the hole! ////
+$(document).ready(function(){
+    VR.Dash.init();
+});
 </script>
 {% endblock script %}

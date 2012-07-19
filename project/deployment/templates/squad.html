@@ -4,7 +4,6 @@
 {% block content %}
 <div class="row-fluid">
 <div class="span12">
-
     {% if squad.id %}
     <h1>Squad: {{ squad }}</h1>
     {% else %}
@@ -15,9 +14,6 @@
 
 <div class="row-fluid">
 <div class="span4">
-
-
-
 
     <form method='post' class='well raptorform'{% if enctype %} enctype="{{ enctype }}"{% endif %}>{% csrf_token %}
         {{ form.non_field_errors }}
@@ -37,7 +33,9 @@
     {# only show add host button if the squad is savede #}
     {% if squad.id %}
     <div>
-        <button id="btn-add-host" type="button" class="btn btn-inverse btn-mini">Add Host</button>
+      {# TODO: Use a dialog on this page for adding hosts instead of linking to admin #}
+        <!--<button id="btn-add-host" type="button" class="btn btn-inverse btn-mini">Add Host</button>-->
+        <a href="/admin/deployment/squad/{{ squad.id }}/">Add Host</a>
     </div>
     {% endif %}
 </div>
@@ -100,7 +98,7 @@
 <script id="procgrid-tmpl" type="text/goatee">
     <div class="procgrid">
         <%#states%>
-        <div class="procbox <%statename%>" id="proc-<%name%>"></div>
+        <div class="procbox <%statename%>" id="proc-<%id%>"></div>
         <%/states%>
     </div>
 </script>
@@ -125,11 +123,15 @@
 
 <script>
     var render_procs = function(hostblock, hostdata) {
+        // add a clean ID for each proc obj
+        _.each(hostdata.states, function(el) {
+          el.id = el.name.replace(/\./g, "");
+        });
         var grid = $(hostblock).children('.procgrid');
         grid.html($('#procgrid-tmpl').goatee(hostdata));
         {# bind data to the children #}
         _.each(hostdata.states, function(el) {
-            var procbox = $(hostblock).find('#proc-' + el.name);
+            var procbox = $(hostblock).find('#proc-' + el.id);
             procbox.data(el);
         });
     };

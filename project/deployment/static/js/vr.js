@@ -1,21 +1,19 @@
 // Set up our namespacing. //
-window.Dash = {
+//
+window.VR = {};
+
+window.VR.Dash = {
     init: function(){
-        Dash.Procs.init();
-        Dash.Tasks.init();
+        VR.Dash.Procs.init();
+        VR.Dash.Tasks.init();
     }
 };
 
-//// Fire in the hole! ////
-$(document).ready(function(){
-    Dash.init();
-});
 
-
-///////////////////  Dash Utilities  ///////////////////
+///////////////////  VR.Util  ///////////////////
 // Generic-use things that didn't seem to fit in a specific model.
 
-Dash.Utilities = {
+VR.Util = {
     isNumber: function(n){
        return !isNaN(parseFloat(n)) && isFinite(n);
     },
@@ -46,25 +44,24 @@ Dash.Utilities = {
 
 // DASH Procs Methods //
 
-Dash.Procs = {
-    // formerly dash.onHostData
+VR.Dash.Procs = {
     init: function(){
-        Dash.Procs.el = $('#dash-procs');
+        VR.Dash.Procs.el = $('#dash-procs');
 
-        $.getJSON('api/hosts/', Dash.Procs.getHostProcs);
+        $.getJSON('api/hosts/', VR.Dash.Procs.getHostProcs);
 
-        Dash.Procs.el.isotope({
+        VR.Dash.Procs.el.isotope({
             itemSelector: '.proc-status',
             layoutMode: 'masonry',
             animationOptions: {duration: 10}
         });
 
         // Load up Click Events for this Object
-        Dash.Procs.el.delegate('.proc-status .label', 'click', Dash.Procs.onProcClick);
-        Dash.Procs.el.delegate('.proc-actions .btn', 'click', Dash.Procs.onProcActionClick);
-        $('body').delegate('.action-dialog .btn', 'click', Dash.Procs.onActionModalClick);
-        $('.procfilter').click(Dash.Procs.onFilterClick);
-        $('.expandcollapse button').click(Dash.Procs.onExpandCollapseClick);
+        VR.Dash.Procs.el.delegate('.proc-status .label', 'click', VR.Dash.Procs.onProcClick);
+        VR.Dash.Procs.el.delegate('.proc-actions .btn', 'click', VR.Dash.Procs.onProcActionClick);
+        $('body').delegate('.action-dialog .btn', 'click', VR.Dash.Procs.onActionModalClick);
+        $('.procfilter').click(VR.Dash.Procs.onFilterClick);
+        $('.expandcollapse button').click(VR.Dash.Procs.onExpandCollapseClick);
 
     },
 
@@ -79,32 +76,32 @@ Dash.Procs = {
                   // strip dots from the host so it can be used as a
                   // classname
                   var splitresult = el.name.split('-');
-                  el.hostclass = Dash.Utilities.cleanName(data.host);
+                  el.hostclass = VR.Util.cleanName(data.host);
                   el.appclass = splitresult[0];
-                  el.destroyable = Dash.Utilities.procIsOurs(el.name);
+                  el.destroyable = VR.Util.procIsOurs(el.name);
                   el.shortname = splitresult[0];
                   // If it is destroyable it is ours, if it ours it should
                   // have a port number as the [5] element.
                   el.port = false;
                   if(el.destroyable) {
-                    if(Dash.Utilities.isNumber(splitresult[5])){
+                    if(VR.Util.isNumber(splitresult[5])){
                       el.port = splitresult[5];
                     }
                   }
                   // each proc gets a unique id of host + procname, with illegal
                   // chars stripped out.
-                  el.procid = Dash.Utilities.createID(el.host, el.name);
+                  el.procid = VR.Util.createID(el.host, el.name);
               });
 
               var element = $('#host-procs-tmpl').goatee(data);
-              Dash.Procs.el.isotope('insert', element);
+              VR.Dash.Procs.el.isotope('insert', element);
             });
         });
     },
 
     onProcClick: function(){
         $(this).parent().toggleClass('host-expanded');
-        Dash.Procs.reflow();
+        VR.Dash.Procs.reflow();
     },
 
     onProcActionClick: function() {
@@ -118,15 +115,15 @@ Dash.Procs = {
             $(popup).modal();
         } else {
             // do stops and starts automatically
-            Dash.Procs.doProcAction(data.host, data.proc, data.action);
+            VR.Dash.Procs.doProcAction(data.host, data.proc, data.action);
         }
     },
 
     onActionResponse: function(data, txtStatus, xhr) {
         // find the proc
         // update its class so it changes colors
-        var proc = $('#' + Dash.Utilities.createID(data.host, data.name));
-        Dash.Utilities.clearStatus(proc);
+        var proc = $('#' + VR.Util.createID(data.host, data.name));
+        VR.Util.clearStatus(proc);
         proc.addClass('status-' + data.statename);
     },
 
@@ -137,7 +134,7 @@ Dash.Procs = {
         } else if (action === 'collapse') {
             $('.proc-status').removeClass('host-expanded');
         }
-        Dash.Procs.reflow();
+        VR.Dash.Procs.reflow();
     },
 
     onFilterClick: function() {
@@ -145,7 +142,7 @@ Dash.Procs = {
       $(this).button('toggle');
       // hide the host dropdown
       $('.hostlist, .applist').removeClass('open');
-      Dash.Procs.el.isotope({ filter: selector });
+      VR.Dash.Procs.el.isotope({ filter: selector });
       return false;
     },
 
@@ -157,9 +154,9 @@ Dash.Procs = {
             // get the data, and make an ajax request with it.
             var data = modal.data();
             if (data.action === 'destroy') {
-                Dash.Procs.destroyProc(data.host, data.proc);
+                VR.Dash.Procs.destroyProc(data.host, data.proc);
             } else {
-                Dash.Procs.doProcAction(data.host, data.proc, data.action);
+                VR.Dash.Procs.doProcAction(data.host, data.proc, data.action);
             }
         }
         // no matter what button we got, hide and destroy the modal.
@@ -173,7 +170,7 @@ Dash.Procs = {
         }
 
         if (callback === undefined) {
-            callback = Dash.Procs.onActionResponse;
+            callback = VR.Dash.Procs.onActionResponse;
         }
 
         var url = '/api/hosts/' + host + '/procs/' + proc + '/';
@@ -187,37 +184,37 @@ Dash.Procs = {
     },
 
     destroyProc: function(host, proc) {
-        return Dash.Procs.doProcAction(host, proc, 'destroy', 'DELETE', Dash.Procs.onProcDestroy);
+        return VR.Dash.Procs.doProcAction(host, proc, 'destroy', 'DELETE', VR.Dash.Procs.onProcDestroy);
     },
 
     onProcDestroy: function(data, txtStatus, xhr) {
         // callback for deleting a proc from the DOM when server lets us know it's
         // been destroyed.
-        $('#' + Dash.Utilities.createID(data.host, data.name)).remove();
-        Dash.Procs.reflow();
+        $('#' + VR.Util.createID(data.host, data.name)).remove();
+        VR.Dash.Procs.reflow();
     },
 
     reflow: function(host){
-        Dash.Procs.el.isotope('reLayout');
+        VR.Dash.Procs.el.isotope('reLayout');
     }
 
-};// end Dash.Procs
+};// end VR.Dash.Procs
 
 
 // DASH Tasks Methods //
-Dash.Tasks = {
+VR.Dash.Tasks = {
     taskDataQueue: '',
 
     init: function(){
-        Dash.Tasks.tmpl = $('#task-tmpl');
-        Dash.Tasks.el = $('#tasks-list');
+        VR.Dash.Tasks.tmpl = $('#task-tmpl');
+        VR.Dash.Tasks.el = $('#tasks-list');
 
-        Dash.Tasks.el.delegate('.task-wrapper', 'click', Dash.Tasks.onTaskClick);
+        VR.Dash.Tasks.el.delegate('.task-wrapper', 'click', VR.Dash.Tasks.onTaskClick);
 
-        Dash.Tasks.getTaskData();
+        VR.Dash.Tasks.getTaskData();
         // then setInterval to re-check every 4 seconds.
         setInterval(function(){
-            Dash.Tasks.getTaskData();
+            VR.Dash.Tasks.getTaskData();
         }, 4000);
 
     },
@@ -230,7 +227,7 @@ Dash.Tasks = {
             // actually simpler to do most recent last and always use
             // $().prepend.  So reverse it.
             data.tasks.reverse();
-            _.each(data.tasks, Dash.Tasks.doItem);
+            _.each(data.tasks, VR.Dash.Tasks.doItem);
 
             // Now remove any tasks that are in the DOM but not in the data.
             var ids = _.map(data.tasks, function(task) {return 'task-' + task.task_id;});
@@ -261,12 +258,12 @@ Dash.Tasks = {
         var task = $('#task-' + taskdata.task_id);
         if (task.length === 0) {
             // add new one
-            task = Dash.Tasks.tmpl.goatee(taskdata);
-            Dash.Tasks.el.prepend(task);
+            task = VR.Dash.Tasks.tmpl.goatee(taskdata);
+            VR.Dash.Tasks.el.prepend(task);
         } else {
             // update existing one.
             if (!_.isEqual(task.data('taskdata'), taskdata)) {
-                var newtask = Dash.Tasks.tmpl.goatee(taskdata);
+                var newtask = VR.Dash.Tasks.tmpl.goatee(taskdata);
                 // update existing item with contents of new one.
                 task.html(newtask.html());
             }
@@ -281,4 +278,4 @@ Dash.Tasks = {
         var popup = $('#task-modal-tmpl').goatee($(this).data('taskdata'));
         $(popup).modal();
     }
-};// end Dash.Tasks
+};// end VR.Dash.Tasks
