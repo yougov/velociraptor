@@ -114,6 +114,11 @@
             window.location = $(this).val();
         });
       });
+
+      {# delegate the modal launcher for each colored procbox #}
+      $('body').delegate('.procbox', 'click', function() {
+          $('#proc-details-tmpl').goatee($(this).data()).modal();
+      });
     </script>
 
     {% block script %}{% endblock script %}

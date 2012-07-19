@@ -98,6 +98,30 @@ there.  Since the project repo is mounted inside the VM, you can do your
 editing on the outside with your regular tools, and the code running on the
 inside will stay in sync.
 
+Structure
+~~~~~~~~~
+
+Velociraptor is a Django project, and organized as such.  Most of the code is
+in the 'deployment' app inside the 'project'.  The 'deployment' app contains
+models.py, views.py, etc.  The Celery tasks that handle actual deployment
+actions are in deployment/tasks.py.
+
+All the URL routes are in project/urls.py.
+
+UI
+~~
+
+All frontend interfaces rely on a 'VR' javascript object defined in
+deployment/static/js/vr.js.  Individual pages add their own sub-namespaces like
+VR.Dash and VR.Squad, using vrdash.js and vrsquad.js, for example.
+
+Velociraptor uses goatee.js_ templates (a Django-friendly fork of
+mustache.js_). They are defined as HTML script blocks with type "text/goatee".
+Common templates are inside deployment/templates/base.html.  More limited use
+templates are defined in their respective HTML pages.
+
+Velociraptor makes liberal use of jQuery_ and Underscore_.
+
 .. _Twelve Factor App: http://www.12factor.net/
 .. _Vagrant: http://vagrantup.com/docs/getting-started/index.html
 .. _VirtualBox: http://www.virtualbox.org/wiki/Downloads
@@ -105,3 +129,7 @@ inside will stay in sync.
 .. _Virtualenvwrapper: http://www.doughellmann.com/docs/virtualenvwrapper/
 .. _South: http://south.aeracode.org/
 .. _Celery: http://celeryproject.org/
+.. _goatee.js: https://github.com/btubbs/goatee.js
+.. _mustache.js: https://github.com/janl/mustache.js
+.. _Underscore: http://underscorejs.org/
+.. _jQuery: http://jquery.com/
