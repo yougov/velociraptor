@@ -67,15 +67,16 @@
       <span class="longname"><%name%></span>
     </div>
     <div class="host-more">
-      <%host%><br />
+        <a href="http://<%host%>:<%port%>/" target="_blank"><%host%>:<%port%></a><br />
       <%description%>
       <div class="proc-actions">
         <a class="btn btn-mini start" href="#" rel="start">Start</a>
         <a class="btn btn-mini stop" href="#" rel="stop">Stop</a>
         <%#destroyable%><a class="btn btn-mini destroy" href="#" rel="destroy">Destroy</a><%/destroyable%>
         <span class="links">
-            <%#port%><a href="http://<%host%>:<%port%>/" target="_blank">Open</a> | <%/port%>
+            {% if log_links %}
             <a href="http://<%host%>:{{ supervisord_web_port }}/logtail/<%name%>" target="_blank">Log Tail</a>
+            {% endif %}
         </span>
        </div>
 
