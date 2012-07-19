@@ -51,20 +51,22 @@
                   </ul>
               </li>
               <li class="dropdown">
+                  <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                    Squads
+                      <b class="caret"></b>
+                  </a>
+                  <ul class="dropdown-menu">
+                      {% for squad in squads %}
+                      <li><a href="{% url edit_squad squad.id %}">{{ squad.name }}</a></li>
+                      {% endfor %}
+                  </ul>
+              </li>
+              <li class="dropdown">
                   <select class="chzn-select nav-select" data-placeholder="Swarms">
                       <option></option>
                       <option value="/swarm/">New</option>
                       {% for swarm in swarms %}
                       <option value="{% url edit_swarm swarm.id %}">{{ swarm.shortname }}</option>
-                      {% endfor %}
-                  </select>
-              </li>
-              <li class="dropdown">
-                  <select class="chzn-select nav-select" data-placeholder="Squads">
-                      <option></option>
-                      <option value="/squad/">New</option>
-                      {% for squad in squads %}
-                      <option value="{% url edit_squad squad.id %}">{{ squad.name }}</option>
                       {% endfor %}
                   </select>
               </li>

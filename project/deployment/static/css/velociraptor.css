@@ -245,6 +245,10 @@ th.rowlabel {
   background-color: transparent;
 }
 
+.chzn-container .chzn-results {
+  max-height: 500px;
+}
+
 /**** Isotope filtering ****/
 
 .isotope-item {
