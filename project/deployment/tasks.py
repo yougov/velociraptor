@@ -14,7 +14,7 @@ from fabric.api import env
 from django.core.files.storage import default_storage
 from django.conf import settings
 
-from deployment.models import Release, Build, Swarm, Host, PortLock
+from deployment.models import Release, Build, Swarm, Host, PortLock, App
 from deployment import balancer
 
 from yg.deploy.fabric.system import (deploy_parcel, run_uptests,
@@ -106,6 +106,17 @@ def build_hg(build_id, callback=None):
     # start callback if there is one.
     if callback is not None:
         subtask(callback).delay()
+
+@task
+def update_tags():
+    env.linewise = True
+    for app in App.objects.filter(repo_url__isnull=False):
+        if app.repo_url:
+            tags = paver_build.get_latest_tags(app.repo_url, app.id)
+            tags = tags.split()
+            app.tag_set.all().delete()
+            for tag in tags:
+                app.tag_set.create(name=tag)
 
 
 @task
