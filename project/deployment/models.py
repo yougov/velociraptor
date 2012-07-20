@@ -64,12 +64,20 @@ class App(models.Model):
     name = models.CharField(max_length=50, help_text=namehelp)
     repo_url = models.CharField(max_length=200, blank=True, null=True)
 
+
     def __unicode__(self):
         return self.name
 
     class Meta:
         ordering = ('name',)
 
+class Tag(models.Model):
+    """ Storage for latest tags for a given app. This model is filled up by a
+    task that clones/pulls all the apps and runs an hg tags to update this
+    model.
+    """
+    app = models.ForeignKey(App)
+    name = models.CharField(max_length=20)
 
 class ConfigRecipe(models.Model):
     app = models.ForeignKey(App)
