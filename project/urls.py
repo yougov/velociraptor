@@ -33,6 +33,10 @@ urlpatterns = patterns('',
     url(r'^preview_ingredient/(?P<recipe_id>\d+)/(?P<ingredient_id>\d+)/$',
         'deployment.views.preview_ingredient', name='preview_ingredient'),
 
+    # Latest tag helper
+    url(r'^get_latest_tag/(?P<recipe_id>\d+)/$',
+        'deployment.views.get_latest_tag', name='get_latest_tag'),
+
     # Utility stuff
     url(r'^login/$', 'deployment.views.login', name='login'),
     url(r'^logout/$', 'deployment.views.logout', name='logout'),

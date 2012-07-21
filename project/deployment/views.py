@@ -9,7 +9,6 @@ from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
-from django.forms.models import inlineformset_factory
 
 from celery.result import AsyncResult
 
@@ -18,7 +17,7 @@ from djcelery.models import TaskState
 from deployment import forms
 from deployment import tasks
 from deployment.models import (Host, App, Release, Build, ConfigRecipe, Squad,
-                               Swarm, remember, make_proc)
+                               RecipeIngredient, Swarm, remember, make_proc)
 
 
 @login_required
@@ -47,10 +46,13 @@ def api_host(request):
 
 
 def enhance_proc(hostname, data):
-    proc = make_proc(data['name'], hostname, data)
+    try:
+        proc = make_proc(data['name'], hostname, data)
+    except ValueError:
+        proc = None
     if not proc:
         # Could not parse or objects don't exist.  just return limited data
-        data['host'] = hostname
+        data['host'] = hostname.__unicode__()
         return data
     return proc.as_dict()
 
@@ -153,11 +155,9 @@ def task_to_dict(task):
 
 @login_required
 def api_task_recent(request):
-
     count = int(request.GET.get('count') or 20)
-    tasks = TaskState.objects.all()[:count]
-
-    return json_response({'tasks': [task_to_dict(t) for t in tasks]})
+    return json_response({'tasks': [task_to_dict(t)
+                                    for t in TaskState.objects.all()[:count]]})
 
 
 @login_required
@@ -195,9 +195,9 @@ def upload_build(request):
         # Redirect to the 'deploy' page.
         return HttpResponseRedirect(reverse('deploy'))
     enctype = "multipart/form-data"
-    instructions = """Use this form to upload a build.  A valid build should have
-    a Procfile, and have all app-specific dependencies already compiled into
-    the env."""
+    instructions = """Use this form to upload a build.  A valid build should
+    have a Procfile, and have all app-specific dependencies already compiled
+    into the env."""
     btn_text = 'Upload'
     return render(request, 'basic_form.html', vars())
 
@@ -206,7 +206,7 @@ def upload_build(request):
 def release(request):
     form = forms.ReleaseForm(request.POST or None)
     if form.is_valid():
-        build=Build.objects.get(id=form.cleaned_data['build_id'])
+        build = Build.objects.get(id=form.cleaned_data['build_id'])
         recipe = ConfigRecipe.objects.get(id=form.cleaned_data['recipe_id'])
         r = Release(
             recipe=recipe,
@@ -319,21 +319,13 @@ def edit_swarm(request, swarm_id=None):
 def edit_squad(request, squad_id=None):
     if squad_id:
         squad = Squad.objects.get(id=squad_id)
-        # Look up all hosts in the squad
-        initial = {
-            'name': squad.name,
-            'balancer': squad.balancer,
-        }
     else:
         squad = Squad()
-        initial = {}
-    form = forms.SquadForm(request.POST or None, initial=initial)
-    if form.is_valid():
+    form = forms.SquadForm(request.POST or None, instance=squad)
+    if request.method.lower() == 'post' and form.is_valid():
         # Save the squad
-        data = form.cleaned_data
-        squad.name = data['name']
-        squad.balancer = data['balancer']
-        squad.save()
+        form.save()
+        squad = form.instance
         remember('squad', 'saved squad %s' % squad.name, request.user.username)
         redirect('edit_squad', squad_id=squad.id)
     btn_text = 'Save'
@@ -355,6 +347,18 @@ def login(request):
 def logout(request):
     django_logout(request)
     return HttpResponseRedirect('/')
+
+
+def get_latest_tag(request, recipe_id):
+    """ Get the latest tag from the repo, we navigate from the given recipe
+    to the app.
+    """
+    recipe = get_object_or_404(ConfigRecipe, pk=recipe_id)
+    tags = []
+    for tag in recipe.app.tag_set.all():
+        tags.append(tag.name)
+    return json_response(tags)
+
 
 def preview_recipe(request, recipe_id):
     """ Preview a settings.yaml generated from a recipe as it is stored in
