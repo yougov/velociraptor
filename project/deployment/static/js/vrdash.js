@@ -245,7 +245,7 @@ VR.Dash.updateProcData = function(data) {
     app = VR.Dash.Apps.getOrCreate(data.app);
     VR.Dash.Apps.add(app);
 
-    var swarmname = [data.proc, data.recipe].join('-');
+    var swarmname = [data.recipe, data.proc].join('-');
     var s = app.swarms.getOrCreate(swarmname);
     var p = s.procs.getOrCreate(data);
 };
