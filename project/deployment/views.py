@@ -16,8 +16,7 @@ from djcelery.models import TaskState
 
 from deployment import forms
 from deployment import tasks
-from deployment.models import (Host, App, Release, Build, ConfigRecipe, Squad,
-                               RecipeIngredient, Swarm, remember, make_proc)
+from deployment import models
 
 
 @login_required

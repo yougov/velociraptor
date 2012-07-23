@@ -121,7 +121,7 @@ mustache.js_). They are defined as HTML script blocks with type "text/goatee".
 Common templates are inside deployment/templates/base.html.  More limited use
 templates are defined in their respective HTML pages.
 
-Velociraptor makes liberal use of jQuery_ and Underscore_.
+Velociraptor makes liberal use of jQuery_, Backbone_, and Underscore_.
 
 .. _Twelve Factor App: http://www.12factor.net/
 .. _Vagrant: http://vagrantup.com/docs/getting-started/index.html
@@ -132,5 +132,6 @@ Velociraptor makes liberal use of jQuery_ and Underscore_.
 .. _Celery: http://celeryproject.org/
 .. _goatee.js: https://github.com/btubbs/goatee.js
 .. _mustache.js: https://github.com/janl/mustache.js
-.. _Underscore: http://underscorejs.org/
 .. _jQuery: http://jquery.com/
+.. _Backbone: http://backbonejs.org/
+.. _Underscore: http://underscorejs.org/
