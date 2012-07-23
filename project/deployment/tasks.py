@@ -40,7 +40,6 @@ def deploy(release_id, recipe_name, hostname, proc, port):
         env.password = settings.DEPLOY_PASSWORD
         env.linewise = True
 
-        deploy.update_state(state='PROGRESS', meta='Started')
         logging.info('deploying %s:%s to %s:%s' % (release, proc, hostname,
                                                    port))
 
