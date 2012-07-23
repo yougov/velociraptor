@@ -1,7 +1,6 @@
 Django==1.4
 Fabric==1.4.0
-django-celery==2.5.1
-celery==2.5.1
+django-celery==3.0.1
 psycopg2==2.4.4
 django-extensions==0.7.1
 keyring==0.7.1
@@ -9,7 +8,7 @@ Paver==1.0.5
 django-yamlfield==0.2
 gunicorn==0.13.4
 yg.ldap==2.2
-yg.deploy>=11.0,<12.0
+yg.deploy>=11.4.1,<12.0
 South==0.7.3
 requests==0.11.1
 pymongo==2.1.1
