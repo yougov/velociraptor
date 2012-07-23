@@ -151,10 +151,12 @@
               <tr><th class="rowlabel">Proc Name</th><td><%proc%></td></tr>
               <tr><th class="rowlabel">Host</th><td><%host%></td></tr>
               <tr><th class="rowlabel">Port</th><td><%port%></td></tr>
+              <tr><th class="rowlabel"></th><td>
+                <button class="proc-destroy btn btn-danger">Destroy</button>
+                <button class="proc-stop btn btn-warning ifrunning">Stop</button>
+                <button class="proc-start btn btn-success ifstopped">Start</button>
+              </td></tr>
           </table>
-          <button class="proc-stop btn btn-mini ifrunning">Stop</button>
-          <button class="proc-start btn btn-mini ifstopped">Start</button>
-          <button class="proc-destroy btn btn-mini">Destroy</button>
       </div>
     </div>
 </script>
