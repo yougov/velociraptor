@@ -305,8 +305,9 @@ def swarm_assign_uptests(swarm_id):
             ))
         )
 
+    this_chord = chord(subtasks)
     callback = swarm_post_uptest.subtask((swarm_id,))
-    chord(subtasks)(callback)
+    this_chord(callback)
 
 
 @task
