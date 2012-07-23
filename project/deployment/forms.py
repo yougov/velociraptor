@@ -118,4 +118,5 @@ class SwarmForm(forms.Form):
                                             models.Squad.objects.all()]
 
     class Media:
-        js = ('js/dash_preview_recipe.js', )
+        js = ('js/dash_preview_recipe.js',
+              'js/dash_latest_tag.js')

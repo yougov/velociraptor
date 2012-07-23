@@ -16,7 +16,8 @@ from djcelery.models import TaskState
 
 from deployment import forms
 from deployment import tasks
-from deployment import models
+from deployment.models import (Host, App, Release, Build, ConfigRecipe, Squad,
+                               RecipeIngredient, Swarm, remember, make_proc)
 
 
 @login_required
@@ -44,11 +45,14 @@ def api_host(request):
                                     models.Host.objects.filter(active=True)]})
 
 
-def enhance_proc(host, data):
-    proc = models.make_proc(data['name'], host, data)
+def enhance_proc(hostname, data):
+    try:
+        proc = models.make_proc(data['name'], hostname, data)
+    except ValueError:
+        proc = None
     if not proc:
         # Could not parse or objects don't exist.  just return limited data
-        data['host'] = host
+        data['host'] = hostname.__unicode__()
         return data
     return proc.as_dict()
 
@@ -158,11 +162,9 @@ def task_to_dict(task):
 
 @login_required
 def api_task_recent(request):
-
     count = int(request.GET.get('count') or 20)
-    tasks = TaskState.objects.all()[:count]
-
-    return json_response({'tasks': [task_to_dict(t) for t in tasks]})
+    return json_response({'tasks': [task_to_dict(t)
+                                    for t in TaskState.objects.all()[:count]]})
 
 
 @login_required
@@ -184,7 +186,7 @@ def build_hg(request):
         models.remember('build', 'built %s-%s' % (app.name, build.tag),
                 request.user.username)
         return redirect('dash')
-    btn_text = "models.Build"
+    btn_text = "Build"
     return render(request, 'basic_form.html', vars())
 
 
@@ -200,9 +202,9 @@ def upload_build(request):
         # Redirect to the 'deploy' page.
         return HttpResponseRedirect(reverse('deploy'))
     enctype = "multipart/form-data"
-    instructions = """Use this form to upload a build.  A valid build should have
-    a Procfile, and have all app-specific dependencies already compiled into
-    the env."""
+    instructions = """Use this form to upload a build.  A valid build should
+    have a Procfile, and have all app-specific dependencies already compiled
+    into the env."""
     btn_text = 'Upload'
     return render(request, 'basic_form.html', vars())
 
@@ -211,7 +213,7 @@ def upload_build(request):
 def release(request):
     form = forms.ReleaseForm(request.POST or None)
     if form.is_valid():
-        build=models.Build.objects.get(id=form.cleaned_data['build_id'])
+        build = models.Build.objects.get(id=form.cleaned_data['build_id'])
         recipe = models.ConfigRecipe.objects.get(id=form.cleaned_data['recipe_id'])
         r = models.Release(
             recipe=recipe,
@@ -259,7 +261,7 @@ def get_or_create_release(recipe, tag):
     releases = models.Release.objects.filter(recipe=recipe,
                                       build__tag=tag)
 
-    # XXX This relies on the models.Releases model having ordering set to '-id'
+    # XXX This relies on the Releases model having ordering set to '-id'
     if releases and releases[0].parsed_config() == recipe.assemble():
         return releases[0]
 
@@ -335,10 +337,8 @@ def edit_squad(request, squad_id=None):
     form = forms.SquadForm(request.POST or None, initial=initial)
     if form.is_valid():
         # Save the squad
-        data = form.cleaned_data
-        squad.name = data['name']
-        squad.balancer = data['balancer']
-        squad.save()
+        form.save()
+        squad = form.instance
         models.remember('squad', 'saved squad %s' % squad.name, request.user.username)
         redirect('edit_squad', squad_id=squad.id)
     btn_text = 'Save'
@@ -361,6 +361,18 @@ def logout(request):
     django_logout(request)
     return HttpResponseRedirect('/')
 
+
+def get_latest_tag(request, recipe_id):
+    """ Get the latest tag from the repo, we navigate from the given recipe
+    to the app.
+    """
+    recipe = get_object_or_404(ConfigRecipe, pk=recipe_id)
+    tags = []
+    for tag in recipe.app.tag_set.all():
+        tags.append(tag.name)
+    return json_response(tags)
+
+
 def preview_recipe(request, recipe_id):
     """ Preview a settings.yaml generated from a recipe as it is stored in
     the db.
@@ -373,7 +385,7 @@ def preview_recipe_addchange(request):
     selected ingredients from the inline form (respecting the ones marked for
     delete!)
     """
-    # We use a new empty models.ConfigRecipe to build this preview since we could be
+    # We use a new empty ConfigRecipe to build this preview since we could be
     # adding a new one.
     recipe = models.ConfigRecipe()
     custom_ingredients = []

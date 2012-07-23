@@ -79,7 +79,11 @@ CELERYBEAT_SCHEDULE = {
     'scooper': {
         'task': 'deployment.tasks.scooper',
         'schedule': timedelta(minutes=30),
-    }
+    },
+    'update_tags': {
+        'task': 'deployment.tasks.update_tags',
+        'schedule': timedelta(minutes=30),
+    },
 }
 
 SUPERVISOR_PORT = 9001

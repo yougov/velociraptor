@@ -53,12 +53,14 @@ class HostInline(admin.TabularInline):
 class SquadAdmin(admin.ModelAdmin):
     inlines = [HostInline]
 
+class AppAdmin(admin.ModelAdmin):
+    model = models.App
+    list_display = ('__unicode__', 'repo_url')
+
 admin.site.register(models.ConfigRecipe, ConfigRecipeAdmin)
 admin.site.register(models.Squad, SquadAdmin)
-
-
 admin.site.register(models.ConfigIngredient, ConfigIngredientAdmin)
-admin.site.register(models.App)
+admin.site.register(models.App, AppAdmin)
 admin.site.register(models.Build)
 admin.site.register(models.Release)
 admin.site.register(models.Host)
