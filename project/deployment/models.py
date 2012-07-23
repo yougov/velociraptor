@@ -237,11 +237,13 @@ class Host(models.Model):
         url = 'http://%s:%s' % (self.name, settings.SUPERVISOR_PORT)
         return xmlrpclib.Server(url).supervisor
 
-    def _get_procdata(self, use_cache=True):
+    def _get_procdata(self, use_cache=False):
         key = self.name + '_procdata'
         data = None
         if use_cache:
             data = cache.get(key)
+            if data:
+                return data
 
         if data is None:
             data = self.rpc.getAllProcessInfo()
@@ -275,7 +277,7 @@ class Host(models.Model):
 
         return next(x for x in all_ports if free(x))
 
-    def get_procs(self, use_cache=True):
+    def get_procs(self, use_cache=False):
         """
         Return a list of Proc objects, one for each supervisord process that
         has a parseable name and whose app and recipe can be found in the DB.
@@ -381,21 +383,24 @@ class Swarm(models.Model):
         ordering = ['recipe__app__name']
 
     def __unicode__(self):
-        rname = self.release.__unicode__()
-        proc = self.proc_name
-        size = self.size
-        squad = self.squad.name
-        return u'%(rname)s-%(proc)s X %(size)s on %(squad)s' % vars()
+        return u'%(rname)s-%(proc)s X %(size)s on %(squad)s' % {
+            'rname': self.release.__unicode__(),
+            'proc': self.proc_name,
+            'size': self.size,
+            'squad': self.squad.name
+        }
 
     def shortname(self):
-        a = self.recipe.app.name
-        p = self.recipe.name
-        proc = self.proc_name
-        return u'%(a)s-%(p)s-%(proc)s' % vars()
+        return u'%(app)s-%(recipe)s-%(proc)s' % {
+            'app': self.recipe.app.name,
+            'recipe': self.recipe.name,
+            'proc': self.proc_name
+        }
 
     def all_procs(self):
         """
-        Return all running procs on the squad that share this swarm's recipe.
+        Return all running procs on the squad that share this swarm's proc name
+        and recipe.
         """
         if not self.release:
             return []

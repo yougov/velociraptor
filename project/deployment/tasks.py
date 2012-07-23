@@ -190,9 +190,6 @@ def swarm_release(swarm_id):
 
     procs_needed = swarm.size - len(current_procs)
 
-    # set uptest task as chord callback
-    callback = swarm_post_deploy.subtask((swarm.id,))
-
     if procs_needed > 0:
         hosts = swarm.get_prioritized_hosts()
         hostcount = len(hosts)
@@ -221,6 +218,7 @@ def swarm_release(swarm_id):
                         new_procs_by_host[host.name],
                     ))
                 )
+        callback = swarm_post_deploy.subtask((swarm.id,))
         chord(subtasks)(callback)
     elif procs_needed < 0:
         # We need to delete some procs
@@ -238,6 +236,7 @@ def swarm_release(swarm_id):
                 swarm_delete_proc.subtask((swarm.id, host.name, proc.name,
                                            proc.port))
             )
+        callback = swarm_post_deploy.subtask((swarm.id,))
         chord(subtasks)(callback)
     else:
         # We have just the right number of procs.  Uptest and route them.
@@ -295,18 +294,11 @@ def swarm_assign_uptests(swarm_id):
     for proc in current_procs:
         host_procs[proc.host.name].append(proc.name)
 
-    subtasks = []
-    for hostname, procs in host_procs.items():
+    header = [swarm_uptest_host.subtask((h, ps)) for h, ps in
+              host_procs.items()]
 
-        subtasks.append(
-            swarm_uptest_host.subtask((
-                hostname,
-                procs,
-            ))
-        )
-
-    this_chord = chord(subtasks)
-    callback = swarm_post_uptest.subtask((swarm_id,))
+    this_chord = chord(header)
+    callback = swarm_post_uptest.s(swarm_id)
     this_chord(callback)
 
 

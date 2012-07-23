@@ -21,10 +21,11 @@ from deployment import models
 
 @login_required
 def dash(request):
-    hosts = models.Host.objects.filter(active=True)
-    apps = models.App.objects.all()
-    supervisord_web_port = settings.SUPERVISORD_WEB_PORT
-    return render(request, 'dash.html', vars())
+    return render(request, 'dash.html', {
+        'hosts': models.Host.objects.filter(active=True),
+        'apps': models.App.objects.all(),
+        'supervisord_web_port': settings.SUPERVISORD_WEB_PORT
+    })
 
 
 def json_response(obj, status=200):
@@ -64,7 +65,7 @@ def api_host_procs(request, hostname):
     host = models.Host.objects.get(name=hostname)
     # TODO: use Cache-Control header to determine whether to pass use_cache
     # into _get_procdata()
-    procs = [enhance_proc(host, p) for p in host._get_procdata()]
+    procs = [enhance_proc(host, p) for p in host._get_procdata(use_cache=True)]
 
     data = {
         'procs': procs,
