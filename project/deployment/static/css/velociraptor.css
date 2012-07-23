@@ -136,20 +136,28 @@ th.rowlabel {
   float: left;
   margin: 0 4px 4px 0;
   cursor: pointer;
+  background-color: #999;
 }
 
-.RUNNING {
-  background-color: #00CC00;
-}
 
-.STOPPED {
-  background-color: #FFCC00;
-}
+/* SUPERVISORD PROCESS STATES */
+.RUNNING { background-color: #00CC00; }
 
-.FATAL, .BACKOFF {
-  background-color: #F00;
-}
+.STARTING { background-color: #0FF; }
 
+.STOPPED { background-color: #FFCC00; }
+
+.STOPPING { background-color: #F0F; }
+
+.FATAL, .BACKOFF { background-color: #F00; }
+
+.EXITED { background-color: #F60; }
+
+.UNKNOWN { background-color: #909; }
+/* END SUPERVISORD PROCESS STATES */
+
+
+/* Only show 'Stop' button if running, and vice versa */
 .procmodal-STOPPED .ifrunning {
   display: none;
 }
