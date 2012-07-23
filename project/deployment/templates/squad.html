@@ -47,10 +47,11 @@
     <div class="row-fluid">
         {# now a block for each host #}
         {% for host in squad.hosts.all %}
-        <div class="span4 hostblock" data-hostname="{{host.name}}"><h4>{{ host.name }}</h4>
-        <div class="procgrid">
-            <img src="{% static 'img/waiting.gif' %}">
-        </div>
+        <div class="hostblock" data-hostname="{{host.name}}">
+            <h4>{{ host.name }}</h4>
+            <div class="procgrid">
+                <img src="{% static 'img/waiting.gif' %}">
+            </div>
         </div>
         {% endfor %}
     </div>
@@ -62,34 +63,6 @@
 {% block script %}
 <script src="{% static 'js/vrsquad.js' %}"></script>
 
-{# TODO: Make this template and accompanying JS global #}
-<script id="proc-details-tmpl" type="text/goatee">
-
-    <div class="modal task-details">
-    <div class="modal-header">
-        <a class="close" data-dismiss="modal">×</a>
-        <h3><%name%> </h3>
-        on <a href="http://<%host%>:<%port%>"><%host%>:<%port%></a>
-    </div>
-    <div class="modal-body">
-        <table class="attrs">
-            <tr><th class="rowlabel">Name</th><td><%name%></td></tr>
-            <tr><th class="rowlabel">Description</th><td><%description%></td></tr>
-            <tr><th class="rowlabel">State</th><td><%statename%></td></tr>
-            <tr><th class="rowlabel">App</th><td><%app%></td></tr>
-            <tr><th class="rowlabel">Tag</th><td><%tag%></td></tr>
-            <tr><th class="rowlabel">Config Recipe</th><td><%recipe%></td></tr>
-            <tr><th class="rowlabel">Release Hash</th><td><%hash%></td></tr>
-            <tr><th class="rowlabel">Proc Name</th><td><%proc%></td></tr>
-            <tr><th class="rowlabel">Host</th><td><%host%></td></tr>
-            <tr><th class="rowlabel">Port</th><td><%port%></td></tr>
-        </table>
-    </div>
-
-    </div>
-
-</script>
-
 {# the box for each host #}
 <script id="proc-block-tmpl" type="text/goatee">
     <div class="span4"><h4><%host%></h4>
@@ -99,9 +72,9 @@
 {# the inner grid of proc data for each host #}
 <script id="procgrid-tmpl" type="text/goatee">
     <div class="procgrid">
-        <%#states%>
-        <div class="procbox <%statename%>" id="proc-<%id%>"></div>
-        <%/states%>
+        <%#procs%>
+        <div class="procbox <%statename%>" id="proc-<%jsname%>"></div>
+        <%/procs%>
     </div>
 </script>
 

@@ -114,13 +114,52 @@
             window.location = $(this).val();
         });
       });
-
-      {# delegate the modal launcher for each colored procbox #}
-      $('body').delegate('.procbox', 'click', function() {
-          $('#proc-details-tmpl').goatee($(this).data()).modal();
-      });
     </script>
 
-    {% block script %}{% endblock script %}
+{# GOATEE TEMPLATES #}
+
+<script id="app-tmpl" type="text/goatee">
+  <td class="titlecell"><h2 class="apptitle"><%id%></h2></td><td class="proccell"></td>
+</script>
+
+<script id="swarm-tmpl" type="text/goatee">
+  <div class="procgrid">
+    <h4 class="swarmtitle"><%id%></h4>
+  </div>
+</script>
+
+<script id="proc-tmpl" type="text/goatee">
+<div class="procbox <%statename%>" id="proc-<%jsname%>"></div>
+</script>
+
+<script id="proc-details-tmpl" type="text/goatee">
+    <div class="modal proc-details-modal" data-host="<%host%>" data-name="<%name%>">
+      <div class="modal-header">
+          <a class="close" data-dismiss="modal">×</a>
+          <h3><%name%> </h3>
+          on <a href="http://<%host%>:<%port%>"><%host%>:<%port%></a>
+      </div>
+      <div class="modal-body procmodal-<%statename%>">
+          <table class="attrs">
+              <tr><th class="rowlabel">Name</th><td><%name%></td></tr>
+              <tr><th class="rowlabel">Description</th><td><%description%></td></tr>
+              <tr><th class="rowlabel">State</th><td><%statename%></td></tr>
+              <tr><th class="rowlabel">App</th><td><%app%></td></tr>
+              <tr><th class="rowlabel">Tag</th><td><%tag%></td></tr>
+              <tr><th class="rowlabel">Config Recipe</th><td><%recipe%></td></tr>
+              <tr><th class="rowlabel">Release Hash</th><td><%hash%></td></tr>
+              <tr><th class="rowlabel">Proc Name</th><td><%proc%></td></tr>
+              <tr><th class="rowlabel">Host</th><td><%host%></td></tr>
+              <tr><th class="rowlabel">Port</th><td><%port%></td></tr>
+          </table>
+          <button class="proc-stop btn btn-mini ifrunning">Stop</button>
+          <button class="proc-start btn btn-mini ifstopped">Start</button>
+          <button class="proc-destroy btn btn-mini">Destroy</button>
+      </div>
+    </div>
+</script>
+{# /GOATEE TEMPLATES #}
+
+{% block script %}{% endblock script %}
 </body>
 </html>

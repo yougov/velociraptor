@@ -63,6 +63,7 @@ Once your database is created, you'll need to create the tables::
     cd /vagrant/project
     ./manage.py syncdb
     ./manage.py migrate
+    ./manage.py createcachetable raptor_cache
 
 As Velociraptor is developed and the DB schema changes, you can run
 `./manage.py migrate` again to get your local DB schema in sync with the code.

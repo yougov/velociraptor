@@ -45,6 +45,13 @@ BALANCERS = {
     }
 }
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'raptor_cache',
+    }
+}
+
 # Username and password to be used when SSHing to hosts.  Set to
 # 'vagrant/vagrant' by default for ease of development within a Vagrant VM.
 DEPLOY_USER = 'vagrant'

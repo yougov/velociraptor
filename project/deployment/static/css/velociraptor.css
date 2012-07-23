@@ -1,9 +1,3 @@
-
-/* http://paulirish.com/2012/box-sizing-border-box-ftw/ */
-/* Apparently Bootstrap isn't compatible with box-sizing; border-box :(.  It
- * screws up a bunch of stuff */
-/** { -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box; }*/
-
 /* Some headers want to float left so we can stick some other UI on the
  * same line to the right */
 .float {
@@ -49,108 +43,11 @@ div.label {
   background-color: #333
 }
 
-/* styles for the process lists on the homepage dashboard */
-.proc-list {
-  list-style: none;
-  margin-left: 0;
-}
+/* APPS, SWARMS, PROCS */
 
-.proc-status {
-  margin: 5px 10px 5px 0;
-  padding: 3px 0 0;
-  width: 100px;
+#dash-apps {
+  margin-top: 20px;
 }
-
-.proc-status .label {
-  overflow: hidden;
-}
-
-.proc-status .host-more {
-  display: none;
-}
-
-.proc-status .longname {
-  display: none;
-}
-
-.host-expanded {
-  width: 210px;
-}
-
-.host-expanded .host-more {
-  display: block;
-  z-index: 20;
-  overflow: visible;
-}
-
-/* When expanded, show the longname and hide the shortname */
-.host-expanded .longname {
-  display: inline;
-}
-
-.host-expanded .shortname {
-  display: none;
-}
-
-.host-more {
-  color: black;
-  text-shadow: none;
-  background: white;
-  font-weight: normal;
-  font-size: 11px;
-  min-height: 72px;
-}
-
-.proc-actions {
-  margin-top: 3px;
-}
-.proc-actions span.links {
-    float: right;
-}
-
-/* hide/show action buttons depending on host status */
-
-.status-RUNNING .start {
-  display: none;
-}
-
-.status-STOPPED .stop {
-  display: none;
-}
-
-/* TODO: instead of just passing back the status from supervisord, and using
- * that as a class name for styling, have more abstract statuses like "ok" and
- * "alert", that can be based on additional info like smoke tests or nagios
- * checks. */
-
-.status-FATAL .label {
-  background-color: #b94a48;
-}
-.status-RUNNING .label {
-  background-color: #468847;
-}
-.status-STOPPED .label {
-  background-color: #f89406;
-}
-.status-FATAL .label:hover {
-  background-color: #953b39;
-}
-.status-STOPPED .label:hover {
-  background-color: #c67605;
-}
-.status-RUNNING .label:hover {
-  background-color: #356635;
-}
-
-.procfilter {
-  min-width: 50px;
-}
-
-.procbar {
-  display: inline-block;
-}
-
-/* MODALS */
 
 th.rowlabel {
   font-weight: normal;
@@ -159,10 +56,78 @@ th.rowlabel {
   padding-right: 10px;
 }
 
-/* MINI PROC VIEW */
-.procgrid {
-  margin-top: 5px;
+.appbox {
+  margin-bottom: 25px;
+  float: left;
+  width: 50%;
+}
+
+.apptitle {
+  font-weight: bold;
+  font-size: 17px;
+  line-height: 32px;
+  text-align: right;
+  margin-right: 18px;
+}
+
+.apptitle:hover {
+  color: #08C;
+  cursor: pointer;
+}
+
+.biggened .apptitle {
+  color: #08C;
+}
+
+.titlecell {
+  vertical-align: top;
+}
+
+.proccell {
+  padding-top: 6px;
+}
+
+.swarmbox {
+  float: left;
+}
+
+.biggened .swarmbox {
+  margin-right: 20px;
+}
+
+.swarmtitle {
+  color: #999;
+  line-height: 23px;
+  display: none;
+}
+
+.biggened .swarmtitle {
+  display: block;
+}
+
+.hostblock {
+  width: 22%;
+  float: left;
+  margin-right: 2%;
+  margin-bottom: 10px;
+}
+
+.hostblock h4 {
+  /* prevent weird wrapping on small screen */
   clear: both;
+}
+
+.procgrid {
+  /*margin-top: 5px;*/
+  /*clear: both;*/
+}
+
+.procgrid h4 {
+  margin-bottom: 5px;
+}
+
+.procwrap {
+  float: left;
 }
 
 .procbox {
@@ -170,10 +135,27 @@ th.rowlabel {
   width: 15px;
   float: left;
   margin: 0 4px 4px 0;
+  cursor: pointer;
 }
 
-.procbox.RUNNING {
-  background-color: #468847;
+.RUNNING {
+  background-color: #00CC00;
+}
+
+.STOPPED {
+  background-color: #FFCC00;
+}
+
+.FATAL, .BACKOFF {
+  background-color: #F00;
+}
+
+.procmodal-STOPPED .ifrunning {
+  display: none;
+}
+
+.procmodal-RUNNING .ifstopped {
+  display: none;
 }
 
 
@@ -247,41 +229,4 @@ th.rowlabel {
 
 .chzn-container .chzn-results {
   max-height: 500px;
-}
-
-/**** Isotope filtering ****/
-
-.isotope-item {
-  z-index: 2;
-}
-
-.isotope-hidden.isotope-item {
-  pointer-events: none;
-  z-index: 1;
-}
-
-.isotope,
-.isotope .isotope-item {
-  /* change duration value to whatever you like */
-  -webkit-transition-duration: 0.4s;
-     -moz-transition-duration: 0.4s;
-      -ms-transition-duration: 0.4s;
-       -o-transition-duration: 0.4s;
-          transition-duration: 0.4s;
-}
-
-.isotope {
-  -webkit-transition-property: height, width;
-     -moz-transition-property: height, width;
-      -ms-transition-property: height, width;
-       -o-transition-property: height, width;
-          transition-property: height, width;
-}
-
-.isotope .isotope-item {
-  -webkit-transition-property: -webkit-transform, opacity;
-     -moz-transition-property:    -moz-transform, opacity;
-      -ms-transition-property:     -ms-transform, opacity;
-       -o-transition-property:         top, left, opacity;
-          transition-property:         transform, opacity;
 }

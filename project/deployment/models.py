@@ -5,6 +5,7 @@ import json
 from copy import copy
 
 from django.db import models
+from django.core.cache import cache
 from django.contrib.auth.models import User
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -223,14 +224,29 @@ class Host(models.Model):
     def __unicode__(self):
         return self.name
 
+    @property
+    def rpc(self):
+        url = 'http://%s:%s' % (self.name, settings.SUPERVISOR_PORT)
+        return xmlrpclib.Server(url).supervisor
+
+    def _get_procdata(self, use_cache=True):
+        key = self.name + '_procdata'
+        data = None
+        if use_cache:
+            data = cache.get(key)
+
+        if data is None:
+            data = self.rpc.getAllProcessInfo()
+
+        cache.set(key, data, 10)
+        return data
+
     def get_used_ports(self):
-        server = xmlrpclib.Server('http://%s:%s' % (self.name,
-                                                    settings.SUPERVISOR_PORT))
-        states = server.supervisor.getAllProcessInfo()
+        procdata = self._get_procdata(False)
         # names will look like 'thumpy-0.0.1-9585c1f8-web-8001'
         # split off the port at the end.
         ports = set()
-        for proc in states:
+        for proc in procdata:
             parts = proc['name'].split('-')
             if parts[-1].isdigit():
                 ports.add(int(parts[-1]))
@@ -251,15 +267,13 @@ class Host(models.Model):
 
         return next(x for x in all_ports if free(x))
 
-    def get_procs(self):
+    def get_procs(self, use_cache=True):
         """
         Return a list of Proc objects, one for each supervisord process that
         has a parseable name and whose app and recipe can be found in the DB.
         """
-        server = xmlrpclib.Server('http://%s:%s' % (self.name,
-                                                    settings.SUPERVISOR_PORT))
-        states = server.supervisor.getAllProcessInfo()
-        procs = [make_proc(p['name'], self, p) for p in states]
+        procdata = self._get_procdata(use_cache)
+        procs = [make_proc(p['name'], self, p) for p in procdata]
 
         # Filter out any procs for whom we couldn't look up an App or
         # ConfigRecipe
@@ -303,7 +317,12 @@ class Proc(object):
 
     def as_dict(self):
         data = copy(self.data)
+        if self.host.squad:
+            squadname = self.host.squad.name
+        else:
+            squadname = None
         data.update(
+            id=self.host.name + '-' + self.name,
             name=self.name,
             tag=self.tag,
             hash=self.hash,
@@ -312,6 +331,9 @@ class Proc(object):
             app=self.app.name,
             recipe=self.recipe.name,
             port=self.port,
+            # Add a name that's safe for jquery selectors
+            jsname=self.name.replace('.', 'dot'),
+            squad=squadname,
         )
         return data
 

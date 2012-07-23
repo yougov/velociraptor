@@ -1,169 +1,254 @@
 // Depends on vr.js
+//
+// TODO: Handle HTTP 500 responses to ajax calls.  They should contain JSON.
 
 // DASH //
-VR.Dash = {
-    init: function(){
-        VR.Dash.Procs.init();
-        VR.Dash.Tasks.init();
+VR.Dash = {};
+
+
+Proc = Backbone.Model.extend({
+    initialize: function() {
+      this.on('change', this.updateUrl);
+    },
+    url: function() {
+      var host = this.get('host');
+      var name = this.get('name');
+      return '/api/hosts/' + host + '/procs/' + name + '/';
     }
+});
+
+
+ProcList = Backbone.Collection.extend({
+    model: Proc,
+
+    getOrCreate: function(data) {
+      // if proc with id is in collection, return it.
+      var proc = _.find(this.models, function(proc) {
+          return proc.id == data.id;
+        });
+      if (proc) {
+        proc.set(data);
+        return proc;
+      }
+      // else create, add, and return.
+      proc = new Proc(data);
+      this.add(proc);
+      return proc;
+    }
+});
+
+
+Swarm = Backbone.Model.extend({
+    initialize: function() {
+      this.procs = new ProcList();
+    }
+});
+
+
+SwarmList = Backbone.Collection.extend({
+    model: Swarm,
+
+    comparator: function(swarm) {
+      return swarm.id;
+    },
+    getOrCreate: function(id) {
+      // if swarm with id is in collection, return it.
+      var swarm = _.find(this.models, function(swarm) {
+          return swarm.id == id;
+        });
+      if (swarm) {
+        return swarm;
+      }
+      // else create, add, and return.
+      swarm = new Swarm({id: id});
+      this.add(swarm);
+      return swarm;
+    }
+});
+
+
+App = Backbone.Model.extend({
+    initialize: function() {
+      this.swarms = new SwarmList();
+    }
+});
+
+
+AppList = Backbone.Collection.extend({
+    model: App,
+
+    initialize: function(container) {
+      this.on('add', function(app) {
+        // draw the new app on the page
+        var v = new AppView(app);
+        v.render();
+        container.append(v.el);
+      });
+    },
+
+    comparator: function(app) {
+      return app.id;
+    },
+
+    getOrCreate: function(id) {
+      // if app with id is in collection, return it.
+      var app = _.find(this.models, function(app) {
+          return app.id == id;
+        });
+      if (app) {
+        return app;
+      }
+      // else create, add, and return.
+      app = new App({id: id, "class": "appbox"});
+      this.add(app);
+      return app;
+    }
+});
+
+
+ProcView = Backbone.View.extend({
+    template: '#proc-tmpl',
+    el: '<div class="procwrap"></div>',
+    modalTemplate: '#proc-details-tmpl',
+    initialize: function(proc) {
+      this.proc = proc;
+      this.template = $(this.template);
+      this.proc.on('change', this.render, this);
+      this.proc.on('destroy', this.onProcDestroy, this);
+    },
+    render: function() {
+      this.$el.html(this.template.goatee(this.proc.toJSON()));
+    },
+
+    events: {
+      'click': 'onClick'
+    },
+
+    onClick: function(ev) {
+      if (!this.modal) {
+        this.modal = new ProcModalView(this.proc);   
+      }
+
+      this.modal.show();
+    },
+    onProcDestroy: function() {
+      this.$el.remove();
+    }
+});
+
+
+ProcModalView = Backbone.View.extend({
+    template: '#proc-details-tmpl',
+    initialize: function(proc) {
+      this.proc = proc;
+      this.template = $(this.template);
+      this.proc.on('change', this.render, this);
+      this.proc.on('destroy', this.onProcDestroy, this);
+    },
+    render: function() {
+      this.$el.html(this.template.goatee(this.proc.toJSON()));
+    },
+    events: {
+      'click .proc-start': 'onStartBtn',
+      'click .proc-stop': 'onStopBtn',
+      'click .proc-destroy': 'onDestroyBtn'
+    },
+    onStartBtn: function(ev) {
+      this.doAction('start');
+    },
+    onStopBtn: function(ev) {
+      this.doAction('stop');
+    },
+    doAction: function(action) {
+      $.post(this.proc.url(), {'action': action}, function(data, stat, xhr) {
+          VR.Dash.updateProcData(data);
+        });
+    },
+    onDestroyBtn: function(ev) {
+      console.log('destroy btn');
+      this.proc.destroy();
+    },
+    onProcDestroy: function() {
+      this.$el.modal('hide');
+      this.$el.remove();
+    },
+    show: function() {
+      this.render();
+      this.$el.modal('show');
+    }
+});
+
+
+SwarmView = Backbone.View.extend({
+    template: '#swarm-tmpl',
+    el: '<div class="swarmbox"></div>',
+    initialize: function(swarm) {
+      this.swarm = swarm;
+      this.template = $(this.template);
+      // when a new proc is added, make sure it gets rendered in here
+      this.swarm.procs.on('add', this.procAdded, this);
+    },
+
+    procAdded: function(proc) {
+      var pv = new ProcView(proc);
+      pv.render();
+      this.$el.find('.procgrid').append(pv.el);
+    },
+
+    render: function() {
+      this.$el.html(this.template.goatee(this.swarm.toJSON()));
+    }
+});
+
+
+AppView = Backbone.View.extend({
+    template: '#app-tmpl',
+    el: '<tr></tr>',
+    initialize: function(app) {
+      this.app = app;
+      this.template = $(this.template);
+      this.app.swarms.on('add', this.swarmAdded, this);
+    },
+
+    swarmAdded: function(swarm) {
+      var sv = new SwarmView(swarm);
+      sv.render();
+      this.$el.find('.proccell').append(sv.el);
+    },
+
+    events: {
+      'click .apptitle': 'toggleBigness'
+    },
+
+    toggleBigness: function() {
+        this.$el.toggleClass('biggened');
+    },
+
+    render: function() {
+      this.$el.html(this.template.goatee(this.app.toJSON()));
+    }
+});
+
+
+VR.Dash.onHostList = function(data, stat, xhr) {
+   _.each(data.hosts, function(el) {
+     $.getJSON('/api/hosts/' + el + '/procs/', VR.Dash.onHostData);
+   });
 };
 
-VR.Dash.Procs = {
-    init: function(){
-        VR.Dash.Procs.el = $('#dash-procs');
 
-        $.getJSON('api/hosts/', VR.Dash.Procs.getHostProcs);
+VR.Dash.onHostData = function(data, stat, xhr) {
+  _.each(data.procs, VR.Dash.updateProcData);
+};
 
-        VR.Dash.Procs.el.isotope({
-            itemSelector: '.proc-status',
-            layoutMode: 'masonry',
-            animationOptions: {duration: 10}
-        });
+VR.Dash.updateProcData = function(data) {
+    app = VR.Dash.Apps.getOrCreate(data.app);
+    VR.Dash.Apps.add(app);
 
-        // Load up Click Events for this Object
-        VR.Dash.Procs.el.delegate('.proc-status .label', 'click', VR.Dash.Procs.onProcClick);
-        VR.Dash.Procs.el.delegate('.proc-actions .btn', 'click', VR.Dash.Procs.onProcActionClick);
-        $('body').delegate('.action-dialog .btn', 'click', VR.Dash.Procs.onActionModalClick);
-        $('.procfilter').click(VR.Dash.Procs.onFilterClick);
-        $('.expandcollapse button').click(VR.Dash.Procs.onExpandCollapseClick);
-
-    },
-
-    getHostProcs: function(data, txtStatus, xhr){
-        // note - scope is inside getJSON call!
-        _.each(data.hosts, function(el, idx, lst) {
-            // for each host in the list, make a request for the procs and draw
-            // a box for each.
-            $.getJSON('/api/hosts/' + el + '/procs/', function(data, txtStatus, xhr) {
-              _.each(data.states, function(el, idx, lst) {
-                  el.host = data.host;
-                  // strip dots from the host so it can be used as a
-                  // classname
-                  var splitresult = el.name.split('-');
-                  el.hostclass = VR.Util.cleanName(data.host);
-                  el.appclass = splitresult[0];
-                  el.destroyable = VR.Util.procIsOurs(el.name);
-                  el.shortname = splitresult[0];
-                  // If it is destroyable it is ours, if it ours it should
-                  // have a port number as the [5] element.
-                  el.port = false;
-                  if(el.destroyable) {
-                    if(VR.Util.isNumber(splitresult[5])){
-                      el.port = splitresult[5];
-                    }
-                  }
-                  // each proc gets a unique id of host + procname, with illegal
-                  // chars stripped out.
-                  el.procid = VR.Util.createID(el.host, el.name);
-              });
-
-              var element = $('#host-procs-tmpl').goatee(data);
-              VR.Dash.Procs.el.isotope('insert', element);
-            });
-        });
-    },
-
-    onProcClick: function(){
-        $(this).parent().toggleClass('host-expanded');
-        VR.Dash.Procs.reflow();
-    },
-
-    onProcActionClick: function() {
-        var data = $(this).parents('.proc-status').data();
-        // action buttons will have their action stored in the 'rel attribute.
-        data.action = $(this).attr('rel');
-        if (data.action === 'destroy') {
-            // show a confirmation dialog before doing proc deletions
-            var popup = $('#proc-modal-tmpl').goatee(data);
-            popup.data(data);
-            $(popup).modal();
-        } else {
-            // do stops and starts automatically
-            VR.Dash.Procs.doProcAction(data.host, data.proc, data.action);
-        }
-    },
-
-    onActionResponse: function(data, txtStatus, xhr) {
-        // find the proc
-        // update its class so it changes colors
-        var proc = $('#' + VR.Util.createID(data.host, data.name));
-        VR.Util.clearStatus(proc);
-        proc.addClass('status-' + data.statename);
-    },
-
-    onExpandCollapseClick: function() {
-        var action = $(this).attr('rel');
-        if (action === 'expand') {
-            $('.proc-status').addClass('host-expanded');
-        } else if (action === 'collapse') {
-            $('.proc-status').removeClass('host-expanded');
-        }
-        VR.Dash.Procs.reflow();
-    },
-
-    onFilterClick: function() {
-      var selector = $(this).attr('data-filter');
-      $(this).button('toggle');
-      // hide the host dropdown
-      $('.hostlist, .applist').removeClass('open');
-      VR.Dash.Procs.el.isotope({ filter: selector });
-      return false;
-    },
-
-    onActionModalClick: function() {
-      // this handler is bound using $().delegate on init.
-        var btn = $(this).attr('rel');
-        var modal = $(this).parents('.modal');
-        if (btn === 'confirm') {
-            // get the data, and make an ajax request with it.
-            var data = modal.data();
-            if (data.action === 'destroy') {
-                VR.Dash.Procs.destroyProc(data.host, data.proc);
-            } else {
-                VR.Dash.Procs.doProcAction(data.host, data.proc, data.action);
-            }
-        }
-        // no matter what button we got, hide and destroy the modal.
-        modal.modal('hide');
-        modal.remove();
-    },
-
-    doProcAction: function(host, proc, action, method, callback) {
-        if (method === undefined) {
-            method = 'POST';
-        }
-
-        if (callback === undefined) {
-            callback = VR.Dash.Procs.onActionResponse;
-        }
-
-        var url = '/api/hosts/' + host + '/procs/' + proc + '/';
-        data = {host:host,proc:proc,action:action};
-        $.ajax(url, {
-            data: data,
-            dataType: 'json',
-            type: method,
-            success: callback
-        });
-    },
-
-    destroyProc: function(host, proc) {
-        return VR.Dash.Procs.doProcAction(host, proc, 'destroy', 'DELETE', VR.Dash.Procs.onProcDestroy);
-    },
-
-    onProcDestroy: function(data, txtStatus, xhr) {
-        // callback for deleting a proc from the DOM when server lets us know it's
-        // been destroyed.
-        $('#' + VR.Util.createID(data.host, data.name)).remove();
-        VR.Dash.Procs.reflow();
-    },
-
-    reflow: function(host){
-        VR.Dash.Procs.el.isotope('reLayout');
-    }
-
-};// end VR.Dash.Procs
-
+    var swarmname = [data.proc, data.recipe].join('-');
+    var s = app.swarms.getOrCreate(swarmname);
+    var p = s.procs.getOrCreate(data);
+};
 
 // DASH Tasks Methods //
 VR.Dash.Tasks = {
