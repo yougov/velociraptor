@@ -79,10 +79,25 @@ AppList = Backbone.Collection.extend({
 
     initialize: function(container) {
       this.on('add', function(app) {
+        // TODO: this should be a view
         // draw the new app on the page
         var v = new AppView(app);
         v.render();
-        container.append(v.el);
+        var inserted = false;
+        // loop until we see one later than us, alphabetically, and insert
+        // there.
+        _.each(container.find('.approw'), function(row) {
+            var title = $(row).find('.apptitle').text();
+            if (!inserted && title > app.id) {
+                $(row).before(v.el);
+                inserted = true;
+            } 
+        });
+
+        // If still not inserted, just append to container
+        if (!inserted) {
+            container.append(v.el);
+        }
       });
     },
 
@@ -203,7 +218,7 @@ SwarmView = Backbone.View.extend({
 
 AppView = Backbone.View.extend({
     template: '#app-tmpl',
-    el: '<tr></tr>',
+    el: '<tr class="approw"></tr>',
     initialize: function(app) {
       this.app = app;
       this.template = $(this.template);
