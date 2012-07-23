@@ -5,7 +5,7 @@
 <head>
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <title>{% block title %}Velociraptor{% endblock title %}</title>
+  <title>{% block title %}{% if site_title %}{{ site_title }}{% else %}Velociraptor{% endif %}{% endblock title %}</title>
   <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}" type="text/css" media="screen">
   <link rel="stylesheet" href="{% static 'chosen/chosen.css' %}" type="text/css" media="screen">
   <link rel="stylesheet" href="{% static 'css/velociraptor.css' %}" type="text/css" media="screen">
@@ -16,6 +16,9 @@
   </style>
   <link rel="stylesheet" href="{% static 'css/bootstrap-responsive.css' %}" type="text/css" media="screen">
   {% block style %}{% endblock style %}
+  {% if custom_css %}
+    <link rel="stylesheet" href="{{ custom_css }}" type="text/css" media="screen">
+  {% endif %}
 </head>
 <body>
     <div class="navbar navbar-fixed-top">
@@ -26,7 +29,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </a>
-          <a class="brand" href="/">Velociraptor</a>
+          <a class="brand" href="/">{% if site_title %}{{ site_title }}{% else %}Velociraptor{% endif %}</a>
           <div class="nav-collapse">
           {% block nav %}
           {% if not hide_nav %}

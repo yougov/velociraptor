@@ -10,4 +10,6 @@ def raptor(request):
         'squads': Squad.objects.all(),
         # Don't show web log links if syslogging is enabled
         'log_links': not settings.PROC_SYSLOG,
+        'site_title': getattr(settings, 'SITE_TITLE', 'Velociraptor'),
+        'custom_css': getattr(settings, 'CUSTOM_CSS', None),
     }
