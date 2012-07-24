@@ -92,6 +92,10 @@ CELERYBEAT_SCHEDULE = {
         'task': 'deployment.tasks.update_tags',
         'schedule': timedelta(minutes=30),
     },
+    'test_all_the_things': {
+        'task': 'deployment.tasks.uptest_all_procs',
+        'schedule': timedelta(minutes=10),
+    },
 }
 
 SUPERVISOR_PORT = 9001

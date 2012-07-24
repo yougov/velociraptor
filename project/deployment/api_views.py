@@ -2,6 +2,8 @@
 import xmlrpclib
 from djcelery.models import TaskState
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
+from django import http
 
 from deployment import utils
 from deployment import models
@@ -96,3 +98,21 @@ def task_status(request, task_id):
     status['id'] = task_id
 
     return utils.json_response(status)
+
+
+@login_required
+def uptest_run(request, run_id):
+    run = get_object_or_404(models.TestRun, id=run_id)
+    return utils.json_response(run.results)
+
+
+@login_required
+def uptest_latest(request):
+    """
+    Look up most recent test run and return its results.
+    """
+    runs = models.TestRun.objects.order_by('-start')
+    if len(runs):
+        return utils.json_response(runs[0].results)
+    else:
+        raise http.Http404
