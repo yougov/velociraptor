@@ -8,13 +8,16 @@ import contextlib
 import re
 from collections import defaultdict
 
+import yaml
 import fabric.network
 from celery.task import subtask, chord, task
 from fabric.api import env
 from django.core.files.storage import default_storage
 from django.conf import settings
+from django.utils import timezone
 
-from deployment.models import Release, Build, Swarm, Host, PortLock, App
+from deployment.models import (Release, Build, Swarm, Host, PortLock, App,
+                               TestRun, TestResult)
 from deployment import balancer
 
 from yg.deploy.fabric.system import (deploy_parcel, run_uptests,
@@ -294,7 +297,7 @@ def swarm_assign_uptests(swarm_id):
     for proc in current_procs:
         host_procs[proc.host.name].append(proc.name)
 
-    header = [swarm_uptest_host.subtask((h, ps)) for h, ps in
+    header = [uptest_host_procs.subtask((h, ps)) for h, ps in
               host_procs.items()]
 
     this_chord = chord(header)
@@ -303,17 +306,49 @@ def swarm_assign_uptests(swarm_id):
 
 
 @task
-def swarm_uptest_host(hostname, procs):
-    # Do uptests for each proc on host.
+def uptest_host_procs(hostname, procs):
     env.host_string = hostname
     env.abort_on_prompts = True
     env.user = settings.DEPLOY_USER
     env.password = settings.DEPLOY_PASSWORD
     env.linewise = True
-    for proc in procs:
-        run_uptests(proc)
 
-    return hostname, procs
+    with always_disconnect():
+        results = {p: run_uptests(p) for p in procs}
+    return hostname, results
+
+
+@task
+def uptest_host(hostname, test_run_id=None):
+    """
+    Given a hostname, look up all its procs and then run uptests on them.
+    """
+
+    host = Host.objects.get(name=hostname)
+    _, results = uptest_host_procs(hostname, [p['name'] for p in
+                                           host._get_procdata()])
+
+    if test_run_id:
+        run = TestRun.objects.get(id=test_run_id)
+        for procname, resultlist in results.items():
+            testcount = len(resultlist)
+            if testcount:
+                passed = all(r['passed'] for r in resultlist)
+            else:
+                # There were no tests :(
+                passed = True
+
+            tr = TestResult(
+                run=run,
+                time=timezone.now(),
+                hostname=hostname,
+                procname=procname,
+                passed=passed,
+                testcount=testcount,
+                results=yaml.safe_dump(resultlist)
+            )
+            tr.save()
+    return hostname, results
 
 
 @task
@@ -323,12 +358,16 @@ def swarm_post_uptest(uptest_results, swarm_id):
     were successful, and then calls routing function.
     """
 
+    # uptest_results will be a list of dictionaries (unless there's an
+    # exception in one of them, which won't be common)
+
     if any(isinstance(r, Exception) for r in uptest_results):
-        assert False, "Error in uptests."
+        assert False, "Exception in uptests."
 
     correct_nodes = set()
-    for host, procnames in uptest_results:
-        for procname in procnames:
+    for host, results in uptest_results:
+        # results is now a dictionary keyed by procname
+        for procname in results:
             correct_nodes.add('%s:%s' % (host, procname.split('-')[-1]))
 
     callback = swarm_cleanup.subtask((swarm_id,))
@@ -403,6 +442,26 @@ def swarm_delete_proc(swarm_id, hostname, procname, port):
             balancer.delete_nodes(swarm.squad.balancer, swarm.pool, [node])
 
     delete_proc(hostname, procname)
+
+
+@task
+def uptest_all_procs():
+    # Create a test run record.
+    run = TestRun(start=timezone.now())
+    run.save()
+    # Fan out a task for each active host
+    # callback post_uptest_all_procs at the end
+    hosts = Host.objects.filter(active=True)
+    chord(uptest_host.s(h.name, run.id) for h in
+          hosts)(post_uptest_all_procs.s(run.id))
+
+
+@task
+def post_uptest_all_procs(results, test_run_id):
+    # record test run end time
+    run = TestRun.objects.get(id=test_run_id)
+    run.end = timezone.now()
+    run.save()
 
 
 @task

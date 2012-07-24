@@ -1,7 +1,4 @@
-import datetime
-import json
 import logging
-import xmlrpclib
 
 from django.conf import settings
 from django.contrib.auth import login as django_login, logout as django_logout
@@ -10,13 +7,8 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
 
-from celery.result import AsyncResult
 
-from djcelery.models import TaskState
-
-from deployment import forms
-from deployment import tasks
-from deployment import models
+from deployment import forms, tasks, models, utils
 
 
 @login_required
@@ -26,153 +18,6 @@ def dash(request):
         'apps': models.App.objects.all(),
         'supervisord_web_port': settings.SUPERVISORD_WEB_PORT
     })
-
-
-def json_response(obj, status=200):
-    """Given a Python object, dump it to JSON and return a Django HttpResponse
-    with the contents and proper Content-Type"""
-    resp = HttpResponse(json.dumps(obj), status=status)
-    resp['Content-Type'] = 'application/json'
-    return resp
-
-
-# TODO: protect these json views with a decorator that returns a 403 instead of
-# a redirect to the login page.  To be more ajax-friendly.
-@login_required
-def api_host(request):
-    # list all hosts
-    return json_response({'hosts': [h.name for h in
-                                    models.Host.objects.filter(active=True)]})
-
-
-def enhance_proc(hostname, data):
-    try:
-        proc = models.make_proc(data['name'], hostname, data)
-    except ValueError:
-        proc = None
-    if not proc:
-        # Could not parse or objects don't exist.  just return limited data
-        data['host'] = hostname.__unicode__()
-        return data
-    return proc.as_dict()
-
-
-@login_required
-def api_host_procs(request, hostname):
-    """Display status of all supervisord-managed processes on a single host, in
-    JSON"""
-
-    host = models.Host.objects.get(name=hostname)
-    # TODO: use Cache-Control header to determine whether to pass use_cache
-    # into _get_procdata()
-    procs = [enhance_proc(host, p) for p in host._get_procdata(use_cache=True)]
-
-    data = {
-        'procs': procs,
-        'host': hostname,
-    }
-    return json_response(data)
-
-
-@login_required
-def api_host_ports(request, hostname):
-    host = models.Host.objects.get(name=hostname)
-    return json_response({
-        'used_ports': list(host.get_used_ports()),
-        'next_port': host.get_unused_port(),
-    })
-
-
-@login_required
-def api_host_proc(request, hostname, proc):
-    """Display status of a single supervisord-managed process on a host, in
-    JSON """
-    host = models.Host.objects.get(name=hostname)
-    if request.method == 'GET':
-        state = host.rpc.getProcessInfo(proc)
-    elif request.method == 'DELETE':
-        # check for and remove port lock if present
-        try:
-            pr = models.make_proc(proc, host, None)
-            pl = models.PortLock.objects.get(host=host, port=pr.port)
-            pl.delete()
-        except models.PortLock.DoesNotExist:
-            pass
-        # Do proc deletions syncronously instead of with Celery, since they're
-        # fast and we want instant feedback.
-        tasks.delete_proc(hostname, proc)
-
-        # Make the cache forget about this proc
-        host._get_procdata(use_cache=False)
-        return json_response({'name': proc, 'deleted': True})
-    elif request.method == 'POST':
-        action = request.POST.get('action')
-        try:
-            if action == 'start':
-                host.rpc.startProcess(proc)
-            elif action == 'stop':
-                host.rpc.stopProcess(proc)
-            elif action == 'restart':
-                host.rpc.startProcess(proc)
-                host.rpc.stopProcess(proc)
-        except xmlrpclib.Fault as e:
-            return json_response({'fault': e.faultString}, 500)
-        state = host.rpc.getProcessInfo(proc)
-    # Add the host in too for convenience's sake
-    out = enhance_proc(host, state)
-    return json_response(out)
-
-
-def get_task_status(task_id):
-    """
-    Given a task ID, return a dictionary with status information.
-    """
-    task = AsyncResult(task_id)
-    status = {
-        'successful': task.successful(),
-        'result': str(task.result),  # result can be any picklable object
-        'status': task.status,
-        'ready': task.ready(),
-        'failed': task.failed(),
-    }
-
-    if task.failed():
-        status['traceback'] = task.traceback
-    return status
-
-
-def clean_task_value(v):
-    if isinstance(v, (datetime.datetime, datetime.date)):
-        return v.isoformat()
-    elif isinstance(v, (basestring, int, float, tuple, list, dict, bool,
-                        type(None))):
-        return v
-
-
-def task_to_dict(task):
-    """
-    Given a Celery TaskState instance, return a JSONable dict with its
-    information.
-    """
-    # Make a copy of task.__dict__, leaving off any of the cached complex
-    # objects
-    return {k: clean_task_value(v) for k, v in task.__dict__.items() if not
-           k.startswith('_')}
-
-
-@login_required
-def api_task_recent(request):
-    count = int(request.GET.get('count') or 20)
-    return json_response({'tasks': [task_to_dict(t)
-                                    for t in TaskState.objects.all()[:count]]})
-
-
-@login_required
-def api_task_status(request, task_id):
-    status = get_task_status(task_id)
-    status['id'] = task_id
-
-    return json_response(status)
 
 
 @login_required
@@ -341,9 +186,12 @@ def edit_squad(request, squad_id=None):
         squad = form.instance
         models.remember('squad', 'saved squad %s' % squad.name, request.user.username)
         redirect('edit_squad', squad_id=squad.id)
-    btn_text = 'Save'
-    docstring = models.Squad.__doc__
-    return render(request, 'squad.html', vars())
+    return render(request, 'squad.html', {
+        'squad': squad,
+        'form': form,
+        'btn_text': 'Save',
+        'docstring': models.Squad.__doc__
+    })
 
 
 def login(request):
@@ -353,8 +201,10 @@ def login(request):
         django_login(request, form.user)
         # redirect to next or home
         return HttpResponseRedirect(request.GET.get('next', '/'))
-    hide_nav = True
-    return render(request, 'login.html', vars())
+    return render(request, 'login.html', {
+        'form': form,
+        'hide_nav': True
+    })
 
 
 def logout(request):
@@ -366,11 +216,11 @@ def get_latest_tag(request, recipe_id):
     """ Get the latest tag from the repo, we navigate from the given recipe
     to the app.
     """
-    recipe = get_object_or_404(ConfigRecipe, pk=recipe_id)
+    recipe = get_object_or_404(models.ConfigRecipe, pk=recipe_id)
     tags = []
     for tag in recipe.app.tag_set.all():
         tags.append(tag.name)
-    return json_response(tags)
+    return utils.json_response(tags)
 
 
 def preview_recipe(request, recipe_id):
@@ -379,6 +229,7 @@ def preview_recipe(request, recipe_id):
     """
     recipe = get_object_or_404(models.ConfigRecipe, pk=recipe_id)
     return HttpResponse(recipe.to_yaml())
+
 
 def preview_recipe_addchange(request):
     """ Preview a recipe from the add/change view which will use the currently
@@ -393,6 +244,7 @@ def preview_recipe_addchange(request):
     custom_dict = recipe.assemble(custom_ingredients=custom_ingredients)
     return HttpResponse(recipe.to_yaml(custom_dict=custom_dict))
 
+
 def preview_ingredient(request, recipe_id, ingredient_id):
     """ Preview a recipe from an ingredient change view which will use a
     given recipe ingredients except for the ingredient that is being edited,
@@ -401,7 +253,7 @@ def preview_ingredient(request, recipe_id, ingredient_id):
     recipe = get_object_or_404(models.ConfigRecipe, pk=recipe_id)
     # Get the current ingredients except for the one we are editing now
     custom_ingredients = [i.ingredient for i in
-            RecipeIngredient.objects.filter(recipe=recipe).exclude(
+            models.RecipeIngredient.objects.filter(recipe=recipe).exclude(
                 ingredient__id=ingredient_id)]
     custom_dict = recipe.assemble(custom_ingredients=custom_ingredients)
     # Add to the custom dict the values that are being edited

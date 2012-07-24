@@ -44,17 +44,17 @@ urlpatterns = patterns('',
 
     # JSON API routes
     url(r'^api/hosts/$',
-        'deployment.views.api_host', name='api_host'),
+        'deployment.api_views.host', name='api_host'),
     url(r'^api/hosts/(?P<hostname>[a-zA-Z0-9_.-]+)/ports/$',
-        'deployment.views.api_host_ports', name='api_host_ports'),
+        'deployment.api_views.host_ports', name='api_host_ports'),
     url(r'^api/hosts/(?P<hostname>[a-zA-Z0-9_.-]+)/procs/$',
-        'deployment.views.api_host_procs', name='api_host_procs'),
+        'deployment.api_views.host_procs', name='api_host_procs'),
     url(r'^api/hosts/(?P<hostname>[a-zA-Z0-9_.-]+)/procs/(?P<proc>[a-zA-Z0-9_.-]+)/$',
-        'deployment.views.api_host_proc', name='api_host_proc'),
-    url(r'^api/task/$', 'deployment.views.api_task_recent',
+        'deployment.api_views.host_proc', name='api_host_proc'),
+    url(r'^api/task/$', 'deployment.api_views.task_recent',
         name='api_task_recent'),
     url(r'^api/task/(?P<task_id>[a-zA-Z0-9_.-]+)/$',
-        'deployment.views.api_task_status', name='api_task'),
+        'deployment.api_views.task_status', name='api_task'),
 )
 
 urlpatterns += staticfiles_urlpatterns()

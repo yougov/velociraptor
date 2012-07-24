@@ -447,3 +447,52 @@ class PortLock(models.Model):
 
     def __unicode__(self):
         return '%s:%s' % (self.host, self.port)
+
+
+class TestRun(models.Model):
+    """
+    Once every 15 minutes or so (configurable), run uptests on every proc on
+    every host.  One of these records should be created for each such run.
+    """
+    start = models.DateTimeField()
+    end = models.DateTimeField(null=True)
+
+    def __unicode__(self):
+        return self.start.isoformat()
+
+    @property
+    def results(self):
+        """
+        Return a serializable compilation/summary of the test run results.
+        """
+        return {
+            'start': self.start.isoformat(),
+            'end': self.end.isoformat() if self.end else None,
+            'seconds': (self.end - self.start).seconds,
+            'pass_count': self.tests.filter(passed=True).count(),
+            'fail_count': self.tests.filter(passed=False).count(),
+            'notests_count': self.tests.filter(testcount=0).count(),
+            'results': {'%s-%s' % (t.hostname, t.procname): yaml.safe_load(t.results) for t in
+                        self.tests.all()}
+        }
+
+
+class TestResult(models.Model):
+    """
+    Results from testing a single proc on a single host.
+    """
+    run = models.ForeignKey(TestRun, related_name='tests')
+    time = models.DateTimeField()
+    hostname = models.CharField(max_length=200)
+    procname = models.CharField(max_length=200)
+    passed = models.BooleanField(default=False)
+    testcount = models.IntegerField(default=0)
+    # YAML dump of test results
+    results = models.TextField()
+
+    def __unicode__(self):
+        if self.testcount:
+            desc = 'pass' if self.passed else 'fail'
+        else:
+            desc = 'no tests'
+        return '%s: %s' % (self.procname, desc)

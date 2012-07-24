@@ -58,6 +58,8 @@ SITE_TITLE = "Velociraptor"
 # URL to a custom CSS file
 CUSTOM_CSS = None
 
+USE_TZ = True
+
 # Username and password to be used when SSHing to hosts.  Set to
 # 'vagrant/vagrant' by default for ease of development within a Vagrant VM.
 DEPLOY_USER = 'vagrant'
