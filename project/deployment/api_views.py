@@ -1,7 +1,10 @@
-
 import xmlrpclib
+import base64
+from functools import wraps
+
 from djcelery.models import TaskState
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 from django import http
 
@@ -10,16 +13,48 @@ from deployment import models
 from deployment import tasks
 
 
-# TODO: protect these json views with a decorator that returns a 403 instead of
-# a redirect to the login page.  To be more ajax-friendly.
-@login_required
+def auth_required(view_func):
+    """
+    An API-friendly alternative to Django's login_required decorator.  Honors
+    both normal cookie-based auth as well as HTTP basic auth.  Returns status
+    401 and a JSON response if auth not present.
+    """
+    @wraps(view_func)
+    def wrapped(request, *args, **kwargs):
+        # If the request is not authenticated, then check basic auth, and add
+        # user object if it passes.  Else return a 401 Unauthorized with JSON
+        # content
+
+        nope = lambda: utils.json_response({'status': 401,
+                                            'msg': 'Basic auth required'},
+                                           status=401)
+        if request.user.is_authenticated():
+            return view_func(request, *args, **kwargs)
+        elif request.META.get('HTTP_AUTHORIZATION'):
+
+            auth_type, data = request.META['HTTP_AUTHORIZATION'].split()
+            if auth_type.lower() != 'basic':
+                return nope()
+
+            username, password = base64.b64decode(data).split(':', 1)
+            user = authenticate(username=username, password=password)
+            if not user:
+                return nope()
+            request.user = user
+            return view_func(request, *args, **kwargs)
+        else:
+            return nope()
+    return wrapped
+
+
+@auth_required
 def host(request):
     # list all hosts
     return utils.json_response({'hosts': [h.name for h in
                                     models.Host.objects.filter(active=True)]})
 
 
-@login_required
+@auth_required
 def host_procs(request, hostname):
     """Display status of all supervisord-managed processes on a single host, in
     JSON"""
@@ -36,7 +71,7 @@ def host_procs(request, hostname):
     return utils.json_response(data)
 
 
-@login_required
+@auth_required
 def host_ports(request, hostname):
     host = models.Host.objects.get(name=hostname)
     return utils.json_response({
@@ -45,7 +80,7 @@ def host_ports(request, hostname):
     })
 
 
-@login_required
+@auth_required
 def host_proc(request, hostname, proc):
     """Display status of a single supervisord-managed process on a host, in
     JSON """
@@ -85,14 +120,14 @@ def host_proc(request, hostname, proc):
     return utils.json_response(out)
 
 
-@login_required
+@auth_required
 def task_recent(request):
     count = int(request.GET.get('count') or 20)
     return utils.json_response({'tasks': [utils.task_to_dict(t)
                                     for t in TaskState.objects.all()[:count]]})
 
 
-@login_required
+@auth_required
 def task_status(request, task_id):
     status = utils.get_task_status(task_id)
     status['id'] = task_id
@@ -100,13 +135,13 @@ def task_status(request, task_id):
     return utils.json_response(status)
 
 
-@login_required
+@auth_required
 def uptest_run(request, run_id):
     run = get_object_or_404(models.TestRun, id=run_id)
     return utils.json_response(run.results)
 
 
-@login_required
+@auth_required
 def uptest_latest(request):
     """
     Look up most recent test run and return its results.
