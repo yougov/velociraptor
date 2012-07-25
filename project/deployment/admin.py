@@ -53,9 +53,20 @@ class HostInline(admin.TabularInline):
 class SquadAdmin(admin.ModelAdmin):
     inlines = [HostInline]
 
+
 class AppAdmin(admin.ModelAdmin):
     model = models.App
     list_display = ('__unicode__', 'repo_url')
+
+
+class TestResultInline(admin.TabularInline):
+    model = models.TestResult
+    extra = 0
+
+
+class TestRunAdmin(admin.ModelAdmin):
+    model = models.TestRun
+    inlines = [TestResultInline]
 
 admin.site.register(models.ConfigRecipe, ConfigRecipeAdmin)
 admin.site.register(models.Squad, SquadAdmin)
@@ -66,6 +77,7 @@ admin.site.register(models.Release)
 admin.site.register(models.Host)
 admin.site.register(models.DeploymentLogEntry)
 admin.site.register(models.Swarm)
+admin.site.register(models.TestRun, TestRunAdmin)
 
 
 # Unregister the Django 'group' model, as I don't think we'll be using it.

@@ -476,6 +476,9 @@ class TestRun(models.Model):
                         self.tests.all()}
         }
 
+    class Meta:
+        ordering = ['-start']
+
 
 class TestResult(models.Model):
     """
