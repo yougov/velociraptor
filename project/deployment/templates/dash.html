@@ -103,7 +103,7 @@
 $(document).ready(function(){
   VR.Dash.Tasks.init();
   VR.Dash.Apps = new AppList($('#dash-apps'));
-  $.getJSON('/api/hosts/', VR.Dash.onHostList);
+  VR.Dash.getHostList();
 });
 </script>
 {% endblock script %}

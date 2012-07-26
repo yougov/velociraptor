@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.storage import default_storage
+from django.utils import timezone
 
 import yaml
 
@@ -237,7 +238,7 @@ class Host(models.Model):
         url = 'http://%s:%s' % (self.name, settings.SUPERVISOR_PORT)
         return xmlrpclib.Server(url).supervisor
 
-    def _get_procdata(self, use_cache=False):
+    def procdata(self, use_cache=False):
         key = self.name + '_procdata'
         data = None
         if use_cache:
@@ -246,17 +247,24 @@ class Host(models.Model):
                 return data
 
         if data is None:
-            data = self.rpc.getAllProcessInfo()
+            now = timezone.now().isoformat()
+            data = {
+                'time': now,
+                'procs': self.rpc.getAllProcessInfo()
+            }
+            # also set the time in all the procs
+            for p in data['procs']:
+                p['time'] = now
 
         cache.set(key, data, 10)
         return data
 
     def get_used_ports(self):
-        procdata = self._get_procdata(False)
+        procdata = self.procdata(False)
         # names will look like 'thumpy-0.0.1-9585c1f8-web-8001'
         # split off the port at the end.
         ports = set()
-        for proc in procdata:
+        for proc in procdata['procs']:
             parts = proc['name'].split('-')
             if parts[-1].isdigit():
                 ports.add(int(parts[-1]))
@@ -282,12 +290,33 @@ class Host(models.Model):
         Return a list of Proc objects, one for each supervisord process that
         has a parseable name and whose app and recipe can be found in the DB.
         """
-        procdata = self._get_procdata(use_cache)
-        procs = [make_proc(p['name'], self, p) for p in procdata]
+        procdata = self.procdata(use_cache)
+        procs = [make_proc(p['name'], self, p) for p in procdata['procs']]
 
         # Filter out any procs for whom we couldn't look up an App or
         # ConfigRecipe
         return [p for p in procs if p is not None]
+
+    def get_proc(self, name, use_cache=False):
+        """
+        Given a name of a proc, get its information from supervisord and return
+        a Proc instance.
+        """
+        # filter down to the proc we care about
+        data = self.procdata(use_cache)
+        proc_dict = next(p for p in data['procs'] if p['name']
+                        == name)
+        return make_proc(name, self, proc_dict)
+
+    def start_proc(self, name):
+        self.rpc.startProcess(name)
+
+    def stop_proc(self, name):
+        self.rpc.stopProcess(name)
+
+    def restart_proc(self, name):
+        self.rpc.startProcess(name)
+        self.rpc.stopProcess(name)
 
     class Meta:
         ordering = ('name',)
@@ -324,6 +353,7 @@ class Proc(object):
         self.host = host
         self.port = port
         self.data = data  # raw dict returned from supervisord
+        self.time = data['time']
 
     def as_dict(self):
         data = copy(self.data)

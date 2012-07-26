@@ -34,9 +34,21 @@ ProcList = Backbone.Collection.extend({
       proc = new Proc(data);
       this.add(proc);
       return proc;
+    },
+
+    cull: function(host, cutoff) {
+      // given a cutoff timestamp string, look at .time on each proc in the
+      // collection.  If it's older than the cutoff, then kill it.
+
+      // build a separate list of procs to remove because otherwise, we're
+      // modifying the same list that we're iterating over, which throws things
+      // off.
+      var stale = _.filter(this.models, function(proc) {
+          return proc.get('host') === host && proc.get('time') < cutoff;
+      });
+      _.each(stale, function(proc) {this.remove(proc);}, this);
     }
 });
-
 
 Swarm = Backbone.Model.extend({
     initialize: function() {
@@ -63,6 +75,17 @@ SwarmList = Backbone.Collection.extend({
       swarm = new Swarm({id: id});
       this.add(swarm);
       return swarm;
+    },
+    cull: function(host, cutoff) {
+      // call cull on each proclist on each swarm in the collection.
+      _.each(this.models, function(swarm) {
+          swarm.procs.cull(host, cutoff);
+        }, this);
+      // if there are any swarms wth no procs, remove them.
+      var empty_swarms = _.filter(this.models, function(swarm) {
+          return swarm.procs.models.length === 0;
+        }, this);
+      _.each(empty_swarms, function(swarm) {this.remove(swarm);}, this);
     }
 });
 
@@ -117,6 +140,17 @@ AppList = Backbone.Collection.extend({
       app = new App({id: id, "class": "appbox"});
       this.add(app);
       return app;
+    },
+    cull: function(host, cutoff) {
+      // call cull on each swarmlist on each swarm in the collection.
+      _.each(this.models, function(app) {
+          app.swarms.cull(host, cutoff);
+        }, this);
+      // if there are any apps wth no swarms, remove them.
+      var empty_apps = _.filter(this.models, function(app) {
+          return app.swarms.models.length === 0;
+        }, this);
+      _.each(empty_apps, function(app) {this.remove(app);}, this);
     }
 });
 
@@ -129,7 +163,8 @@ ProcView = Backbone.View.extend({
       this.proc = proc;
       this.template = $(this.template);
       this.proc.on('change', this.render, this);
-      this.proc.on('destroy', this.onProcDestroy, this);
+      this.proc.on('destroy', this.onRemove, this);
+      this.proc.on('remove', this.onRemove, this);
     },
     render: function() {
       this.$el.html(this.template.goatee(this.proc.toJSON()));
@@ -146,7 +181,8 @@ ProcView = Backbone.View.extend({
 
       this.modal.show();
     },
-    onProcDestroy: function() {
+
+    onRemove: function() {
       this.$el.remove();
     }
 });
@@ -159,6 +195,7 @@ ProcModalView = Backbone.View.extend({
       this.template = $(this.template);
       this.proc.on('change', this.render, this);
       this.proc.on('destroy', this.onProcDestroy, this);
+      this.proc.on('remove', this.onProcDestroy, this);
     },
     render: function() {
       this.$el.html(this.template.goatee(this.proc.toJSON()));
@@ -180,7 +217,6 @@ ProcModalView = Backbone.View.extend({
         });
     },
     onDestroyBtn: function(ev) {
-      console.log('destroy btn');
       this.proc.destroy();
     },
     onProcDestroy: function() {
@@ -202,6 +238,7 @@ SwarmView = Backbone.View.extend({
       this.template = $(this.template);
       // when a new proc is added, make sure it gets rendered in here
       this.swarm.procs.on('add', this.procAdded, this);
+      this.swarm.on('remove', this.onRemove, this);
     },
 
     procAdded: function(proc) {
@@ -212,6 +249,10 @@ SwarmView = Backbone.View.extend({
 
     render: function() {
       this.$el.html(this.template.goatee(this.swarm.toJSON()));
+    },
+
+    onRemove: function() {
+      this.$el.remove();
     }
 });
 
@@ -223,6 +264,7 @@ AppView = Backbone.View.extend({
       this.app = app;
       this.template = $(this.template);
       this.app.swarms.on('add', this.swarmAdded, this);
+      this.app.on('remove', this.onRemove, this);
     },
 
     swarmAdded: function(swarm) {
@@ -241,19 +283,31 @@ AppView = Backbone.View.extend({
 
     render: function() {
       this.$el.html(this.template.goatee(this.app.toJSON()));
+    },
+
+    onRemove: function() {
+      this.$el.remove();
     }
 });
 
+VR.Dash.getHostList = function() {
+  $.getJSON('/api/hosts/', VR.Dash.onHostList);
+};
 
 VR.Dash.onHostList = function(data, stat, xhr) {
    _.each(data.hosts, function(el) {
      $.getJSON('/api/hosts/' + el + '/procs/', VR.Dash.onHostData);
    });
+
+   setTimeout(VR.Dash.getHostList, 5000);
 };
 
 
 VR.Dash.onHostData = function(data, stat, xhr) {
   _.each(data.procs, VR.Dash.updateProcData);
+
+  // cull any old procs
+  VR.Dash.Apps.cull(data.host, data.time);
 };
 
 VR.Dash.updateProcData = function(data) {

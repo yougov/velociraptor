@@ -3,7 +3,6 @@ import base64
 from functools import wraps
 
 from djcelery.models import TaskState
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 from django import http
@@ -61,13 +60,16 @@ def host_procs(request, hostname):
 
     host = models.Host.objects.get(name=hostname)
     # TODO: use Cache-Control header to determine whether to pass use_cache
-    # into _get_procdata()
-    procs = [utils.enhance_proc(host, p) for p in host._get_procdata(use_cache=True)]
+    # into procdata()
+    data = host.procdata(use_cache=True)
 
-    data = {
-        'procs': procs,
-        'host': hostname,
-    }
+    # add in the hostname
+    data['host'] = host.name
+
+    # add in things parsed from each procname
+    data['procs'] = [models.make_proc(p['name'], host, p).as_dict() for p in
+                     data['procs']]
+
     return utils.json_response(data)
 
 
@@ -81,50 +83,51 @@ def host_ports(request, hostname):
 
 
 @auth_required
-def host_proc(request, hostname, proc):
-    """Display status of a single supervisord-managed process on a host, in
-    JSON """
+def host_proc(request, hostname, procname):
+    """
+    Display status of a single supervisord-managed process on a host, in
+    JSON
+    """
     host = models.Host.objects.get(name=hostname)
-    if request.method == 'GET':
-        state = host.rpc.getProcessInfo(proc)
-    elif request.method == 'DELETE':
+    proc = host.get_proc(procname)
+    if request.method == 'DELETE':
         # check for and remove port lock if present
         try:
-            pr = models.make_proc(proc, host, None)
-            pl = models.PortLock.objects.get(host=host, port=pr.port)
+            pl = models.PortLock.objects.get(host=host, port=proc.port)
             pl.delete()
         except models.PortLock.DoesNotExist:
             pass
         # Do proc deletions syncronously instead of with Celery, since they're
         # fast and we want instant feedback.
-        tasks.delete_proc(hostname, proc)
+        tasks.delete_proc(hostname, procname)
 
         # Make the cache forget about this proc
-        host._get_procdata(use_cache=False)
-        return utils.json_response({'name': proc, 'deleted': True})
+        host.procdata(use_cache=False)
+        return utils.json_response({'name': procname, 'deleted': True})
     elif request.method == 'POST':
         action = request.POST.get('action')
         try:
             if action == 'start':
-                host.rpc.startProcess(proc)
+                host.start_proc(procname)
             elif action == 'stop':
-                host.rpc.stopProcess(proc)
+                host.stop_proc(procname)
             elif action == 'restart':
-                host.rpc.startProcess(proc)
-                host.rpc.stopProcess(proc)
+                host.restart_proc(procname)
         except xmlrpclib.Fault as e:
             return utils.json_response({'fault': e.faultString}, 500)
-        state = host.rpc.getProcessInfo(proc)
-    # Add the host in too for convenience's sake
-    out = utils.enhance_proc(host, state)
-    return utils.json_response(out)
+
+    proc = host.get_proc(procname)
+    return utils.json_response(proc.as_dict())
 
 
 @auth_required
 def task_recent(request):
     count = int(request.GET.get('count') or 20)
-    return utils.json_response({'tasks': [utils.task_to_dict(t)
-                                    for t in TaskState.objects.all()[:count]]})
+    # XXX HACK.  We're hiding tasks whose function names start with an
+    # underscore, by using a kinda kludgy filter in the query.  Seems to keep
+    # the task spam from repetitive things down, though.
+    return utils.json_response({'tasks': [utils.task_to_dict(t) for t in
+                                          TaskState.objects.exclude(name__contains='._')[:count]]})
 
 
 @auth_required

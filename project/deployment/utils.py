@@ -4,8 +4,6 @@ import json
 from django.http import HttpResponse
 from celery.result import AsyncResult
 
-from deployment import models
-
 
 def json_response(obj, status=200):
     """Given a Python object, dump it to JSON and return a Django HttpResponse
@@ -13,18 +11,6 @@ def json_response(obj, status=200):
     resp = HttpResponse(json.dumps(obj), status=status)
     resp['Content-Type'] = 'application/json'
     return resp
-
-
-def enhance_proc(hostname, data):
-    try:
-        proc = models.make_proc(data['name'], hostname, data)
-    except ValueError:
-        proc = None
-    if not proc:
-        # Could not parse or objects don't exist.  just return limited data
-        data['host'] = hostname.__unicode__()
-        return data
-    return proc.as_dict()
 
 
 def get_task_status(task_id):

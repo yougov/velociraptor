@@ -25,6 +25,9 @@ from yg.deploy.fabric.system import (deploy_parcel, run_uptests,
                                      fab_delete_proc)
 from yg.deploy.paver import build as paver_build
 
+# XXX Tasks whose names start with an underscore will not be shown in the main
+# dashboard view, to prevent clutter.
+
 
 @task
 def deploy(release_id, recipe_name, hostname, proc, port):
@@ -72,6 +75,8 @@ def deploy(release_id, recipe_name, hostname, proc, port):
                               release.hash,
                               use_syslog=getattr(settings, 'PROC_SYSLOG',
                                                  False))
+
+    _update_host_cache(hostname)
 
 
 @task
@@ -134,6 +139,8 @@ def delete_proc(host, proc, callback=None):
 
     if callback:
         subtask(callback).delay()
+
+    _update_host_cache(host)
 
 
 @task
@@ -325,8 +332,8 @@ def uptest_host(hostname, test_run_id=None):
     """
 
     host = Host.objects.get(name=hostname)
-    _, results = uptest_host_procs(hostname, [p['name'] for p in
-                                           host._get_procdata()])
+    procs = host.procdata()['procs']
+    _, results = uptest_host_procs(hostname, [p['name'] for p in procs])
 
     if test_run_id:
         run = TestRun.objects.get(id=test_run_id)
@@ -465,7 +472,7 @@ def post_uptest_all_procs(results, test_run_id):
 
 
 @task
-def clean_host_releases(hostname):
+def _clean_host_releases(hostname):
     env.host_string = hostname
     env.abort_on_prompts = True
     env.user = settings.DEPLOY_USER
@@ -480,7 +487,25 @@ def clean_host_releases(hostname):
 def scooper():
     # Clean up all active hosts
     for host in Host.objects.filter(active=True):
-        clean_host_releases.delay(host.name)
+        _clean_host_releases.delay(host.name)
+
+
+@task
+def _update_hosts_cache():
+    """
+    Call out to each host, get the status of its procs, and put it in our
+    cache.  By keeping this data warm, we can have cheap refreshes on the
+    client side without doing a million duplicative calls.
+    """
+    for host in Host.objects.filter(active=True):
+        _update_host_cache.delay(host.name)
+
+
+@task
+def _update_host_cache(hostname):
+    host = Host.objects.get(name=hostname)
+    # Just calling host.procdata() will update the host's cached info.
+    host.procdata()
 
 
 @contextlib.contextmanager

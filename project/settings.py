@@ -96,6 +96,10 @@ CELERYBEAT_SCHEDULE = {
         'task': 'deployment.tasks.uptest_all_procs',
         'schedule': timedelta(minutes=10),
     },
+    'update_host_caches': {
+        'task': 'deployment.tasks._update_hosts_cache',
+        'schedule': timedelta(seconds=10),
+    },
 }
 
 SUPERVISOR_PORT = 9001
