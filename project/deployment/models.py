@@ -207,19 +207,22 @@ def make_proc(name, host, data):
     parts = name.split('-')
     try:
         app = App.objects.get(name=parts[0])
-        return Proc(
-            name=name,
-            app=app,
-            tag=parts[1],
-            recipe=ConfigRecipe.objects.get(app=app, name=parts[2]),
-            hash=parts[3],
-            proc=parts[4],
-            port=int(parts[5]),
-            host=host,
-            data=data,
-        )
+        recipe = ConfigRecipe.objects.get(app=app, name=parts[2])
     except ObjectDoesNotExist:
-        return None
+        app = None
+        recipe = None
+
+    return Proc(
+        name=name,
+        app=app,
+        tag=parts[1],
+        recipe=recipe,
+        hash=parts[3],
+        proc=parts[4],
+        port=int(parts[5]),
+        host=host,
+        data=data,
+    )
 
 
 class Host(models.Model):
@@ -368,8 +371,8 @@ class Proc(object):
             hash=self.hash,
             proc=self.proc,
             host=self.host.name,
-            app=self.app.name,
-            recipe=self.recipe.name,
+            app=self.app.name if self.app else None,
+            recipe=self.recipe.name if self.recipe else None,
             port=self.port,
             # Add a name that's safe for jquery selectors
             jsname=self.name.replace('.', 'dot'),
