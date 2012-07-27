@@ -149,7 +149,7 @@ def uptest_latest(request):
     """
     Look up most recent test run and return its results.
     """
-    runs = models.TestRun.objects.order_by('-start')
+    runs = models.TestRun.objects.filter(end__isnull=False).order_by('-start')
     if len(runs):
         return utils.json_response(runs[0].results)
     else:

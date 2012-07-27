@@ -496,7 +496,7 @@ class TestRun(models.Model):
         Return a serializable compilation/summary of the test run results.
         """
         end = self.end.isoformat() if self.end else None
-        seconds = (self.end - self.start).total_seconds if end else None
+        seconds = (self.end - self.start).total_seconds() if end else None
         return {
             'start': self.start.isoformat(),
             'end': end,
