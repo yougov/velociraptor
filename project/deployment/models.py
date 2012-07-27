@@ -380,9 +380,6 @@ class Proc(object):
         )
         return data
 
-    def as_json(self):
-        return json.dumps(self.as_dict)
-
     def as_node(self):
         """
         Return host:port, as needed by the balancer interface.
