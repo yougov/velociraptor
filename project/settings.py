@@ -87,18 +87,30 @@ CELERYBEAT_SCHEDULE = {
     'scooper': {
         'task': 'deployment.tasks.scooper',
         'schedule': timedelta(minutes=30),
+        'options': {
+            'expires': 120,
+        },
     },
     'update_tags': {
         'task': 'deployment.tasks.update_tags',
         'schedule': timedelta(minutes=30),
+        'options': {
+            'expires': 120,
+        },
     },
     'test_all_the_things': {
         'task': 'deployment.tasks.uptest_all_procs',
         'schedule': timedelta(minutes=10),
+        'options': {
+            'expires': 120,
+        },
     },
     'update_host_caches': {
         'task': 'deployment.tasks._update_hosts_cache',
         'schedule': timedelta(seconds=10),
+        'options': {
+            'expires': 3,
+        },
     },
 }
 
