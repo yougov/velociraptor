@@ -459,8 +459,10 @@ def uptest_all_procs():
     # Fan out a task for each active host
     # callback post_uptest_all_procs at the end
     hosts = Host.objects.filter(active=True)
-    chord(uptest_host.s(h.name, run.id) for h in
-          hosts)(post_uptest_all_procs.s(run.id))
+
+    def make_test_task(host):
+        return uptest_host.subtask((host.name, run.id), expires=120)
+    chord(make_test_task(h) for h in hosts)(post_uptest_all_procs.s(run.id))
 
 
 @task
@@ -487,7 +489,7 @@ def _clean_host_releases(hostname):
 def scooper():
     # Clean up all active hosts
     for host in Host.objects.filter(active=True):
-        _clean_host_releases.delay(host.name)
+        _clean_host_releases.apply_async((host.name,), expires=120)
 
 
 @task
@@ -498,7 +500,9 @@ def _update_hosts_cache():
     client side without doing a million duplicative calls.
     """
     for host in Host.objects.filter(active=True):
-        _update_host_cache.delay(host.name)
+        # Expire the task if it hasn't completed in 3 seconds, to prevent huge
+        # backlogs.
+        _update_host_cache.apply_async((host.name,), expires=3)
 
 
 @task
