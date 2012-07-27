@@ -410,7 +410,7 @@ class Swarm(models.Model):
 
     class Meta:
         unique_together = ('recipe', 'squad', 'proc_name')
-        ordering = ['recipe__app__name']
+        ordering = ['recipe__app__name', 'recipe__name', 'proc_name']
 
     def __unicode__(self):
         return u'%(rname)s-%(proc)s X %(size)s on %(squad)s' % {
