@@ -91,16 +91,9 @@ CELERYBEAT_SCHEDULE = {
             'expires': 120,
         },
     },
-    'update_tags': {
-        'task': 'deployment.tasks.update_tags',
-        'schedule': timedelta(minutes=30),
-        'options': {
-            'expires': 120,
-        },
-    },
     'test_all_the_things': {
         'task': 'deployment.tasks.uptest_all_procs',
-        'schedule': timedelta(minutes=10),
+        'schedule': timedelta(minutes=30),
         'options': {
             'expires': 120,
         },
