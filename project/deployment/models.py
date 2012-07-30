@@ -259,7 +259,7 @@ class Host(models.Model):
             for p in data['procs']:
                 p['time'] = now
 
-        cache.set(key, data, 10)
+        cache.set(key, data, 30)
         return data
 
     def get_used_ports(self):
@@ -318,8 +318,8 @@ class Host(models.Model):
         self.rpc.stopProcess(name)
 
     def restart_proc(self, name):
-        self.rpc.startProcess(name)
         self.rpc.stopProcess(name)
+        self.rpc.startProcess(name)
 
     class Meta:
         ordering = ('name',)

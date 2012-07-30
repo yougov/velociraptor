@@ -203,6 +203,7 @@ ProcModalView = Backbone.View.extend({
     events: {
       'click .proc-start': 'onStartBtn',
       'click .proc-stop': 'onStopBtn',
+      'click .proc-restart': 'onRestartBtn',
       'click .proc-destroy': 'onDestroyBtn'
     },
     onStartBtn: function(ev) {
@@ -210,6 +211,9 @@ ProcModalView = Backbone.View.extend({
     },
     onStopBtn: function(ev) {
       this.doAction('stop');
+    },
+    onRestartBtn: function(ev) {
+      this.doAction('restart');
     },
     doAction: function(action) {
       $.post(this.proc.url(), {'action': action}, function(data, stat, xhr) {
