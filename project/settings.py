@@ -105,13 +105,6 @@ CELERYBEAT_SCHEDULE = {
             'expires': 120,
         },
     },
-    'update_host_caches': {
-        'task': 'deployment.tasks._update_hosts_cache',
-        'schedule': timedelta(seconds=10),
-        'options': {
-            'expires': 3,
-        },
-    },
 }
 
 SUPERVISOR_PORT = 9001
