@@ -462,8 +462,7 @@ def uptest_all_procs():
 
     def make_test_task(host):
         return uptest_host.subtask((host.name, run.id), expires=120)
-    then_run = chord((make_test_task(h) for h in hosts))
-    then_run(post_uptest_all_procs.s(run.id))
+    chord((make_test_task(h) for h in hosts))(post_uptest_all_procs.subtask((run.id,)))
 
 
 @task
