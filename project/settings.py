@@ -91,13 +91,16 @@ CELERYBEAT_SCHEDULE = {
             'expires': 120,
         },
     },
-    'test_all_the_things': {
-        'task': 'deployment.tasks.uptest_all_procs',
-        'schedule': timedelta(minutes=30),
-        'options': {
-            'expires': 120,
-        },
-    },
+    # This task seems to hang the worker. :(.  It happens just after the
+    # chord_unlock successfully completes.  For some reason the callback
+    # doesn't get picked up off the queue, and the worker is then unresponsive.
+    #'test_all_the_things': {
+        #'task': 'deployment.tasks.uptest_all_procs',
+        #'schedule': timedelta(minutes=30),
+        #'options': {
+            #'expires': 120,
+        #},
+    #},
 }
 
 SUPERVISOR_PORT = 9001
