@@ -87,6 +87,7 @@ def build_hg(build_id, callback=None):
     url = '%s#%s' % (build.app.repo_url, build.tag)
     with tmpdir():
         build.status = 'started'
+        build.start_time = timezone.now()
         build.save()
 
         try:
