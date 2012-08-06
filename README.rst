@@ -124,7 +124,7 @@ templates are defined in their respective HTML pages.
 Velociraptor makes liberal use of jQuery_, Backbone_, and Underscore_.
 
 .. _Twelve Factor App: http://www.12factor.net/
-.. _Vagrant: http://vagrantup.com/docs/getting-started/index.html
+.. _Vagrant: http://vagrantup.com/v1/docs/getting-started/index.html
 .. _VirtualBox: http://www.virtualbox.org/wiki/Downloads
 .. _Foreman: http://ddollar.github.com/foreman/
 .. _Virtualenvwrapper: http://www.doughellmann.com/docs/virtualenvwrapper/

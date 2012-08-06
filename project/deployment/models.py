@@ -6,6 +6,7 @@ from copy import copy
 
 from django.db import models
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -22,6 +23,15 @@ LOG_ENTRY_TYPES = (
     ('release', 'Release'),
     ('deployment', 'Deployment'),
 )
+
+
+def no_spaces(value):
+    if ' ' in value:
+        raise ValidationError(u'spaces not allowed')
+
+def no_dashes(value):
+    if '-' in value:
+        raise ValidationError(u'dashes not allowed')
 
 
 class DeploymentLogEntry(models.Model):
@@ -63,9 +73,9 @@ class ConfigIngredient(models.Model):
 class App(models.Model):
     namehelp = ("Used in release name.  Good app names are short and use "
                 "no spaces or dashes (underscores are OK).")
-    name = models.CharField(max_length=50, help_text=namehelp)
+    name = models.CharField(max_length=50, help_text=namehelp,
+        validators=[no_spaces, no_dashes])
     repo_url = models.CharField(max_length=200, blank=True, null=True)
-
 
     def __unicode__(self):
         return self.name
@@ -86,7 +96,8 @@ class ConfigRecipe(models.Model):
     namehelp = ("Used in release name.  Good recipe names are short and use "
                 "no spaces or dashes (underscores are OK)")
     name = models.CharField(verbose_name="ConfigRecipe Name", max_length=20,
-                            help_text=namehelp)
+                            help_text=namehelp,
+                            validators=[no_spaces, no_dashes])
     ingredients = models.ManyToManyField(ConfigIngredient,
                                          through='RecipeIngredient')
 
