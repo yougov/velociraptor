@@ -4,6 +4,7 @@ from django.views.generic import ListView
 from django.contrib import admin
 
 from deployment.models import DeploymentLogEntry
+from deployment.feeds import DeploymentLogFeed
 
 admin.autodiscover()
 
@@ -24,6 +25,8 @@ urlpatterns = patterns('',
     url(r'^upload/$', 'deployment.views.upload_build', name='upload_build'),
     url(r'^log/$', ListView.as_view(model=DeploymentLogEntry,
                                     template_name='log.html'), name='log'),
+    url(r'^log/rss/$', DeploymentLogFeed(), name='log_rss'),
+
     # Preview for Recipes configs
     url(r'^preview_recipe/(?P<recipe_id>\d+)/$',
         'deployment.views.preview_recipe', name='preview_recipe'),
