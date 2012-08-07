@@ -8,7 +8,7 @@ class DeploymentLogFeed(Feed):
 	description = "Application deployment details"
 
 	def items(self):
-		return DeploymentLogEntry.objects
+		return DeploymentLogEntry.objects.all()
 
 	def item_title(self, entry):
 		return "activity by {entry.user} at {entry.time}".format(entry=entry)
