@@ -112,7 +112,10 @@ def get_or_create_release(recipe, tag):
 
     # If we got here, there's no existing release with the specified recipe,
     # tag, and current config.  Is there at least a build?
-    builds = models.Build.objects.filter(app=recipe.app, tag=tag)
+    builds = models.Build.objects.filter(
+            app=recipe.app, tag=tag
+        ).exclude(status='expired'
+        ).exclude(status='failed')
     if builds:
         build = builds[0]
     else:

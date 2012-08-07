@@ -225,6 +225,13 @@ LOGGING = {
 
 SUPERVISORD_WEB_PORT = 9001
 
+# If BUILD_EXPIRATION_DAYS is set to an integer instead of None, then the
+# celerybeat proc will run a task every day to clean up old builds.  Regardless
+# of the date cutoff, builds that are currently in use will be kept around, as
+# well as the N most recent builds up to BUILD_EXPIRATION_COUNT.
+BUILD_EXPIRATION_DAYS = None
+BUILD_EXPIRATION_COUNT = 10
+
 # Allow production to override these settings.
 if os.environ.get('APP_SETTINGS_YAML'):
     import yaml
@@ -244,3 +251,12 @@ GRIDFS_DB = mongoparts['database'] or 'test'
 GRIDFS_COLLECTION = mongoparts['collection'] or 'fs'
 
 djcelery.setup_loader()
+
+# Now that production settings have been patched in, schedule a task for build
+# cleanup if necessary.
+if BUILD_EXPIRATION_DAYS is not None:
+    CELERYBEAT_SCHEDULE['build_cleanup'] = {
+        'task': 'deployment.tasks.clean_old_builds',
+        'schedule': timedelta(days=1),
+        'options': {'expires': 120}
+    }

@@ -163,6 +163,7 @@ class Build(models.Model):
         ('started', 'Started'),
         ('success', 'Success'),
         ('failed', 'Failed'),
+        ('expired', 'Expired'),
     )
 
     status = models.CharField(max_length=20, choices=build_status_choices,
@@ -368,6 +369,13 @@ class Proc(object):
         self.port = port
         self.data = data  # raw dict returned from supervisord
         self.time = data['time']
+
+        try:
+            self.release = Release.objects.get(hash=self.hash)
+            self.build = self.release.build
+        except Release.DoesNotExist:
+            self.release = None
+            self.build = None
 
     def as_dict(self):
         data = copy(self.data)
