@@ -140,7 +140,8 @@ def edit_swarm(request, swarm_id=None):
             'proc_name': swarm.proc_name,
             'size': swarm.size,
             'pool': swarm.pool or '',
-            'active': swarm.active
+            'active': swarm.active,
+            'balancer': swarm.balancer,
         }
     else:
         initial = None
