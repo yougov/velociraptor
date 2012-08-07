@@ -4,11 +4,14 @@ from deployment.models import DeploymentLogEntry
 
 class DeploymentLogFeed(Feed):
 	title = "Deployment Log"
-	link = "/log/"
+	link = "/log"
 	description = "Application deployment details"
 
 	def items(self):
 		return DeploymentLogEntry.objects.all()
+
+	def item_link(self, entry):
+		return "/log"
 
 	def item_title(self, entry):
 		return "activity by {entry.user} at {entry.time}".format(entry=entry)
