@@ -154,6 +154,7 @@ def edit_swarm(request, swarm_id=None):
         swarm.proc_name = data['proc_name']
         swarm.size = data['size']
         swarm.pool = data['pool'] or None
+        swarm.balancer = data['balancer'] or None
         swarm.active = data['active']
 
         swarm.release = get_or_create_release(swarm.recipe, data['tag'])

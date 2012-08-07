@@ -425,8 +425,7 @@ def swarm_route(swarm_id, correct_nodes, callback=None):
         # There's just the right number of procs.  Make sure the balancer is up
         # to date, but only if the swarm has a pool specified.
 
-        current_nodes = set(balancer.get_nodes(swarm.squad.balancer,
-                                               swarm.pool))
+        current_nodes = set(balancer.get_nodes(swarm.balancer, swarm.pool))
 
         correct_nodes = set(correct_nodes)
 
@@ -435,11 +434,11 @@ def swarm_route(swarm_id, correct_nodes, callback=None):
         stale_nodes = current_nodes.difference(correct_nodes)
 
         if new_nodes:
-            balancer.add_nodes(swarm.squad.balancer, swarm.pool,
+            balancer.add_nodes(swarm.balancer, swarm.pool,
                                list(new_nodes))
 
         if stale_nodes:
-            balancer.delete_nodes(swarm.squad.balancer, swarm.pool,
+            balancer.delete_nodes(swarm.balancer, swarm.pool,
                                   list(stale_nodes))
 
     if callback is not None:
@@ -472,8 +471,8 @@ def swarm_delete_proc(swarm_id, hostname, procname, port):
     swarm = Swarm.objects.get(id=swarm_id)
     if swarm.pool:
         node = '%s:%s' % (hostname, port)
-        if node in balancer.get_nodes(swarm.squad.balancer, swarm.pool):
-            balancer.delete_nodes(swarm.squad.balancer, swarm.pool, [node])
+        if node in balancer.get_nodes(swarm.balancer, swarm.pool):
+            balancer.delete_nodes(swarm.balancer, swarm.pool, [node])
 
     delete_proc(hostname, procname)
 

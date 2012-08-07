@@ -345,11 +345,6 @@ class Squad(models.Model):
     """
     name = models.CharField(max_length=50)
 
-    # Select which balancer should be used for this squad, from
-    # settings.BALANCERS
-    _balancer_choices = [(k, k) for k in settings.BALANCERS]
-    balancer = models.CharField(max_length=50, choices=_balancer_choices)
-
     def __unicode__(self):
         return self.name
 
@@ -422,9 +417,15 @@ class Swarm(models.Model):
     pool = models.CharField(max_length=50, help_text=pool_help, blank=True,
                             null=True)
 
+    # Select which balancer should be used for this squad, from
+    # settings.BALANCERS
+    _balancer_choices = [(k, k) for k in settings.BALANCERS]
+    balancer = models.CharField(max_length=50, choices=_balancer_choices,
+                                null=True)
+
     # If set to true, then the workers will periodically check this swarm's
     # status and make sure it has enough workers, running the right version,
-    # with the right config.
+    # with the right config.  Someday.
     active = models.BooleanField(default=True)
 
     class Meta:
