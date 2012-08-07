@@ -1,7 +1,6 @@
 import xmlrpclib
 import logging
 import hashlib
-import json
 from copy import copy
 
 from django.db import models
@@ -426,6 +425,12 @@ class Swarm(models.Model):
     # status and make sure it has enough workers, running the right version,
     # with the right config.  Someday.
     active = models.BooleanField(default=True)
+
+    def save(self):
+        if self.pool and not self.balancer:
+            raise ValidationError('Swarms that specify a pool must specify a '
+                                  'balancer')
+        super(Swarm, self).save()
 
     class Meta:
         unique_together = ('recipe', 'squad', 'proc_name')

@@ -109,7 +109,10 @@ class SwarmForm(forms.Form):
     proc_name = forms.CharField(max_length=50)
     size = forms.IntegerField()
     pool = forms.CharField(max_length=50, required=False)
-    balancer = forms.ChoiceField(choices=[], label='Balancer', required=False)
+
+    balancer_help = "Required if a pool is specified."
+    balancer = forms.ChoiceField(choices=[], label='Balancer', required=False,
+                                 help_text=balancer_help)
     active = forms.BooleanField(initial=True)
 
     def __init__(self, data, *args, **kwargs):
@@ -121,6 +124,15 @@ class SwarmForm(forms.Form):
         self.fields['balancer'].choices = [('', '-------')] + [(b, b) for b in
                                                                settings.BALANCERS]
 
+    def clean(self):
+        data = super(SwarmForm, self).clean()
+        if data['pool'] and not data['balancer']:
+            raise forms.ValidationError('Swarms that specify a pool must '
+                                        'specify a balancer')
+        return data
+
     class Media:
-        js = ('js/dash_preview_recipe.js',
-              'js/dash_latest_tag.js')
+        js = (
+            'js/dash_preview_recipe.js',
+              #'js/dash_latest_tag.js'
+        )
