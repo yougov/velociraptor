@@ -365,11 +365,10 @@ class Proc(object):
         self.data = data  # raw dict returned from supervisord
         self.time = data['time']
 
-        try:
-            self.release = Release.objects.get(hash=self.hash)
-            self.build = self.release.build
-        except Release.DoesNotExist:
-            self.release = None
+        rs = Release.objects.filter(hash=self.hash, recipe=self.recipe)
+        if rs:
+            self.build = rs[0].build
+        else:
             self.build = None
 
     def as_dict(self):
