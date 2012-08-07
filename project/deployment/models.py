@@ -421,7 +421,7 @@ class Swarm(models.Model):
     # settings.BALANCERS
     _balancer_choices = [(k, k) for k in settings.BALANCERS]
     balancer = models.CharField(max_length=50, choices=_balancer_choices,
-                                null=True)
+                                blank=True, null=True)
 
     # If set to true, then the workers will periodically check this swarm's
     # status and make sure it has enough workers, running the right version,
