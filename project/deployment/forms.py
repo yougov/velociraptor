@@ -109,7 +109,7 @@ class SwarmForm(forms.Form):
     proc_name = forms.CharField(max_length=50)
     size = forms.IntegerField()
     pool = forms.CharField(max_length=50, required=False)
-    balancer = forms.ChoiceField(choices=[], label='Balancer')
+    balancer = forms.ChoiceField(choices=[], label='Balancer', required=False)
     active = forms.BooleanField(initial=True)
 
     def __init__(self, data, *args, **kwargs):
@@ -118,7 +118,8 @@ class SwarmForm(forms.Form):
                                             models.ConfigRecipe.objects.all()]
         self.fields['squad_id'].choices = [(s.id, s) for s in
                                             models.Squad.objects.all()]
-        self.fields['balancer'].choices = [(b, b) for b in settings.BALANCERS]
+        self.fields['balancer'].choices = [('', '-------')] + [(b, b) for b in
+                                                               settings.BALANCERS]
 
     class Media:
         js = ('js/dash_preview_recipe.js',
