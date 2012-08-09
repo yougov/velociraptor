@@ -179,7 +179,6 @@ def edit_squad(request, squad_id=None):
         # Look up all hosts in the squad
         initial = {
             'name': squad.name,
-            'balancer': squad.balancer,
         }
     else:
         squad = models.Squad()
