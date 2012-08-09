@@ -16,4 +16,4 @@ django-picklefield==0.2.0
 suds==0.4
 django-reversion==1.6.1
 mongoscheduler==0.0.1
-baton==0.0.2
+baton==0.0.3
