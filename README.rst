@@ -13,9 +13,17 @@ VM
 ~~
 
 The smoothest way to get running is to start up a VM with the included
-Vagrantfile.  This requires having VirtualBox_ and Vagrant_ installed.  Once
-they're installed, type this in the repo's root::
+Vagrantfile.  This requires having VirtualBox_ and Vagrant_ installed.
+Go do that now.
 
+You'll also need a local Mercurial workspace containing the
+G/velociraptor/ directory tree::
+
+    hg clone ssh://dev.yougov.com/G/velociraptor
+
+Now enter the velociraptor tree and launch vagrant::
+
+    cd velociraptor
     vagrant up
 
 Now go make a sandwich while you wait for the lucid64 VM image to download
