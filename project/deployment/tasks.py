@@ -28,32 +28,6 @@ from yg.deploy.paver import build as paver_build
 # XXX Tasks whose names start with an underscore will not be shown in the main
 # dashboard view, to prevent clutter.
 
-import time
-
-
-@task
-def debug_add_delegate(jobcount, pause=0, timeout=None):
-    def make_sub():
-        if timeout is None:
-            return debug_add.subtask((pause,))
-        else:
-            return debug_add.subtask((pause,), expires=timeout)
-
-    subtasks = [make_sub() for x in xrange(jobcount)]
-    callback = debug_add_finalize.subtask()
-    chord(subtasks)(callback)
-
-
-@task
-def debug_add(pause=0):
-    time.sleep(pause)
-    return 1
-
-
-@task
-def debug_add_finalize(results):
-    print "DEBUG FINALIZE", sum(x for x in results if isinstance(x, int))
-
 
 @task
 def deploy(release_id, recipe_name, hostname, proc, port):
@@ -548,20 +522,24 @@ def clean_old_builds():
 
         old_builds = Build.objects.filter(end_time__lt=cutoff,
                                           file__isnull=False).order_by('-end_time')
+        old_builds = set(old_builds)
 
         # Now filter out any builds that are currently in use
         all_procs = set()
         for host in Host.objects.filter(active=True):
-            all_procs.add(host.get_procs())
+            all_procs.update(host.get_procs())
         builds_in_use = {p.build for p in all_procs if p.build is not
                          None}
         old_builds.difference_update(builds_in_use)
 
         # Filter out any builds that are still within BUILD_EXPIRATION_COUNT
-        def is_not_recent(build):
-            return (Build.objects.filter(id__gte=build.id).count() >
-                    settings.BUILD_EXPIRATION_COUNT)
-        old_builds.remove([b for b in old_builds if is_not_recent(b)])
+        def is_recent(build):
+            newer_builds = Build.objects.filter(id__gte=build.id,
+                                                app=build.app)
+            rcnt = newer_builds.count() < settings.BUILD_EXPIRATION_COUNT
+            return rcnt
+        old_builds.difference_update([b for b in old_builds if is_recent(b)])
+
 
         # OK, we now have a set of builds that are older than both our cutoffs,
         # and definitely not in use.  Delete their files to free up space.

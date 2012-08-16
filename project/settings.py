@@ -78,13 +78,10 @@ CELERY_ENABLE_UTC = True
 CELERYBEAT_SCHEDULER = 'mongoscheduler.MongoScheduler'
 CELERY_MONGO_SCHEDULER_URI = 'mongodb://localhost:27017/velociraptor.scheduler'
 
-# Use RabbitMQ broker by default, though any supported Celery broker should
-# work.
-BROKER_HOST = "localhost"
-BROKER_PORT = 5672
-BROKER_USER = "guest"
-BROKER_PASSWORD = "guest"
-BROKER_VHOST = "/"
+# Use Redis broker and results backend by default.  The RabbitMQ one isn't as
+# nice for chords.
+BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 
 CELERYBEAT_SCHEDULE = {
     'scooper': {
@@ -122,8 +119,8 @@ LANGUAGE_CODE = 'en-us'
 
 SITE_ID = 1
 
-USE_I18N = False  # We all speak English.
-USE_L10N = False  # U.S.A.! U.S.A.!
+USE_I18N = False
+USE_L10N = False
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"

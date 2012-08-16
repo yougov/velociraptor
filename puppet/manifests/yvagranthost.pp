@@ -27,10 +27,8 @@ class yhost {
         ruby:;
         libevent-dev:;
         vim:;
-        python-software-properties:;
         curl:;
         libcurl4-gnutls-dev:;
-        rabbitmq-server:;
         libldap2-dev:;
         libsasl2-dev:;
         libpcre3-dev:;
@@ -73,27 +71,70 @@ class pipdeps {
 # TODO: Once we have a ygpip provider, switch to the
 # pip-installed version instead of the apt-installed one.
 
+
+# Define a 'ppa' resource type.  With this, your classes can declare the need
+# for ppa repositories to be installed, like this:
+#    ppa {
+#      "pitti/postgresql":;
+#    }
+package {
+    python-software-properties: ensure => present;
+}
+define ppa($ppa = "$title", $ensure = present) {
+
+  case $ensure {
+    present: {
+
+        exec { $ppa:
+            command => "add-apt-repository ppa:$ppa;apt-get update",
+            require => Package["python-software-properties"];
+        }
+
+        # TODO: add ability to check if PPA is installed before running the
+        # above.  Might require writing some Ruby to look at files in
+        # /etc/apt/sources.list.d/
+    }
+
+    absent:  {
+        package {
+            ppa-purge: ensure => present;
+        }
+
+        exec { $ppa:
+            command => "ppa-purge ppa:$ppa;apt-get update",
+            require => Package[ppa-purge];
+        }
+    }
+
+    default: {
+      fail "Invalid 'ensure' value '$ensure' for ppa"
+    }
+  }
+}
+
+class newredis {
+    ppa {
+        "rwky/redis":;
+    }
+
+    package { 'redis-server':
+        ensure => present,
+        require => Ppa["rwky/redis"];
+    }
+}
+
 class pg91 {
-    exec {
-      addpgbackport:
-        command => "add-apt-repository ppa:pitti/postgresql",
-        require => Class [yhost];
-      pgaptupdate:
-        command => "apt-get update",
-        timeout => "300",
-        require => Exec [addpgbackport];
-      pgrestart:
-        command => "/etc/init.d/postgresql restart",
-        require => File ['pg_hba.conf'];
+    ppa {
+        "pitti/postgresql":;
     }
 
     package {
       "postgresql-9.1":
         ensure => present,
-        require => Exec [pgaptupdate];
+        require => Ppa["pitti/postgresql"];
       "postgresql-server-dev-9.1":
         ensure => present,
-        require => Exec [pgaptupdate];
+        require => Ppa["pitti/postgresql"];
     }
 
     file { 'pg_hba.conf':
@@ -102,28 +143,31 @@ class pg91 {
       require => Package['postgresql-9.1'],
       source  => 'puppet:///modules/postgres/pg_hba.conf';
     }
+
+    exec {
+      pgrestart:
+        command => "/etc/init.d/postgresql restart",
+        require => File['pg_hba.conf'];
+    }
 }
 
 class py27 {
-    exec {
-      pythonppa:
-        command => "add-apt-repository ppa:fkrull/deadsnakes",
-        require => Class [yhost];
-      pyaptupdate:
-        command => "apt-get update",
-        timeout => "300",
-        require => Exec [pythonppa];
-      pip27:
-        command => "easy_install-2.7 pip",
-        require => Package ["python-distribute-deadsnakes"];
+    ppa {
+        "fkrull/deadsnakes":;
     }
 
-    Package {ensure => present, require => Exec [pyaptupdate]}
+    Package {ensure => present, require => Ppa["fkrull/deadsnakes"]}
 
     package {
       "python2.7":;
       "python2.7-dev":;
       "python-distribute-deadsnakes":;
+    }
+
+    exec {
+      pip27:
+        command => "easy_install-2.7 pip",
+        require => Package ["python-distribute-deadsnakes"];
     }
 }
 
@@ -167,3 +211,4 @@ class {'pipdeps': }
 class {'py27': }
 class {'pg91': }
 class {'currentmongo': }
+class {'newredis': }

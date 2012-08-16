@@ -4,7 +4,7 @@ from django.core.files.storage import Storage
 from django.conf import settings
 
 from pymongo import Connection
-from gridfs import GridFS
+from gridfs import GridFS, NoFile
 
 
 class GridFSStorage(Storage):
@@ -45,8 +45,11 @@ class GridFSStorage(Storage):
         return self.fs.get_last_version(filename=name)
 
     def delete(self, name):
-        oid = self.fs.get_last_version(filename=name)._id
-        self.fs.delete(oid)
+        try:
+            oid = self.fs.get_last_version(filename=name)._id
+            self.fs.delete(oid)
+        except NoFile:
+            pass
 
     def exists(self, name):
         return self.fs.exists({'filename': name})
