@@ -227,10 +227,42 @@ th.rowlabel {
   width: auto;
 }
 
-.nav .chzn-container .chzn-single span { 
-  background-color: transparent;
+.nav .chzn-container-single .chzn-single {
+  -moz-box-shadow: none;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+}
+.nav .chzn-container-single .chzn-single-with-drop {
+  color: #fff;
 }
 
-.chzn-container .chzn-results {
-  max-height: 500px;
+.nav .chzn-container-single .chzn-single div b {
+  margin-top: 8px;
+  margin-left: 2px;
+  display: inline-block;
+  width: 0;
+  height: 0;
+  text-indent: -99999px;
+  vertical-align: top;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid white;
+  opacity: 0.3;  
+  content: "↓2193";
+  background: none;
+}
+
+.nav .chzn-container-single .chzn-single-with-drop div b {
+  color: #fff;
+  border-top-color: white;
+}
+
+
+/*
+ * TRY to override the GODDAMN chosen styles that don't want to die.
+ */
+.nav .chzn-default {
+  background-color: transparent;
+  background-image: none;
+  border: none;
 }
