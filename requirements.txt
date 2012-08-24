@@ -1,4 +1,4 @@
-baton==0.0.6
+baton==0.0.8
 Django==1.4
 django-celery==3.0.4
 django-extensions==0.7.1
