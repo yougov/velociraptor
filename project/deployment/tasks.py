@@ -366,11 +366,22 @@ def swarm_post_uptest(uptest_results, swarm_id):
     were successful, and then calls routing function.
     """
 
-    # uptest_results will be a list of dictionaries (unless there's an
-    # exception in one of them, which won't be common)
+    # uptest_results will be a list of tuples in form (host, results), where
+    # 'results' is a list of dictionaries, one for each test script.
 
-    if any(isinstance(r, Exception) for r in uptest_results):
-        assert False, "Exception in uptests."
+    for host_results in uptest_results:
+        if isinstance(host_results, Exception):
+            raise host_results
+        host, results = host_results
+        for result in results:
+            # XXX This formatting relies on each uptest result being a dict
+            # with 'passed', 'uptest', 'return_code', and 'output' keys.
+            if result.get('passed', False) != True:
+                msg = ("{uptest} failed with code {return_code} and output "
+                       "'{output}'".format(result))
+                raise AssertionError(msg)
+
+    # Also check for captured failures in the results
 
     correct_nodes = set()
     for host, results in uptest_results:
