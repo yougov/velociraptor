@@ -359,6 +359,10 @@ def uptest_host(hostname, test_run_id=None):
     return hostname, results
 
 
+class FailedUptest(Exception):
+    pass
+
+
 @task
 def swarm_post_uptest(uptest_results, swarm_id):
     """
@@ -369,22 +373,20 @@ def swarm_post_uptest(uptest_results, swarm_id):
     # uptest_results will be a list of tuples in form (host, results), where
     # 'results' is a list of dictionaries, one for each test script.
 
-    print "uptest_results", uptest_results
     for host_results in uptest_results:
-        print "host_results", host_results
         if isinstance(host_results, Exception):
             raise host_results
         host, proc_results = host_results
          #results is now a dict
         for proc, results in proc_results.items():
             for result in results:
-                print "result", result
-                # XXX This formatting relies on each uptest result being a dict
-                # with 'passed', 'uptest', 'return_code', and 'output' keys.
-                if result.get('passed', False) != True:
+                # XXX This checking/formatting relies on each uptest result
+                # being a dict with 'passed', 'uptest', 'return_code', and
+                # 'output' keys.
+                if result['passed'] != True:
                     msg = (proc + ": {uptest} failed with code {return_code} "
-                           "and output '{output}'".format(result))
-                    raise AssertionError(msg)
+                           "and output '{output}'".format(**result))
+                    raise FailedUptest(msg)
 
     # Also check for captured failures in the results
 
