@@ -100,3 +100,6 @@ fi
 
 export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python2.7
 source /usr/local/bin/virtualenvwrapper.sh
+
+# Create ygpip alias to easily install from our cheeseshop
+alias ygpip='pip install -i http://cheese.yougov.net'
