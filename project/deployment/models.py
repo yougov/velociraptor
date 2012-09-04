@@ -147,6 +147,7 @@ class RecipeIngredient(models.Model):
 
     class Meta:
         unique_together = ('ingredient', 'recipe')
+        ordering = ['order']
 
 
 class Build(models.Model):
