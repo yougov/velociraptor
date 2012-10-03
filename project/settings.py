@@ -1,6 +1,7 @@
+import sys
+
 from datetime import timedelta
 import os
-import sys
 import warnings
 
 import djcelery
@@ -82,6 +83,11 @@ CELERY_MONGO_SCHEDULER_URI = 'mongodb://localhost:27017/velociraptor.scheduler'
 # nice for chords.
 BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+
+# A redis pubsub where worker procs can push events, and our fancy schmancy SSE
+# streaming event views can push them out to browsers.
+EVENTS_PUBSUB_URL = 'redis://localhost:6379/0'
+EVENTS_PUBSUB_CHANNEL = 'velociraptor_events'
 
 CELERYBEAT_SCHEDULE = {
     'scooper': {

@@ -62,6 +62,8 @@ urlpatterns = patterns('',
         'deployment.api_views.uptest_latest', name='api_uptest_latest'),
     url(r'^api/uptest/(?P<run_id>\d+)/$',
         'deployment.api_views.uptest_run', name='api_uptest_run'),
+    url(r'^api/events/', 'deployment.api_views.event_stream',
+        name='api_event_stream'),
 )
 
 urlpatterns += staticfiles_urlpatterns()

@@ -6,10 +6,13 @@ from djcelery.models import TaskState
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 from django import http
+from django.conf import settings
+import redis
 
 from deployment import utils
 from deployment import models
 from deployment import tasks
+from deployment import pubsub
 
 
 def auth_required(view_func):
@@ -154,3 +157,16 @@ def uptest_latest(request):
         return utils.json_response(runs[0].results)
     else:
         raise http.Http404
+
+
+#@auth_required
+def event_stream(request):
+    """
+    Stream worker events out to browser.
+    """
+    # Just make a connection here in the view.  It's probably fine.
+    r = redis.StrictRedis(**utils.parse_redis_url(settings.EVENTS_PUBSUB_URL))
+    return http.HttpResponse(
+        pubsub.Listener(r, [settings.EVENTS_PUBSUB_CHANNEL]),
+        mimetype='text/event-stream'
+    )

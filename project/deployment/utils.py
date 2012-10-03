@@ -1,5 +1,6 @@
 import datetime
 import json
+import urlparse
 
 from django.http import HttpResponse
 from celery.result import AsyncResult
@@ -48,3 +49,16 @@ def task_to_dict(task):
     # objects
     return {k: clean_task_value(v) for k, v in task.__dict__.items() if not
            k.startswith('_')}
+
+
+def parse_redis_url(url):
+    """
+    Given a url like redis://localhost:6379/0, return a dict with host, port,
+    and db members.
+    """
+    parsed = urlparse.urlsplit(url)
+    return {
+        'host': parsed.hostname,
+        'port': parsed.port,
+        'db': int(parsed.path.replace('/', '')),
+    }
