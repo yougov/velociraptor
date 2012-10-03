@@ -19,4 +19,4 @@ requests==0.11.1
 South==0.7.6
 suds==0.4
 yg.ldap==2.2
-yg.deploy>=12.2,<13.0
+yg.deploy>=13.0,<14.0
