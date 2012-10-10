@@ -55,6 +55,8 @@ def deploy(release_id, recipe_name, hostname, proc, port):
             logging.info('beginning deploy of %s-%s-%s to %s' % (release, proc,
                                                                  port,
                                                                  hostname))
+            send_event(title=msg_title, msg='deploying %s-%s-%s to %s' %
+                  (release, proc, port, hostname), tags=['deploy'])
 
             assert release.build.file, "Build %s has no file" % release.build
             assert release.hash, "Release %s has not been hashed" % release
@@ -94,8 +96,6 @@ def deploy(release_id, recipe_name, hostname, proc, port):
                                   use_syslog=getattr(settings, 'PROC_SYSLOG',
                                                      False))
 
-        send_event(title=msg_title, msg='deployed %s-%s-%s to %s' %
-              (release, proc, port, hostname), tags=['deploy'])
         _update_host_cache(hostname)
     except:
         send_event(title=msg_title, msg='error in deploy of %s-%s-%s to %s' %
