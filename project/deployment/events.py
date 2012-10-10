@@ -27,11 +27,12 @@ def some_view(request):
 import json
 import datetime
 import uuid
+import logging
 
 import redis
 from django.conf import settings
 
-from deployment import utils
+from deployment import utils, models
 
 
 class Sender(object):
@@ -70,13 +71,15 @@ class Sender(object):
 
 
 class Listener(object):
-    def __init__(self, rcon_or_url, channels, buffer_key=None):
+    def __init__(self, rcon_or_url, channels, buffer_key=None,
+                 last_event_id=None):
         if isinstance(rcon_or_url, redis.StrictRedis):
             self.rcon = rcon_or_url
         elif isinstance(rcon_or_url, basestring):
             self.rcon = redis.StrictRedis(**utils.parse_redis_url(rcon_or_url))
         self.channels = channels
         self.buffer_key = buffer_key
+        self.last_event_id = last_event_id
         self.pubsub = self.rcon.pubsub()
         self.pubsub.subscribe(channels)
 
@@ -86,11 +89,16 @@ class Listener(object):
         if self.buffer_key:
             buffered_events = self.rcon.lrange(self.buffer_key, 0, -1)
             for msg in reversed(list(buffered_events)):
+                if (self.last_event_id and json.loads(msg)['id'] ==
+                    self.last_event_id):
+                    break
                 yield to_sse({'data': msg})
-
-        for msg in self.pubsub.listen():
-            if msg['type'] == 'message':
-                yield to_sse(msg)
+        try:
+            for msg in self.pubsub.listen():
+                if msg['type'] == 'message':
+                    yield to_sse(msg)
+        finally:
+            self.rcon.connection_pool.disconnect()
 
 
 def to_sse(msg):
@@ -116,16 +124,31 @@ def to_sse(msg):
     return out
 
 
-class ConnectionMiddleware(object):
-    def process_request(self, request):
-        # create a redis connection and tack it on to the request for views to
-        # use later.
-        redis_settings = utils.parse_redis_url(settings.EVENTS_PUBSUB_URL)
-        self.redis = redis.StrictRedis(**redis_settings)
-        request.event_sender = Sender(self.redis,
-                                      settings.EVENTS_PUBSUB_CHANNEL,
-                                      settings.EVENTS_BUFFER_KEY)
+# Not a view!
+def eventify(user, action, obj):
+    """
+    Save a message to the user action log, application log, and events pubsub
+    all at once.
+    """
+    fragment = '%s %s' % (action, obj)
+    # create a log entry
+    logentry = models.DeploymentLogEntry(
+        type=action,
+        user=user,
+        message=fragment
+    )
+    logentry.save()
+    # Also log it to actual python logging
+    message = '%s: %s' % (user.username, fragment)
+    logging.info(message)
 
-    def process_response(self, request, response):
-        self.redis.connection_pool.disconnect()
-        return response
+    # put a message on the pubsub.  Just make a new redis connection when you
+    # need to do this.  This is a lot lower traffic than doing a connection per
+    # request.
+    rcon = redis.StrictRedis(
+        **utils.parse_redis_url(settings.EVENTS_PUBSUB_URL)
+    )
+    sender = Sender(rcon, settings.EVENTS_PUBSUB_CHANNEL,
+                           settings.EVENTS_BUFFER_KEY)
+    sender.publish(message, tags=['user', action], title=message)
+    rcon.connection_pool.disconnect()

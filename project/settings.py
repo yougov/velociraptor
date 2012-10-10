@@ -1,10 +1,10 @@
 import sys
 
-#if 'runserver' in sys.argv:
-    #from gevent import monkey
-    #monkey.patch_all()
-    #import gevent_psycopg2
-    #gevent_psycopg2.monkey_patch()
+if 'runserver' in sys.argv:
+    from gevent import monkey
+    monkey.patch_all()
+    import gevent_psycopg2
+    gevent_psycopg2.monkey_patch()
 
 from datetime import timedelta
 import os
@@ -189,7 +189,6 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'deployment.events.ConnectionMiddleware',
 )
 
 SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"

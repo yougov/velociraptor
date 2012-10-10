@@ -7,7 +7,6 @@ from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 from django import http
 from django.conf import settings
-import redis
 
 from deployment import utils
 from deployment import models
@@ -94,7 +93,7 @@ def host_proc(request, hostname, procname):
     host = models.Host.objects.get(name=hostname)
     proc = host.get_proc(procname)
     if request.method == 'DELETE':
-        utils.eventify(request, 'destroy', proc)
+        events.eventify(request.user, 'destroy', proc)
         # check for and remove port lock if present
         try:
             pl = models.PortLock.objects.get(host=host, port=proc.port)
@@ -113,13 +112,13 @@ def host_proc(request, hostname, procname):
         try:
             if action == 'start':
                 host.start_proc(procname)
-                utils.eventify(request, 'start', proc)
+                events.eventify(request.user, 'start', proc)
             elif action == 'stop':
                 host.stop_proc(procname)
-                utils.eventify(request, 'stop', proc)
+                events.eventify(request.user, 'stop', proc)
             elif action == 'restart':
                 host.restart_proc(procname)
-                utils.eventify(request, 'restart', proc)
+                events.eventify(request.user, 'restart', proc)
         except xmlrpclib.Fault as e:
             return utils.json_response({'fault': e.faultString}, 500)
 
@@ -162,29 +161,6 @@ def uptest_latest(request):
     else:
         raise http.Http404
 
-import json
-def to_sse(msg):
-    """
-    Given a Redis pubsub message that was published by a Sender (ie, has a JSON
-    body with time, message, title, tags, and id), return a properly-formatted
-    SSE string.
-    """
-    # Unfortunately, our SSE msg ID has to be carried inside the inner JSON,
-    # since Redis doesn't natively give us such a field.
-    data = json.loads(msg['data'])
-    out = "id: " + data['id']
-    if 'name' in data:
-        out += '\nname: ' + data['name']
-
-    payload = json.dumps({
-        'time': data['time'],
-        'message': data['message'],
-        'tags': data['tags'],
-        'title': data['title'],
-    })
-    out += '\ndata: ' + payload + '\n\n'
-    return out
-
 
 @auth_required
 def event_stream(request):
@@ -192,31 +168,12 @@ def event_stream(request):
     Stream worker events out to browser.
     """
     # Just make a connection here in the view.  It's probably fine.
-    rcon = redis.StrictRedis(
-        **utils.parse_redis_url(settings.EVENTS_PUBSUB_URL)
+
+    listener = events.Listener(
+        settings.EVENTS_PUBSUB_URL,
+        channels=[settings.EVENTS_PUBSUB_CHANNEL],
+        buffer_key=settings.EVENTS_BUFFER_KEY,
+        last_event_id=request.META.get('HTTP_LAST_EVENT_ID')
     )
-    buffered_events = reversed(list(rcon.lrange(settings.EVENTS_BUFFER_KEY, 0,
-                                                -1)))
 
-    last_id = request.META.get('HTTP_LAST_EVENT_ID')
-
-    pubsub = rcon.pubsub()
-    pubsub.subscribe([settings.EVENTS_PUBSUB_CHANNEL])
-
-    def iterator():
-        # First iterate over new buffered messages.
-        for msg in buffered_events:
-            # If there's a message in the buffer with the last-requested ID,
-            # then only return buffered events that are newer than that
-            # message.
-            if last_id and json.loads(msg)['id'] == last_id:
-                break
-            yield to_sse({'data': msg})
-
-        # Then block on the pubsub and iterate over everything that comes out
-        # of it.
-        for msg in pubsub.listen():
-            if msg['type'] == 'message':
-                yield to_sse(msg)
-
-    return http.HttpResponse(iterator(), mimetype='text/event-stream')
+    return http.HttpResponse(listener, mimetype='text/event-stream')

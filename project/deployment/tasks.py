@@ -15,27 +15,32 @@ from fabric.api import env
 from django.core.files.storage import default_storage
 from django.conf import settings
 from django.utils import timezone
+import redis
 
 from deployment.models import (Release, Build, Swarm, Host, PortLock, App,
                                TestRun, TestResult)
-from deployment import balancer, events
+from deployment import balancer, events, utils
 
 from yg.deploy.fabric.system import (deploy_parcel, run_uptests,
                                      clean_releases, delete_proc as
                                      fab_delete_proc)
 from yg.deploy.paver import build as paver_build
 
-# Creating redis connection here should result in one connection per worker.
-sender = events.Sender(settings.EVENTS_PUBSUB_URL,
-                       settings.EVENTS_PUBSUB_CHANNEL,
-                       settings.EVENTS_BUFFER_KEY,
-                       settings.EVENTS_BUFFER_LENGTH,
-                      )
-
 
 def send_event(title, msg, tags=None):
     logging.info(msg)
+    # Create and discard connections when needed.  More robust than trying to
+    # hold them open for a long time.
+    rcon = redis.StrictRedis(
+        **utils.parse_redis_url(settings.EVENTS_PUBSUB_URL)
+    )
+    sender = events.Sender(rcon,
+                           settings.EVENTS_PUBSUB_CHANNEL,
+                           settings.EVENTS_BUFFER_KEY,
+                           settings.EVENTS_BUFFER_LENGTH,
+                          )
     sender.publish(msg, title=title, tags=tags)
+    rcon.connection_pool.disconnect()
 
 
 # NOTE: Tasks whose names start with an underscore will not be shown in the

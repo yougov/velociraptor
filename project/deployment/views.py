@@ -8,7 +8,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
 
 
-from deployment import forms, tasks, models, utils
+from deployment import forms, tasks, models, events
 
 
 @login_required
@@ -28,7 +28,7 @@ def build_hg(request):
         build = models.Build(app=app, tag=form.cleaned_data['tag'])
         build.save()
         tasks.build_hg.delay(build_id=build.id)
-        utils.eventify(request, 'build', build)
+        events.eventify(request.user, 'build', build)
         return redirect('dash')
     return render(request, 'basic_form.html', {
         'form': form,
@@ -41,7 +41,7 @@ def upload_build(request):
     form = forms.BuildUploadForm(request.POST or None, request.FILES or None)
     if form.is_valid():
         form.save()
-        utils.eventify(request, 'upload', form.instance)
+        events.eventify(request.user, 'upload', form.instance)
         return HttpResponseRedirect(reverse('deploy'))
 
     return render(request, 'basic_form.html', {
@@ -63,7 +63,7 @@ def release(request):
         release = models.Release(recipe=recipe, build=build,
                            config=recipe.to_yaml(),)
         release.save()
-        utils.eventify(request, 'release', release)
+        events.eventify(request.user, 'release', release)
         return HttpResponseRedirect(reverse('deploy'))
     return render(request, 'basic_form.html', {
         'form': form,
@@ -90,7 +90,7 @@ def deploy(request):
         logging.info('started job %s' % str(job))
         form.cleaned_data['release'] = str(release)
         proc = '%(release)s-%(proc)s-%(port)s to %(hostname)s' % data
-        utils.eventify(request, 'deploy', proc)
+        events.eventify(request.user, 'deploy', proc)
         return redirect('dash')
 
     return render(request, 'basic_form.html', vars())
@@ -160,7 +160,7 @@ def edit_swarm(request, swarm_id=None):
         swarm.save()
         tasks.swarm_start.delay(swarm.id)
 
-        utils.eventify(request, 'swarm', swarm)
+        events.eventify(request.user, 'swarm', swarm)
         return redirect('dash')
 
     return render(request, 'basic_form.html', {
@@ -185,7 +185,7 @@ def edit_squad(request, squad_id=None):
         # Save the squad
         form.save()
         squad = form.instance
-        utils.eventify(request, 'save', squad)
+        events.eventify(request.user, 'save', squad)
         redirect('edit_squad', squad_id=squad.id)
     return render(request, 'squad.html', {
         'squad': squad,

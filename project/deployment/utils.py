@@ -1,12 +1,9 @@
 import datetime
 import json
 import urlparse
-import logging
 
 from django.http import HttpResponse
 from celery.result import AsyncResult
-
-from deployment import models
 
 
 def json_response(obj, status=200):
@@ -66,29 +63,3 @@ def parse_redis_url(url):
         'db': int(parsed.path.replace('/', '')),
     }
 
-
-# Not a view!
-def eventify(request, action, obj):
-    """
-    Helper function for simultaneously adding messages to the event log at
-    /log/, as well as putting the same messages on the redis pubsub so they'll
-    immediately pop up for all dashboard users.
-
-    Depends on deployment.events.ConnectionMiddleware being enabled in order to
-    get a redis connection per request.
-    """
-    user = request.user
-    fragment = '%s %s' % (action, obj)
-    # create a log entry
-    logentry = models.DeploymentLogEntry(
-        type=action,
-        user=user,
-        message=fragment
-    )
-    logentry.save()
-    # Also log it to actual python logging
-    message = '%s: %s' % (user.username, fragment)
-    logging.info(message)
-
-    # put a message on the pubsub
-    request.event_sender.publish(message, tags=['user', action], title=message)
