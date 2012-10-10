@@ -88,10 +88,21 @@ class Listener(object):
         # that and spew them out before blocking on the pubsub.
         if self.buffer_key:
             buffered_events = self.rcon.lrange(self.buffer_key, 0, -1)
+
+            # check whether msg with last_event_id is still in buffer.  If so,
+            # trim buffered_events to have only newer messages.
+            if self.last_event_id:
+                # Note that we're looping through most recent messages first,
+                # here
+                counter = 0
+                for msg in buffered_events:
+                    if (json.loads(msg)['id'] == self.last_event_id):
+                        break
+                    counter += 1
+                buffered_events = buffered_events[:counter]
+
             for msg in reversed(list(buffered_events)):
-                if (self.last_event_id and json.loads(msg)['id'] ==
-                    self.last_event_id):
-                    break
+                # Stream out oldest messages first
                 yield to_sse({'data': msg})
         try:
             for msg in self.pubsub.listen():
