@@ -70,7 +70,7 @@ th.rowlabel {
   margin-top: 0px;
 }
 
-.apptitle:hover {
+.clickable-text:hover {
   color: #08C;
   cursor: pointer;
 }
@@ -183,6 +183,10 @@ th.rowlabel {
   text-decoration: inherit;
 }  
 
+.event-icon.large {
+  font-size: 26px;
+}
+
 .event-icon::before {
   content: "\f085"; /* default cogs icon */ 
 }
@@ -240,6 +244,8 @@ th.rowlabel {
   font-size: 12px;
   margin-top: 20px;
 }
+
+
 /* FORMS */
 
 .raptorform {

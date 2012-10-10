@@ -27,33 +27,38 @@
 
 {# Goatee template for task item summary#}
 <script id="event-tmpl" type="text/goatee">
-  <div id="event-<%id%>" class="event-wrapper <%classtags%>">
-    <i class="event-icon"></i>
-    <span class="event-title"><%title%></span>
+  <div id="event-<%id%>" class="event-wrapper clickable-text">
+    
+    <span class="event-title <%classtags%>"><i class="event-icon"></i> <%title%></span>
     <div style="clear: both;"></div>
 </div>
 </script>
 
-<script id="event-details-tmpl" type="text/goatee">
-  <div class="modal event-details-modal <%classtags%>"">
+
+<script id="event-detail-tmpl" type="text/goatee">
+  <div class="modal event-details-modal">
       <div class="modal-header">
           <a class="close" data-dismiss="modal">×</a>
-          <h3><%message%> </h3>
-          <div class="event-time-short"><%prettytime%></div>
+          <h3 class="event-title <%classtags%>">
+              <i class="event-icon large"></i>
+              <%title%> 
+          </h3>
+          <div class="event-time-short"><%time%></div>
       </div>
       <div class="modal-body">
+          <h4>Message</h4>
+          <pre><%message%></pre>
+          Tags: <%tags%><br>
       </div>
     </div>
 </script>
 
+
 <script>
-//// Fire in the hole! ////
 $(document).ready(function(){
   VR.Dash.Events.init(
     '{% url api_event_stream %}', 
-    'event-tmpl', 
-    'events-list',
-    {{ max_events }}
+    'events-list'
   );
   VR.Dash.Apps = new AppList($('#dash-apps'));
   VR.Dash.getHostList();

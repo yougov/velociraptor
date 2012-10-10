@@ -89,7 +89,7 @@ def deploy(release_id, recipe_name, hostname, proc, port):
                                   use_syslog=getattr(settings, 'PROC_SYSLOG',
                                                      False))
 
-        send_event(title=msg_title, msg='finished deploy of %s-%s-%s to %s' %
+        send_event(title=msg_title, msg='deployed %s-%s-%s to %s' %
               (release, proc, port, hostname), tags=['deploy'])
         _update_host_cache(hostname)
     except:

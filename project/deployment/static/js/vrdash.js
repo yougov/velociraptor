@@ -206,6 +206,10 @@ ProcModalView = Backbone.View.extend({
       'click .proc-restart': 'onRestartBtn',
       'click .proc-destroy': 'onDestroyBtn'
     },
+    show: function() {
+      this.render();
+      this.$el.modal('show');
+    },
     onStartBtn: function(ev) {
       this.doAction('start');
     },
@@ -226,10 +230,6 @@ ProcModalView = Backbone.View.extend({
     onProcDestroy: function() {
       this.$el.modal('hide');
       this.$el.remove();
-    },
-    show: function() {
-      this.render();
-      this.$el.modal('show');
     }
 });
 
@@ -344,10 +344,11 @@ VREvents = Backbone.Collection.extend({
 });
 
 VREventView = Backbone.View.extend({
+    template: '#event-tmpl',
     initialize: function(model, template) {
         this.model = model;
         this.model.on('destroy', this.onDestroy, this);
-        this.template = template;
+        this.template = $(this.template);
         this.render();
     },
 
@@ -357,11 +358,44 @@ VREventView = Backbone.View.extend({
 
     onDestroy: function() {
         this.$el.remove();
+    },
+
+    events: {
+      'click': 'onClick'
+    },
+
+    onClick: function(ev) {
+      if (!this.modal) {
+        this.modal = new VREventDetailView(this.model);   
+      }
+
+      this.modal.show();
+    }
+});
+
+VREventDetailView = Backbone.View.extend({
+    template: '#event-detail-tmpl',
+    initialize: function(model) {
+      this.model = model;
+      this.template = $(this.template);
+      this.model.on('change', this.render, this);
+      this.model.on('remove', this.onRemove, this);
+    },
+    render: function() {
+      this.$el.html(this.template.goatee(this.model.attributes));
+    },
+    show: function() {
+      this.render();
+      this.$el.modal('show');
+    },
+    onRemove: function() {
+      console.log('removing modal');
+      this.$el.remove();
     }
 });
 
 VREventsView = Backbone.View.extend({
-    initialize: function(collection, template, container) {
+    initialize: function(collection, container, template, modaltemplate) {
         this.collection = collection;
         // template should be the template to use for individual items.  It
         // should be a goatee template already wrapped in a jquery obj.
@@ -377,7 +411,7 @@ VREventsView = Backbone.View.extend({
 
     onAdd: function(model) {
         // create model view and bind it to the model
-        var mv = new VREventView(model, this.template);
+        var mv = new VREventView(model, this.template, this.modaltemplate);
         this.container.prepend(mv.$el);
     },
 
@@ -387,14 +421,14 @@ VREventsView = Backbone.View.extend({
 });
 
 VR.Dash.Events = {
-  init: function(stream_url, tmpl_id, container_id, maxlength) {
+  init: function(stream_url, container_id) {
     // bind stream to handler
     this.stream = new EventSource(stream_url);
     this.stream.onmessage = $.proxy(this.onTaskEvent, this);
 
     this.collection = new VREvents();
-    this.listview = new VREventsView(this.collection, 
-        $('#' + tmpl_id), 
+    this.listview = new VREventsView(
+        this.collection, 
         $('#' + container_id)
     );
   },
