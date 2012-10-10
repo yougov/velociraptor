@@ -18,71 +18,91 @@ from django.utils import timezone
 
 from deployment.models import (Release, Build, Swarm, Host, PortLock, App,
                                TestRun, TestResult)
-from deployment import balancer
+from deployment import balancer, events
 
 from yg.deploy.fabric.system import (deploy_parcel, run_uptests,
                                      clean_releases, delete_proc as
                                      fab_delete_proc)
 from yg.deploy.paver import build as paver_build
 
-# XXX Tasks whose names start with an underscore will not be shown in the main
-# dashboard view, to prevent clutter.
+# Creating redis connection here should result in one connection per worker.
+sender = events.Sender(settings.EVENTS_PUBSUB_URL,
+                       settings.EVENTS_PUBSUB_CHANNEL,
+                       settings.EVENTS_BUFFER_KEY,
+                       settings.EVENTS_BUFFER_LENGTH,
+                      )
 
+
+def send_event(title, msg, tags=None):
+    logging.info(msg)
+    sender.publish(msg, title=title, tags=tags)
+
+
+# NOTE: Tasks whose names start with an underscore will not be shown in the
+# main dashboard view, to prevent clutter.
 
 @task
 def deploy(release_id, recipe_name, hostname, proc, port):
+    try:
+        with remove_port_lock(hostname, port):
+            release = Release.objects.get(id=release_id)
+            msg_title = '%s-%s-%s -> %s' % (release, proc, port, hostname)
+            logging.info('beginning deploy of %s-%s-%s to %s' % (release, proc,
+                                                                 port,
+                                                                 hostname))
 
-    with remove_port_lock(hostname, port):
-        release = Release.objects.get(id=release_id)
+            assert release.build.file, "Build %s has no file" % release.build
+            assert release.hash, "Release %s has not been hashed" % release
 
-        assert release.build.file, "Build %s has no file" % release.build
-        assert release.hash, "Release %s has not been hashed" % release
+            # Set up env for Fabric
+            env.host_string = hostname
+            env.abort_on_prompts = True
+            env.task = deploy
+            env.user = settings.DEPLOY_USER
+            env.password = settings.DEPLOY_PASSWORD
+            env.linewise = True
 
-        # Set up env for Fabric
-        env.host_string = hostname
-        env.abort_on_prompts = True
-        env.task = deploy
-        env.user = settings.DEPLOY_USER
-        env.password = settings.DEPLOY_PASSWORD
-        env.linewise = True
+            with tmpdir():
+                f = open('settings.yaml', 'wb')
+                f.write(release.config)
+                f.close()
+                # pull the build out of gridfs, write it to a temporary location,
+                # and deploy it.
+                build_name = posixpath.basename(release.build.file.name)
+                local_build = open(build_name, 'wb')
+                build = default_storage.open(release.build.file.name)
+                local_build.write(build.read())
 
-        logging.info('deploying %s:%s to %s:%s' % (release, proc, hostname,
-                                                   port))
+                local_build.close()
+                build.close()
 
-        with tmpdir():
-            f = open('settings.yaml', 'wb')
-            f.write(release.config)
-            f.close()
-            # pull the build out of gridfs, write it to a temporary location,
-            # and deploy it.
-            build_name = posixpath.basename(release.build.file.name)
-            local_build = open(build_name, 'wb')
-            build = default_storage.open(release.build.file.name)
-            local_build.write(build.read())
+                proc_user = getattr(settings, 'PROC_USER', 'nobody')
 
-            local_build.close()
-            build.close()
+                with always_disconnect():
+                    deploy_parcel(build_name,
+                                  'settings.yaml',
+                                  recipe_name,
+                                  proc,
+                                  port,
+                                  proc_user,
+                                  release.hash,
+                                  use_syslog=getattr(settings, 'PROC_SYSLOG',
+                                                     False))
 
-            proc_user = getattr(settings, 'PROC_USER', 'nobody')
-
-            with always_disconnect():
-                deploy_parcel(build_name,
-                              'settings.yaml',
-                              recipe_name,
-                              proc,
-                              port,
-                              proc_user,
-                              release.hash,
-                              use_syslog=getattr(settings, 'PROC_SYSLOG',
-                                                 False))
-
-    _update_host_cache(hostname)
+        send_event(title=msg_title, msg='finished deploy of %s-%s-%s to %s' %
+              (release, proc, port, hostname), tags=['deploy'])
+        _update_host_cache(hostname)
+    except:
+        send_event(title=msg_title, msg='error in deploy of %s-%s-%s to %s' %
+              (release, proc, port, hostname), tags=['deploy', 'failed'])
+        raise
 
 
 @task
 def build_hg(build_id, callback=None):
     # call the assemble_hg function.
     build = Build.objects.get(id=build_id)
+    send_event(str(build), "Started build %s" % build, tags=['build'])
     app = build.app
     url = '%s#%s' % (build.app.repo_url, build.tag)
     with tmpdir():
@@ -105,8 +125,12 @@ def build_hg(build_id, callback=None):
             build.file = filepath
             build.end_time = datetime.datetime.now()
             build.status = 'success'
+            send_event(str(build), "Completed build %s" % build, tags=['build',
+                                                                  'success'])
         except:
             build.status = 'failed'
+            send_event(str(build), "Build %s failed" % build, tags=['build',
+                                                               'failed'])
             raise
         finally:
             build.save()
@@ -114,6 +138,7 @@ def build_hg(build_id, callback=None):
     # start callback if there is one.
     if callback is not None:
         subtask(callback).delay()
+
 
 @task
 def update_tags():
@@ -134,9 +159,9 @@ def delete_proc(host, proc, callback=None):
     env.user = settings.DEPLOY_USER
     env.password = settings.DEPLOY_PASSWORD
     env.linewise = True
-    logging.info('deleting %s on %s' % (proc, host))
     with always_disconnect():
         fab_delete_proc(proc)
+    send_event(proc, 'deleted %s on %s' % (proc, host), tags=['proc', 'deleted'])
 
     if callback:
         subtask(callback).delay()
@@ -289,7 +314,10 @@ def swarm_post_deploy(deploy_results, swarm_id):
     launch uptests.
     """
     if any(isinstance(r, Exception) for r in deploy_results):
-        assert False, "Error in deployment."
+        swarm = Swarm.objects.get(id=swarm_id)
+        msg = "Error in deployments for swarm %s" % swarm
+        send_event('DEPLOY ERROR', msg, tags=['failed'])
+        raise Exception(msg)
 
     swarm_assign_uptests(swarm_id)
 
@@ -373,6 +401,8 @@ def swarm_post_uptest(uptest_results, swarm_id):
     # uptest_results will be a list of tuples in form (host, results), where
     # 'results' is a list of dictionaries, one for each test script.
 
+    swarm = Swarm.objects.get(id=swarm_id)
+    test_counter = 0
     for host_results in uptest_results:
         if isinstance(host_results, Exception):
             raise host_results
@@ -380,13 +410,24 @@ def swarm_post_uptest(uptest_results, swarm_id):
          #results is now a dict
         for proc, results in proc_results.items():
             for result in results:
+                test_counter += 1
                 # XXX This checking/formatting relies on each uptest result
                 # being a dict with 'passed', 'uptest', 'return_code', and
                 # 'output' keys.
                 if result['passed'] != True:
                     msg = (proc + ": {uptest} failed with code {return_code} "
                            "and output '{output}'".format(**result))
+                    send_event(str(swarm), msg, tags=['failed', 'uptest'])
                     raise FailedUptest(msg)
+
+    # Don't congratulate swarms that don't actually have any uptests.
+    if test_counter > 0:
+        send_event(str(swarm), 'Uptests passed for swarm %s' % swarm,
+                   tags=['success', 'uptest'])
+    else:
+        send_event(str(swarm), 'No uptests for swarm %s' % swarm,
+                   tags=['warning', 'uptest'])
+
 
     # Also check for captured failures in the results
 
@@ -432,6 +473,8 @@ def swarm_route(swarm_id, correct_nodes, callback=None):
         if stale_nodes:
             balancer.delete_nodes(swarm.balancer, swarm.pool,
                                   list(stale_nodes))
+        send_event(str(swarm), 'Routed swarm %s.  New nodes: %s' % (swarm, list(correct_nodes)),
+             tags=['route'])
 
     if callback is not None:
         subtask(callback).delay()
@@ -450,6 +493,8 @@ def swarm_cleanup(swarm_id):
     # Only delete old procs if the deploy of the new ones was successful.
     if stale_procs and len(current_procs) >= swarm.size:
         for p in stale_procs:
+            # We don't need to worry about removing these nodes from a pool at
+            # this point, so just call delete_proc instead of swarm_delete_proc
             delete_proc.delay(p.host.name, p.name)
 
 
@@ -465,6 +510,10 @@ def swarm_delete_proc(swarm_id, hostname, procname, port):
         node = '%s:%s' % (hostname, port)
         if node in balancer.get_nodes(swarm.balancer, swarm.pool):
             balancer.delete_nodes(swarm.balancer, swarm.pool, [node])
+            send_event('unroute ' + node,
+                       '%s (%s) removed from pool %s on balancer %s' %
+                       (procname, node, swarm.pool,
+                       swarm.balancer), tags=['route'])
 
     delete_proc(hostname, procname)
 
@@ -490,6 +539,14 @@ def post_uptest_all_procs(results, test_run_id):
     run.end = timezone.now()
     run.save()
 
+    if run.has_failures():
+        send_event('scheduled uptest failures', 'Ran uptests on all procs',
+                   tags=['scheduled', 'failed'])
+    else:
+        send_event('scheduled uptests pass', 'Ran uptests on all procs',
+                   tags=['scheduled', 'success'])
+
+
 
 @task
 def _clean_host_releases(hostname):
@@ -506,6 +563,8 @@ def _clean_host_releases(hostname):
 @task
 def scooper():
     # Clean up all active hosts
+    send_event('scooper', 'Cleaning unused releases from all hosts',
+               tags=['scheduled'])
     for host in Host.objects.filter(active=True):
         _clean_host_releases.apply_async((host.name,), expires=120)
 

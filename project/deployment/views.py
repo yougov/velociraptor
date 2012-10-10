@@ -28,30 +28,30 @@ def build_hg(request):
         build = models.Build(app=app, tag=form.cleaned_data['tag'])
         build.save()
         tasks.build_hg.delay(build_id=build.id)
-        models.remember('build', 'built %s-%s' % (app.name, build.tag),
-                request.user.username)
+        utils.eventify(request, 'build', build)
         return redirect('dash')
-    btn_text = "Build"
-    return render(request, 'basic_form.html', vars())
+    return render(request, 'basic_form.html', {
+        'form': form,
+        'btn_text': 'Build',
+    })
 
 
 @login_required
 def upload_build(request):
     form = forms.BuildUploadForm(request.POST or None, request.FILES or None)
     if form.is_valid():
-        # process the form and redirect
         form.save()
-        # set a message
-        models.remember('build', 'uploaded build %s' % str(form.instance.file),
-                 request.user.username)
-        # Redirect to the 'deploy' page.
+        utils.eventify(request, 'upload', form.instance)
         return HttpResponseRedirect(reverse('deploy'))
-    enctype = "multipart/form-data"
-    instructions = """Use this form to upload a build.  A valid build should
-    have a Procfile, and have all app-specific dependencies already compiled
-    into the env."""
-    btn_text = 'Upload'
-    return render(request, 'basic_form.html', vars())
+
+    return render(request, 'basic_form.html', {
+        'form': form,
+        'btn_text': 'Upload',
+        'instructions': """Use this form to upload a build.  A valid build
+        should have a Procfile, and have all app-specific dependencies already
+        compiled into the env.""",
+        'enctype': "multipart/form-data"
+    })
 
 
 @login_required
@@ -60,17 +60,15 @@ def release(request):
     if form.is_valid():
         build = models.Build.objects.get(id=form.cleaned_data['build_id'])
         recipe = models.ConfigRecipe.objects.get(id=form.cleaned_data['recipe_id'])
-        r = models.Release(
-            recipe=recipe,
-            build=build,
-            config=recipe.to_yaml(),
-        )
-        r.save()
-        models.remember('release', 'created release %s' % r.__unicode__(),
-                 request.user.username)
+        release = models.Release(recipe=recipe, build=build,
+                           config=recipe.to_yaml(),)
+        release.save()
+        utils.eventify(request, 'release', release)
         return HttpResponseRedirect(reverse('deploy'))
-    btn_text = 'Save'
-    return render(request, 'basic_form.html', vars())
+    return render(request, 'basic_form.html', {
+        'form': form,
+        'btn_text': 'Save',
+    })
 
 
 @login_required
@@ -91,9 +89,8 @@ def deploy(request):
                                  port=data['port'])
         logging.info('started job %s' % str(job))
         form.cleaned_data['release'] = str(release)
-        msg = ('deployed %(release)s-%(proc)s-%(port)s to %(hostname)s' %
-               form.cleaned_data)
-        models.remember('deployment', msg, request.user.username)
+        proc = '%(release)s-%(proc)s-%(port)s to %(hostname)s' % data
+        utils.eventify(request, 'deploy', proc)
         return redirect('dash')
 
     return render(request, 'basic_form.html', vars())
@@ -163,13 +160,13 @@ def edit_swarm(request, swarm_id=None):
         swarm.save()
         tasks.swarm_start.delay(swarm.id)
 
-        models.remember('swarm', 'swarmed %s' % swarm,
-                request.user.username)
-
+        utils.eventify(request, 'swarm', swarm)
         return redirect('dash')
 
-    btn_text = 'Swarm'
-    return render(request, 'basic_form.html', vars())
+    return render(request, 'basic_form.html', {
+        'form': form,
+        'btn_text': 'Swarm',
+    })
 
 
 @login_required
@@ -188,7 +185,7 @@ def edit_squad(request, squad_id=None):
         # Save the squad
         form.save()
         squad = form.instance
-        models.remember('squad', 'saved squad %s' % squad.name, request.user.username)
+        utils.eventify(request, 'save', squad)
         redirect('edit_squad', squad_id=squad.id)
     return render(request, 'squad.html', {
         'squad': squad,

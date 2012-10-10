@@ -1,5 +1,11 @@
 import sys
 
+#if 'runserver' in sys.argv:
+    #from gevent import monkey
+    #monkey.patch_all()
+    #import gevent_psycopg2
+    #gevent_psycopg2.monkey_patch()
+
 from datetime import timedelta
 import os
 import warnings
@@ -88,11 +94,13 @@ CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 # streaming event views can push them out to browsers.
 EVENTS_PUBSUB_URL = 'redis://localhost:6379/0'
 EVENTS_PUBSUB_CHANNEL = 'velociraptor_events'
+EVENTS_BUFFER_KEY = 'velociraptor_events_buffer'
+EVENTS_BUFFER_LENGTH = 100
 
 CELERYBEAT_SCHEDULE = {
     'scooper': {
         'task': 'deployment.tasks.scooper',
-        'schedule': timedelta(minutes=30),
+        'schedule': timedelta(minutes=240),
         'options': {
             'expires': 120,
         },
@@ -181,6 +189,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'deployment.events.ConnectionMiddleware',
 )
 
 SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"

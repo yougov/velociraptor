@@ -45,10 +45,6 @@ div.label {
 
 /* APPS, SWARMS, PROCS */
 
-#dash-apps {
-  margin-top: 20px;
-}
-
 th.rowlabel {
   font-weight: normal;
   color: #888;
@@ -68,6 +64,10 @@ th.rowlabel {
   line-height: 32px;
   text-align: right;
   margin-right: 18px;
+}
+
+.approw:first .apptitle {
+  margin-top: 0px;
 }
 
 .apptitle:hover {
@@ -166,29 +166,80 @@ th.rowlabel {
   display: none;
 }
 
+/* EVENTS */
 
-/* TASKS */
-
-.task-wrapper {
+.event-wrapper {
+  /*display: none;*/
+  /*border: 1px solid #eee;*/
   margin-bottom: 5px;
 }
 
-.task-status a {
-  text-decoration: underline;
+.event-icon {
+  font-family: FontAwesome;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 18px;
+  display: inline-block;
+  text-decoration: inherit;
+}  
+
+.event-icon::before {
+  content: "\f085"; /* default cogs icon */ 
 }
 
-.task-status.SUCCESS a {
-  color: #468847;
+.build .event-icon::before {
+  content: "\f0ad"; /* wrench icon */
 }
 
-.task-status.FAILURE a {
-  color: #b94a48;
+.deploy .event-icon::before {
+  content: "\f093"; /* upload icon */
 }
 
-.task-status.STARTED a {
-  color: #3A87AD;
+.route .event-icon::before {
+  content: "\f0e8"; /* sitemap icon */
 }
 
+.deleted .event-icon::before {
+  content: "\f014"; /* trash icon */
+}
+
+.uptest.success .event-icon::before {
+  content: "\f00c"; /* checkmark icon */
+}
+
+.uptest.failed .event-icon::before {
+  content: "\f00d"; /* X icon */
+}
+
+.user .event-icon::before {
+  content: "\f007"; /* user icon */
+}
+
+.scheduled .event-icon::before {
+  content: "\f017"; /* clock icon */
+}
+
+.warning .event-icon::before {
+  content: "\f071"; /* warning icon */
+  color: #fc0;
+}
+
+.failed .event-icon {
+  color: red;
+}
+
+.success .event-icon {
+  color: #0c0;
+}
+
+#events-list {
+  margin-top: 30px;
+}
+
+#events-list .event-title {
+  font-size: 12px;
+  margin-top: 20px;
+}
 /* FORMS */
 
 .raptorform {

@@ -46,18 +46,6 @@ class DeploymentLogEntry(models.Model):
         ordering = ['-time']
 
 
-def remember(msg_type, msg, username):
-    # Log to DB
-    logentry = DeploymentLogEntry(
-        type=msg_type,
-        user=User.objects.get(username=username),
-        message=msg
-    )
-    logentry.save()
-    # Also log it to actual python logging
-    logging.info('%s %s: %s' % (msg_type, username, msg))
-
-
 class ConfigIngredient(models.Model):
     label = models.CharField(max_length=50, unique=True)
     value = YAMLDictField(help_text=("Must be valid YAML dict."))
@@ -399,6 +387,12 @@ class Proc(object):
         """
         return '%s:%s' % (self.host.name, self.port)
 
+    def __unicode__(self):
+        return self.name
+
+    def __str__(self):
+        return self.__unicode__().encode('utf-8')
+
 
 class Swarm(models.Model):
     """
@@ -438,11 +432,9 @@ class Swarm(models.Model):
         ordering = ['recipe__app__name', 'recipe__name', 'proc_name']
 
     def __unicode__(self):
-        return u'%(rname)s-%(proc)s X %(size)s on %(squad)s' % {
+        return u'%(rname)s-%(proc)s' % {
             'rname': self.release.__unicode__(),
             'proc': self.proc_name,
-            'size': self.size,
-            'squad': self.squad.name
         }
 
     def shortname(self):
@@ -532,6 +524,9 @@ class TestRun(models.Model):
             'results': {'%s-%s' % (t.hostname, t.procname): yaml.safe_load(t.results) for t in
                         self.tests.all()}
         }
+
+    def has_failures(self):
+        return self.tests.filter(passed=False).count() > 0
 
     class Meta:
         ordering = ['-start']

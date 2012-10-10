@@ -12,8 +12,8 @@
 
   <div class="tasks-column span3">
       <div id="dash-tasks">
-        <h1>Tasks</h1>
-        <div id="tasks-list"></div>
+        <h1>Events</h1>
+        <div id="events-list"></div>
       </div>
   </div>
 </div>
@@ -26,84 +26,38 @@
 
 
 {# Goatee template for task item summary#}
-<script id="task-tmpl" type="text/goatee">
-<div id="task-<%task_id%>" class="task-wrapper">
-  <div class="task-status <%state%>" data-proc="<%name%>">
-    <a href="#"><%shortname%></a>
-  </div>
+<script id="event-tmpl" type="text/goatee">
+  <div id="event-<%id%>" class="event-wrapper <%classtags%>">
+    <i class="event-icon"></i>
+    <span class="event-title"><%title%></span>
+    <div style="clear: both;"></div>
 </div>
 </script>
 
-
-{# Goatee template for task item details modal#}
-<script id="task-modal-tmpl" type="text/goatee">
-    <div id="task-details-<%task_id%>" class="modal task-details">
-    <div class="modal-header">
-        <a class="close" data-dismiss="modal">×</a>
-        <h3>Task Details</h3>
-    </div>
-    <div class="modal-body">
-        <table class="table table-condensed">
-            <dl>
-                <dt>Name
-                <dd><%name%>
-
-                <dt>Task ID
-                <dd><%task_id%>
-
-                <dt>Args
-                <dd><%args%>
-
-                <dt>Kwargs
-                <dd><%kwargs%>
-
-                <dt>Tstamp
-                <dd><%prettydate%>
-
-                <%#runtime%>
-                <dt>Run time
-                <dd><%runtime%>
-                <%/runtime%>
-
-                <%#eta%>
-                    <dt>ETA
-                    <dd><%eta%>
-                <%/eta%>
-
-                <%#expires%>
-                    <dt>Expires
-                    <dd><%expires%>
-                <%/expires%>
-
-                <dt>State
-                <dd><%state%>
-
-                <%#retries%>
-                    <dt>Retries
-                    <dd><%retries%>
-                <%/retries%>
-
-                <dt>Result
-                <dd><%result%>
-
-                <%#traceback%>
-                    <dt>Traceback
-                    <dd><pre><%traceback%></pre>
-                <%/traceback%>
-            </dl>
-        </table>
-
-
-    </div>
+<script id="event-details-tmpl" type="text/goatee">
+  <div class="modal event-details-modal <%classtags%>"">
+      <div class="modal-header">
+          <a class="close" data-dismiss="modal">×</a>
+          <h3><%message%> </h3>
+          <div class="event-time-short"><%prettytime%></div>
+      </div>
+      <div class="modal-body">
+      </div>
     </div>
 </script>
 
 <script>
 //// Fire in the hole! ////
 $(document).ready(function(){
-  VR.Dash.Tasks.init();
+  VR.Dash.Events.init(
+    '{% url api_event_stream %}', 
+    'event-tmpl', 
+    'events-list',
+    {{ max_events }}
+  );
   VR.Dash.Apps = new AppList($('#dash-apps'));
   VR.Dash.getHostList();
+
 });
 </script>
 {% endblock script %}

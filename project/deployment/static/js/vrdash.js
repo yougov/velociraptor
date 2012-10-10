@@ -323,81 +323,90 @@ VR.Dash.updateProcData = function(data) {
     var p = s.procs.getOrCreate(data);
 };
 
-// DASH Tasks Methods //
-VR.Dash.Tasks = {
-    taskDataQueue: '',
+VREvent = Backbone.Model.extend({});
 
-    init: function(){
-        VR.Dash.Tasks.tmpl = $('#task-tmpl');
-        VR.Dash.Tasks.el = $('#tasks-list');
+VREvents = Backbone.Collection.extend({
+    model: VREvent,
+    maxlength: 100,
 
-        VR.Dash.Tasks.el.delegate('.task-wrapper', 'click', VR.Dash.Tasks.onTaskClick);
-
-        VR.Dash.Tasks.getTaskData();
-        // then setInterval to re-check every 4 seconds.
-        setInterval(function(){
-            VR.Dash.Tasks.getTaskData();
-        }, 4000);
-
+    initialize: function() {
+        this.on('add', this.trim, this);
     },
 
-    getTaskData: function(){
-        var that = this;
-
-        $.getJSON('/api/task/', function(data){
-            // the data comes back with the most recent first, but it's
-            // actually simpler to do most recent last and always use
-            // $().prepend.  So reverse it.
-            data.tasks.reverse();
-            _.each(data.tasks, VR.Dash.Tasks.doItem);
-
-            // Now remove any tasks that are in the DOM but not in the data.
-            var ids = _.map(data.tasks, function(task) {return 'task-' + task.task_id;});
-            _.each($('.task-wrapper'), function(el, idx, lst) {
-                el = $(el);
-                if (!_.include(ids, el.attr('id'))) {
-                    el.remove();
-                }
-            });
-        });
-    },
-
-    // doItem should be called for each task returned from the API, each time.
-    // It will check whether the item already exists in the list, and only add
-    // it if necessary.
-    doItem: function(taskdata, idx, lst) {
-        if (_.isNull(taskdata.name)) {
-            taskdata.shortname = taskdata.task_id;
-        } else {
-            taskdata.shortname = taskdata.name.split('.').pop();
+    trim: function() {
+        // ensure that there are only this.maxlength items in the collection.
+        // The rest should be discarded.
+        while (this.models.length > this.maxlength) {
+            var model = this.at(0);
+            this.remove(model);
         }
-
-        // Set a nicer date for humans.  Assumes all browsers we care about can
-        // accept an iso datetime on Date init.
-        var date = new Date(taskdata.tstamp);
-        taskdata.prettydate = date.toString();
-
-        var task = $('#task-' + taskdata.task_id);
-        if (task.length === 0) {
-            // add new one
-            task = VR.Dash.Tasks.tmpl.goatee(taskdata);
-            VR.Dash.Tasks.el.prepend(task);
-        } else {
-            // update existing one.
-            if (!_.isEqual(task.data('taskdata'), taskdata)) {
-                var newtask = VR.Dash.Tasks.tmpl.goatee(taskdata);
-                // update existing item with contents of new one.
-                task.html(newtask.html());
-            }
-        }
-
-        // remember taskdata for comparing later.  Also for rendering details
-        // in a modal.
-        task.data('taskdata', taskdata);
-    },
-
-    onTaskClick: function(ev) {
-        var popup = $('#task-modal-tmpl').goatee($(this).data('taskdata'));
-        $(popup).modal();
     }
-};// end VR.Dash.Tasks
+});
+
+VREventView = Backbone.View.extend({
+    initialize: function(model, template) {
+        this.model = model;
+        this.model.on('destroy', this.onDestroy, this);
+        this.template = template;
+        this.render();
+    },
+
+    render: function() {
+        this.$el.html(this.template.goatee(this.model.attributes));
+    },
+
+    onDestroy: function() {
+        this.$el.remove();
+    }
+});
+
+VREventsView = Backbone.View.extend({
+    initialize: function(collection, template, container) {
+        this.collection = collection;
+        // template should be the template to use for individual items.  It
+        // should be a goatee template already wrapped in a jquery obj.
+        this.template = template;
+
+        // container should also be already wrapped in a jquery
+        this.container = container;
+
+        this.collection.on('remove', this.onRemove, this);
+
+        this.collection.on('add', this.onAdd, this);
+    },
+
+    onAdd: function(model) {
+        // create model view and bind it to the model
+        var mv = new VREventView(model, this.template);
+        this.container.prepend(mv.$el);
+    },
+
+    onRemove: function(model) {
+        model.trigger('destroy');
+    }
+});
+
+VR.Dash.Events = {
+  init: function(stream_url, tmpl_id, container_id, maxlength) {
+    // bind stream to handler
+    this.stream = new EventSource(stream_url);
+    this.stream.onmessage = $.proxy(this.onTaskEvent, this);
+
+    this.collection = new VREvents();
+    this.listview = new VREventsView(this.collection, 
+        $('#' + tmpl_id), 
+        $('#' + container_id)
+    );
+  },
+
+  onTaskEvent: function(e) {
+    var data = JSON.parse(e.data);
+    data.time = new Date(data.time);
+    data.prettytime = data.time.format("mm/dd HH:MM:ss");
+    data.id = e.lastEventId;
+    data.classtags = data.tags.join(' ');
+    var evmodel = new VREvent(data);
+    this.collection.add(evmodel);
+  }
+};
+
