@@ -107,6 +107,8 @@
     <script src="{% static 'chosen/chosen.jquery.min.js' %}"></script>
     <script src="{% static 'js/django-jquery.js' %}"></script>
     <script src="{% static 'js/underscore-min.js' %}"></script>
+
+    <script src="{% static 'js/backbone-min.js' %}"></script>
     <script src="{% static 'js/goatee.js' %}"></script>
     <script src="{% static 'js/bootstrap.js' %}"></script>
     <script src="{% static 'js/vr.js' %}"></script>
@@ -124,12 +126,12 @@
 {# GOATEE TEMPLATES #}
 
 <script id="app-tmpl" type="text/goatee">
-  <td class="titlecell"><h2 class="apptitle clickable-text"><%id%></h2></td><td class="proccell"></td>
+  <td class="titlecell"><div class="apptitle clickable-text"><%id%></div></td><td class="proccell"></td>
 </script>
 
 <script id="swarm-tmpl" type="text/goatee">
   <div class="procgrid">
-    <h4 class="swarmtitle"><%id%></h4>
+    <div class="swarmtitle"><%id%></div>
   </div>
 </script>
 
