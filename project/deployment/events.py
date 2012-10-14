@@ -31,13 +31,17 @@ import logging
 
 import redis
 from django.conf import settings
+from django.http import HttpResponse
 
 from deployment import utils, models
 
 
 class Sender(object):
-    def __init__(self, rcon_or_url, channel, buffer_key=None,
-                 buffer_length=100):
+    def __init__(self,
+                 rcon_or_url=settings.EVENTS_PUBSUB_URL,
+                 channel=settings.EVENTS_PUBSUB_CHANNEL,
+                 buffer_key=settings.EVENTS_BUFFER_KEY,
+                 buffer_length=getattr(settings, 'EVENTS_BUFFER_LENGTH', 100)):
         if isinstance(rcon_or_url, redis.StrictRedis):
             self.rcon = rcon_or_url
         elif isinstance(rcon_or_url, basestring):
@@ -49,9 +53,9 @@ class Sender(object):
     def publish(self, message, name=None, tags=None, title=None):
         # Make an object with timestamp, ID, and payload
         data = {
+            'id': uuid.uuid1().hex,
             'time': datetime.datetime.utcnow().isoformat(),
             'message': message,
-            'id': uuid.uuid1().hex,
             'tags': tags or [],
             'title': title or '',
         }
@@ -71,17 +75,30 @@ class Sender(object):
 
 
 class Listener(object):
-    def __init__(self, rcon_or_url, channels, buffer_key=None,
+    def __init__(self,
+                 rcon_or_url=settings.EVENTS_PUBSUB_URL,
+                 channels=None,
+                 buffer_key=settings.EVENTS_BUFFER_KEY,
                  last_event_id=None):
         if isinstance(rcon_or_url, redis.StrictRedis):
             self.rcon = rcon_or_url
         elif isinstance(rcon_or_url, basestring):
             self.rcon = redis.StrictRedis(**utils.parse_redis_url(rcon_or_url))
+        if channels is None:
+            channels = [settings.EVENTS_PUBSUB_CHANNEL]
         self.channels = channels
         self.buffer_key = buffer_key
         self.last_event_id = last_event_id
         self.pubsub = self.rcon.pubsub()
         self.pubsub.subscribe(channels)
+
+        # Send a superfluous message down the pubsub to flush out stale
+        # connections.
+        for channel in self.channels:
+            # Use buffer_key=None since these pings never need to be remembered
+            # and replayed.
+            sender = Sender(self.rcon, channel, None)
+            sender.publish('_flush', tags=['hidden'])
 
     def __iter__(self):
         # If we've been initted with a buffer key, then get all the events off
@@ -104,12 +121,33 @@ class Listener(object):
             for msg in reversed(list(buffered_events)):
                 # Stream out oldest messages first
                 yield to_sse({'data': msg})
-        try:
-            for msg in self.pubsub.listen():
-                if msg['type'] == 'message':
-                    yield to_sse(msg)
-        finally:
-            self.rcon.connection_pool.disconnect()
+
+        for msg in self.pubsub.listen():
+            if msg['type'] == 'message':
+                yield to_sse(msg)
+
+    def close(self):
+        self.pubsub.close()
+        self.rcon.connection_pool.disconnect()
+
+
+class SSEResponse(HttpResponse):
+    def __init__(self, rcon_or_url, channels, buffer_key=None,
+                 last_event_id=None, *args, **kwargs):
+        self.listener = Listener(rcon_or_url, channels, buffer_key,
+                                 last_event_id)
+        super(SSEResponse, self).__init__(self.listener,
+                                          mimetype='text/event-stream',
+                                          *args, **kwargs)
+
+    def close(self):
+        """
+        This will be called by the WSGI server at the end of the request, even
+        if the client disconnects midstream.  Unless you're using Django's
+        runserver, in which case you should expect to see Redis connections
+        build up until http://bugs.python.org/issue16220 is fixed.
+        """
+        self.listener.close()
 
 
 def to_sse(msg):
@@ -118,12 +156,22 @@ def to_sse(msg):
     body with time, message, title, tags, and id), return a properly-formatted
     SSE string.
     """
-    # Unfortunately, our SSE msg ID has to be carried inside the inner JSON,
-    # since Redis doesn't natively give us such a field.
     data = json.loads(msg['data'])
-    out = "id: " + data['id']
+
+    # According to the SSE spec, lines beginning with a colon should be
+    # ignored.  We can use that as a way to force zombie listeners to try
+    # pushing something down the socket and clean up their redis connections
+    # when they get an error.
+    # See http://dev.w3.org/html5/eventsource/#event-stream-interpretation
+    if data['message'] == '_flush':
+        return ":\n"  # Administering colonic!
+
+    if 'id' in data:
+        out = "id: " + data['id'] + '\n'
+    else:
+        out = ''
     if 'name' in data:
-        out += '\nname: ' + data['name']
+        out += 'name: ' + data['name'] + '\n'
 
     payload = json.dumps({
         'time': data['time'],
@@ -131,7 +179,7 @@ def to_sse(msg):
         'tags': data['tags'],
         'title': data['title'],
     })
-    out += '\ndata: ' + payload + '\n\n'
+    out += 'data: ' + payload + '\n\n'
     return out
 
 

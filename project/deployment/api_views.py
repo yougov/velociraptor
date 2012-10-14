@@ -167,13 +167,9 @@ def event_stream(request):
     """
     Stream worker events out to browser.
     """
-    # Just make a connection here in the view.  It's probably fine.
-
-    listener = events.Listener(
+    return events.SSEResponse(
         settings.EVENTS_PUBSUB_URL,
         channels=[settings.EVENTS_PUBSUB_CHANNEL],
         buffer_key=settings.EVENTS_BUFFER_KEY,
         last_event_id=request.META.get('HTTP_LAST_EVENT_ID')
     )
-
-    return http.HttpResponse(listener, mimetype='text/event-stream')

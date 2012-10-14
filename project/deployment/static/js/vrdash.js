@@ -435,12 +435,15 @@ VR.Dash.Events = {
 
   onTaskEvent: function(e) {
     var data = JSON.parse(e.data);
-    data.time = new Date(data.time);
-    data.prettytime = data.time.format("mm/dd HH:MM:ss");
-    data.id = e.lastEventId;
-    data.classtags = data.tags.join(' ');
-    var evmodel = new VREvent(data);
-    this.collection.add(evmodel);
+    // Messages may be hidden. 
+    if (!_.contains(data.tags, 'hidden')) {
+      data.time = new Date(data.time);
+      data.prettytime = data.time.format("mm/dd HH:MM:ss");
+      data.id = e.lastEventId;
+      data.classtags = data.tags.join(' ');
+      var evmodel = new VREvent(data);
+      this.collection.add(evmodel);
+    }
   }
 };
 

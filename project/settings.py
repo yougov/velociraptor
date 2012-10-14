@@ -6,6 +6,8 @@ if 'runserver' in sys.argv:
     import gevent_psycopg2
     gevent_psycopg2.monkey_patch()
 
+from socket import getfqdn
+
 from datetime import timedelta
 import os
 import warnings
@@ -35,6 +37,8 @@ ADMINS = (
 )
 
 MANAGERS = ADMINS
+SERVER_EMAIL = 'velociraptor@' + getfqdn()
+CELERY_SEND_TASK_ERROR_EMAILS = True
 
 DATABASES = {
     'default': {
