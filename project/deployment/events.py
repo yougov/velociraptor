@@ -101,17 +101,6 @@ class Listener(object):
             sender.publish('_flush', tags=['hidden'])
 
     def __iter__(self):
-        # stream out at least one dummy message so browsers don't complain
-        # about getting nothing.
-        #yield to_sse({'data': json.dumps({
-            #'name': 'up',
-            #'message': 'up',
-            #'tags': ['up'],
-            #'time': datetime.datetime.utcnow().isoformat(),
-            #'title': 'up',
-            #'id': uuid.uuid1().hex,
-        #})})
-
         # If we've been initted with a buffer key, then get all the events off
         # that and spew them out before blocking on the pubsub.
         if self.buffer_key:
