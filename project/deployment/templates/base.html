@@ -173,6 +173,25 @@
 </script>
 {# /GOATEE TEMPLATES #}
 
+
+<script>
+{# build some URLs from Django.  vrdash.js and other scripts rely on these #}
+(function () {
+    var root = this;
+    var urls = root.VR.Urls = {};
+    urls.hosts = '{% url api_hosts %}';
+    urls.all_hosts = '{% url api_all_hosts %}';
+    urls.active_hosts = '{% url api_active_hosts %}';
+    urls.events = '{% url api_events %}';
+    urls.host_changes = '{% url api_host_changes %}';
+
+    urls.getProcs = function(hostname) {
+        return urls.hosts + hostname + '/procs/';
+    };
+}).call(this);
+</script>
+
 {% block script %}{% endblock script %}
+
 </body>
 </html>

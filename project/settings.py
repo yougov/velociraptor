@@ -57,11 +57,16 @@ BALANCERS = {
     }
 }
 
+
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-        'LOCATION': 'raptor_cache',
-    }
+        'BACKEND': 'redis_cache.RedisCache',
+        'LOCATION': 'localhost:6379',
+        'KEY_PREFIX': 'vrcache_',
+        'OPTIONS': {
+            'DB': 0,
+        },
+    },
 }
 
 # UI Customization.  It's good to make your non-production instances look
@@ -97,9 +102,12 @@ CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 # A redis pubsub where worker procs can push events, and our fancy schmancy SSE
 # streaming event views can push them out to browsers.
 EVENTS_PUBSUB_URL = 'redis://localhost:6379/0'
-EVENTS_PUBSUB_CHANNEL = 'velociraptor_events'
-EVENTS_BUFFER_KEY = 'velociraptor_events_buffer'
+EVENTS_PUBSUB_CHANNEL = 'vr_events'
+EVENTS_BUFFER_KEY = 'vr_events_buffer'
 EVENTS_BUFFER_LENGTH = 100
+
+HOST_EVENTS_CHANNEL = 'vr_host_events'
+HOST_EVENTS_BUFFER = 'vr_host_events_buffer'
 
 CELERYBEAT_SCHEDULE = {
     'scooper': {
@@ -213,7 +221,8 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'djcelery',
     'django_extensions',
-    'deployment',  # Our main velociraptor app
+    'deployment',   # Velociraptor UI
+    'api',          # Velociraptor API
     'south',
     'reversion'
 )

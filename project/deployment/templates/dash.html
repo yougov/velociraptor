@@ -54,14 +54,14 @@
 
 
 <script>
-$(document).ready(function(){
+  $(document).ready(function(){
   VR.Dash.Events.init(
-    '{% url api_event_stream %}', 
+    VR.Urls.events, 
     'events-list'
   );
   VR.Dash.Apps = new AppList($('#dash-apps'));
   VR.Dash.getHostList();
-
+  VR.Dash.init(VR.Urls.host_changes);
 });
 </script>
 {% endblock script %}

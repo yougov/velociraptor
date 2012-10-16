@@ -3,6 +3,7 @@ Django==1.4
 django-celery==3.0.4
 django-extensions==0.7.1
 django-picklefield==0.2.0
+django-redis-cache==0.9.5
 django-reversion==1.6.1
 django-yamlfield==0.2
 Fabric==1.4.0

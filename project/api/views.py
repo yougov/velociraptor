@@ -2,9 +2,9 @@ import xmlrpclib
 import base64
 from functools import wraps
 
-from djcelery.models import TaskState
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
+from django.core.cache import cache
 from django import http
 from django.conf import settings
 
@@ -57,21 +57,32 @@ def host(request):
 
 @auth_required
 def host_procs(request, hostname):
-    """Display status of all supervisord-managed processes on a single host, in
-    JSON"""
+    """
+    Display status of all supervisord-managed processes on a single host, in
+    JSON
+    """
+    return utils.json_response(
+        models.Host.objects.get(name=hostname).get_apidata()
+    )
 
-    host = models.Host.objects.get(name=hostname)
-    # TODO: use Cache-Control header to determine whether to pass use_cache
-    # into procdata()
-    data = host.procdata(use_cache=True)
 
-    # add in the hostname
-    data['host'] = host.name
+@auth_required
+def all_hosts(request):
+    data = {
+        'hosts': [h.get_apidata() for h in models.Host.objects.all()],
+    }
+    return utils.json_response(data)
 
-    # add in things parsed from each procname
-    data['procs'] = [models.make_proc(p['name'], host, p).as_dict() for p in
-                     data['procs']]
 
+@auth_required
+def active_hosts(request):
+    data = cache.get('active_procdata')
+    if data is None:
+        data = {
+            'hosts': [h.get_apidata(use_cache=False) for h in
+                      models.Host.objects.filter(active=True)],
+        }
+        cache.set('active_procdata', data, 30)
     return utils.json_response(data)
 
 
@@ -127,24 +138,6 @@ def host_proc(request, hostname, procname):
 
 
 @auth_required
-def task_recent(request):
-    count = int(request.GET.get('count') or 20)
-    # XXX HACK.  We're hiding tasks whose function names start with an
-    # underscore, by using a kinda kludgy filter in the query.  Seems to keep
-    # the task spam from repetitive things down, though.
-    return utils.json_response({'tasks': [utils.task_to_dict(t) for t in
-                                          TaskState.objects.exclude(name__contains='._')[:count]]})
-
-
-@auth_required
-def task_status(request, task_id):
-    status = utils.get_task_status(task_id)
-    status['id'] = task_id
-
-    return utils.json_response(status)
-
-
-@auth_required
 def uptest_run(request, run_id):
     run = get_object_or_404(models.TestRun, id=run_id)
     return utils.json_response(run.results)
@@ -167,9 +160,22 @@ def event_stream(request):
     """
     Stream worker events out to browser.
     """
-    return events.SSEResponse(
+    return http.HttpResponse(events.EventListener(
         settings.EVENTS_PUBSUB_URL,
         channels=[settings.EVENTS_PUBSUB_CHANNEL],
         buffer_key=settings.EVENTS_BUFFER_KEY,
         last_event_id=request.META.get('HTTP_LAST_EVENT_ID')
-    )
+    ), mimetype='text/event-stream')
+
+
+@auth_required
+def host_change_stream(request):
+    """
+    Stream host status changes out to browser.
+    """
+    return http.HttpResponse(events.Listener(
+        settings.EVENTS_PUBSUB_URL,
+        channels=[settings.HOST_EVENTS_CHANNEL],
+        buffer_key=settings.HOST_EVENTS_BUFFER,
+        last_event_id=request.META.get('HTTP_LAST_EVENT_ID')
+    ), mimetype='text/event-stream')

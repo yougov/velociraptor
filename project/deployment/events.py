@@ -31,17 +31,13 @@ import logging
 
 import redis
 from django.conf import settings
-from django.http import HttpResponse
 
-from deployment import utils, models
+from deployment import utils
 
 
 class Sender(object):
-    def __init__(self,
-                 rcon_or_url=settings.EVENTS_PUBSUB_URL,
-                 channel=settings.EVENTS_PUBSUB_CHANNEL,
-                 buffer_key=settings.EVENTS_BUFFER_KEY,
-                 buffer_length=getattr(settings, 'EVENTS_BUFFER_LENGTH', 100)):
+    def __init__(self, rcon_or_url, channel, buffer_key=None,
+                 buffer_length=100):
         if isinstance(rcon_or_url, redis.StrictRedis):
             self.rcon = rcon_or_url
         elif isinstance(rcon_or_url, basestring):
@@ -50,35 +46,57 @@ class Sender(object):
         self.buffer_key = buffer_key
         self.buffer_length = buffer_length
 
-    def publish(self, message, name=None, tags=None, title=None):
+    def publish(self, data, msgid=None, event=None):
+        message = self.format(data, msgid, event)
+
+        # Serialize it and stick it on the pubsub
+        self.rcon.publish(self.channel, message)
+
+        # Also stick it on the end of our length-capped list, so consumers can
+        # get a list of recent events as well as seeing current ones.
+        if self.buffer_key:
+            self.rcon.lpush(self.buffer_key, message)
+            self.rcon.ltrim(self.buffer_key, 0, self.buffer_length -
+                                        1)
+
+    def flush(self):
+        self.rcon.publish(self.channel, 'flush')
+
+    def format(self, data, msgid=None, event=None):
+        out = {
+            'id': msgid or uuid.uuid1().hex,
+            'data': data,
+        }
+
+        if event:
+            out['event'] = event
+        return json.dumps(out)
+
+    def close(self):
+        self.rcon.connection_pool.disconnect()
+
+
+class EventSender(Sender):
+
+    def publish(self, message, event=None, tags=None, title=None):
         # Make an object with timestamp, ID, and payload
         data = {
-            'id': uuid.uuid1().hex,
             'time': datetime.datetime.utcnow().isoformat(),
             'message': message,
             'tags': tags or [],
             'title': title or '',
         }
-        if name:
-            data['name'] = name
 
         payload = json.dumps(data)
         # Serialize it and stick it on the pubsub
-        self.rcon.publish(self.channel, payload)
+        super(EventSender, self).publish(payload, event=event)
 
-        # Also stick it on the end of our length-capped list, so consumers can
-        # get a list of recent events as well as seeing current ones.
-        if self.buffer_key:
-            self.rcon.lpush(self.buffer_key, payload)
-            self.rcon.ltrim(self.buffer_key, 0, self.buffer_length -
-                                        1)
+    def close(self):
+        self.rcon.connection_pool.disconnect()
 
 
 class Listener(object):
-    def __init__(self,
-                 rcon_or_url=settings.EVENTS_PUBSUB_URL,
-                 channels=None,
-                 buffer_key=settings.EVENTS_BUFFER_KEY,
+    def __init__(self, rcon_or_url, channels, buffer_key=None,
                  last_event_id=None):
         if isinstance(rcon_or_url, redis.StrictRedis):
             self.rcon = rcon_or_url
@@ -92,95 +110,108 @@ class Listener(object):
         self.pubsub = self.rcon.pubsub()
         self.pubsub.subscribe(channels)
 
+        self.ping()
+
+    def __iter__(self):
+        # If we've been initted with a buffer key, then get all the events off
+        # that and spew them out before blocking on the pubsub.
+
+        for msg in self.get_buffer():
+            parsed = json.loads(msg)
+            # account for earlier version that used 'message'
+            data = parsed.get('data') or parsed.get('message')
+            yield self.format(data, msgid=parsed['id'],
+                              event=parsed.get('event'))
+
+        for msg in self.pubsub.listen():
+            # pubsub msg will be a dict with keys 'pattern', 'type', 'channel',
+            # and 'data'
+            if msg['type'] == 'message':
+                if msg['data'] == 'flush':
+                    yield ':\n'
+                else:
+                    parsed = json.loads(msg['data'])
+                    yield self.format(parsed['data'], msgid=parsed['id'],
+                                      event=parsed.get('event'))
+
+    def ping(self):
         # Send a superfluous message down the pubsub to flush out stale
         # connections.
         for channel in self.channels:
             # Use buffer_key=None since these pings never need to be remembered
             # and replayed.
-            sender = Sender(self.rcon, channel, None)
-            sender.publish('_flush', tags=['hidden'])
+            sender = Sender(self.rcon, channel, buffer_key=None)
+            sender.flush()
 
-    def __iter__(self):
-        # If we've been initted with a buffer key, then get all the events off
-        # that and spew them out before blocking on the pubsub.
-        if self.buffer_key:
-            buffered_events = self.rcon.lrange(self.buffer_key, 0, -1)
+    def get_buffer(self):
+        # Only return anything from buffer if we've been given a last event ID
+        if not (self.buffer_key and self.last_event_id):
+            return []
 
-            # check whether msg with last_event_id is still in buffer.  If so,
-            # trim buffered_events to have only newer messages.
-            if self.last_event_id:
-                # Note that we're looping through most recent messages first,
-                # here
-                counter = 0
-                for msg in buffered_events:
-                    if (json.loads(msg)['id'] == self.last_event_id):
-                        break
-                    counter += 1
-                buffered_events = buffered_events[:counter]
+        buffered_events = self.rcon.lrange(self.buffer_key, 0, -1)
 
-            for msg in reversed(list(buffered_events)):
-                # Stream out oldest messages first
-                yield to_sse({'data': msg})
+        # check whether msg with last_event_id is still in buffer.  If so,
+        # trim buffered_events to have only newer messages.
+        if self.last_event_id:
+            # Note that we're looping through most recent messages first,
+            # here
+            counter = 0
+            for msg in buffered_events:
+                if (json.loads(msg)['id'] == self.last_event_id):
+                    break
+                counter += 1
+            buffered_events = buffered_events[:counter]
 
-        for msg in self.pubsub.listen():
-            if msg['type'] == 'message':
-                yield to_sse(msg)
+        # Return oldest messages first
+        return reversed(list(buffered_events))
 
-    def close(self):
-        self.pubsub.close()
-        self.rcon.connection_pool.disconnect()
+    def format(self, data, msgid=None, retry=None, event=None):
 
-
-class SSEResponse(HttpResponse):
-    def __init__(self, rcon_or_url, channels, buffer_key=None,
-                 last_event_id=None, *args, **kwargs):
-        self.listener = Listener(rcon_or_url, channels, buffer_key,
-                                 last_event_id)
-        super(SSEResponse, self).__init__(self.listener,
-                                          mimetype='text/event-stream',
-                                          *args, **kwargs)
-
-    def close(self):
-        """
-        This will be called by the WSGI server at the end of the request, even
-        if the client disconnects midstream.  Unless you're using Django's
-        runserver, in which case you should expect to see Redis connections
-        build up until http://bugs.python.org/issue16220 is fixed.
-        """
-        self.listener.close()
-
-
-def to_sse(msg):
-    """
-    Given a Redis pubsub message that was published by a Sender (ie, has a JSON
-    body with time, message, title, tags, and id), return a properly-formatted
-    SSE string.
-    """
-    data = json.loads(msg['data'])
-
-    # According to the SSE spec, lines beginning with a colon should be
-    # ignored.  We can use that as a way to force zombie listeners to try
-    # pushing something down the socket and clean up their redis connections
-    # when they get an error.
-    # See http://dev.w3.org/html5/eventsource/#event-stream-interpretation
-    if data['message'] == '_flush':
-        return ":\n"  # Administering colonic!
-
-    if 'id' in data:
-        out = "id: " + data['id'] + '\n'
-    else:
         out = ''
-    if 'name' in data:
-        out += 'name: ' + data['name'] + '\n'
 
-    payload = json.dumps({
-        'time': data['time'],
-        'message': data['message'],
-        'tags': data['tags'],
-        'title': data['title'],
-    })
-    out += 'data: ' + payload + '\n\n'
-    return out
+        if msgid:
+            out += 'id: %s\n' % msgid
+        if retry:
+            out += 'retry: %s\n' % retry
+        if event:
+            out += 'event: %s\n' % event
+
+        # data comes last.  It may be str or an iterable representing multiple
+        # lines
+        if isinstance(data, basestring):
+            out += 'data: %s\n' % data
+        else:
+            out += '\n'.join('data: %s' % l for l in data) + '\n'
+        out += '\n'
+        return out
+
+
+class EventListener(Listener):
+    """
+    Listener with special buffer behavior.  If no last_event_id is provided,
+    then default to playing back the whole buffer.
+    """
+
+    def get_buffer(self):
+        if not (self.buffer_key):
+            return []
+
+        buffered_events = self.rcon.lrange(self.buffer_key, 0, -1)
+
+        # check whether msg with last_event_id is still in buffer.  If so,
+        # trim buffered_events to have only newer messages.
+        if self.last_event_id:
+            # Note that we're looping through most recent messages first,
+            # here
+            counter = 0
+            for msg in buffered_events:
+                if (json.loads(msg)['id'] == self.last_event_id):
+                    break
+                counter += 1
+            buffered_events = buffered_events[:counter]
+
+        # Return oldest messages first
+        return reversed(list(buffered_events))
 
 
 # Not a view!
@@ -191,6 +222,7 @@ def eventify(user, action, obj):
     """
     fragment = '%s %s' % (action, obj)
     # create a log entry
+    from deployment import models
     logentry = models.DeploymentLogEntry(
         type=action,
         user=user,
@@ -204,10 +236,9 @@ def eventify(user, action, obj):
     # put a message on the pubsub.  Just make a new redis connection when you
     # need to do this.  This is a lot lower traffic than doing a connection per
     # request.
-    rcon = redis.StrictRedis(
-        **utils.parse_redis_url(settings.EVENTS_PUBSUB_URL)
-    )
-    sender = Sender(rcon, settings.EVENTS_PUBSUB_CHANNEL,
-                           settings.EVENTS_BUFFER_KEY)
+    sender = EventSender(
+        settings.EVENTS_PUBSUB_URL,
+        settings.EVENTS_PUBSUB_CHANNEL,
+        settings.EVENTS_BUFFER_KEY)
     sender.publish(message, tags=['user', action], title=message)
-    rcon.connection_pool.disconnect()
+    sender.close()

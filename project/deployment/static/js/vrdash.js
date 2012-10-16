@@ -5,6 +5,23 @@
 // DASH //
 VR.Dash = {};
 
+VR.Dash.Options = {
+    refreshInterval: 60000
+};
+
+VR.Dash.init = function(stream_url) {
+    // bind stream to handler
+    var stream = new EventSource(stream_url);
+    stream.onmessage = $.proxy(VR.Dash.onHostChange, this);
+  };
+
+VR.Dash.onHostChange = function(e) {
+    // when we get a host change event from the SSE stream, parse its JSON and
+    // call our normal 'on host data' function.
+    var hostdata = JSON.parse(e.data);
+    VR.Dash.onHostData(hostdata);
+};
+
 
 Proc = Backbone.Model.extend({
     initialize: function() {
@@ -295,23 +312,37 @@ AppView = Backbone.View.extend({
 });
 
 VR.Dash.getHostList = function() {
-  $.getJSON('/api/hosts/', VR.Dash.onHostList);
+  $.getJSON(VR.Urls.hosts, VR.Dash.onHostList);
 };
 
 VR.Dash.onHostList = function(data, stat, xhr) {
    _.each(data.hosts, function(el) {
-     $.getJSON('/api/hosts/' + el + '/procs/', VR.Dash.onHostData);
+       $.getJSON(VR.Urls.getProcs(el), VR.Dash.onHostData);
    });
 
-   setTimeout(VR.Dash.getHostList, 5000);
+   setTimeout(VR.Dash.getHostList, VR.Dash.Options.refreshInterval);
 };
 
 
 VR.Dash.onHostData = function(data, stat, xhr) {
+  // This function serves double duty.  When requesting data on an individual
+  // host, this can be used as the AJAX callback.  When requesting data for all
+  // hosts, you can loop over all of them and pass the data into this function
+  // in order to get all its procs rendered.
   _.each(data.procs, VR.Dash.updateProcData);
 
   // cull any old procs
   VR.Dash.Apps.cull(data.host, data.time);
+};
+
+VR.Dash.getActiveHostData = function() {
+  $.getJSON(VR.Urls.active_hosts, VR.Dash.onActiveHostData);
+};
+
+VR.Dash.onActiveHostData = function(data, stat, xhr) {
+  _.each(data.hosts, function(el, idx, list) {
+    VR.Dash.onHostData(el);
+  });
 };
 
 VR.Dash.updateProcData = function(data) {
@@ -389,7 +420,6 @@ VREventDetailView = Backbone.View.extend({
       this.$el.modal('show');
     },
     onRemove: function() {
-      console.log('removing modal');
       this.$el.remove();
     }
 });
@@ -424,7 +454,7 @@ VR.Dash.Events = {
   init: function(stream_url, container_id) {
     // bind stream to handler
     this.stream = new EventSource(stream_url);
-    this.stream.onmessage = $.proxy(this.onTaskEvent, this);
+    this.stream.onmessage = $.proxy(this.onEvent, this);
 
     this.collection = new VREvents();
     this.listview = new VREventsView(
@@ -433,7 +463,7 @@ VR.Dash.Events = {
     );
   },
 
-  onTaskEvent: function(e) {
+  onEvent: function(e) {
     var data = JSON.parse(e.data);
     // Messages may be hidden. 
     if (!_.contains(data.tags, 'hidden')) {
@@ -446,4 +476,3 @@ VR.Dash.Events = {
     }
   }
 };
-

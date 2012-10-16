@@ -45,25 +45,7 @@ urlpatterns = patterns('',
     url(r'^logout/$', 'deployment.views.logout', name='logout'),
     url(r'^admin/', include(admin.site.urls)),
 
-    # JSON API routes
-    url(r'^api/hosts/$',
-        'deployment.api_views.host', name='api_host'),
-    url(r'^api/hosts/(?P<hostname>[a-zA-Z0-9_.-]+)/ports/$',
-        'deployment.api_views.host_ports', name='api_host_ports'),
-    url(r'^api/hosts/(?P<hostname>[a-zA-Z0-9_.-]+)/procs/$',
-        'deployment.api_views.host_procs', name='api_host_procs'),
-    url(r'^api/hosts/(?P<hostname>[a-zA-Z0-9_.-]+)/procs/(?P<procname>[a-zA-Z0-9_.-]+)/$',
-        'deployment.api_views.host_proc', name='api_host_proc'),
-    url(r'^api/task/$', 'deployment.api_views.task_recent',
-        name='api_task_recent'),
-    url(r'^api/task/(?P<task_id>[a-zA-Z0-9_.-]+)/$',
-        'deployment.api_views.task_status', name='api_task'),
-    url(r'^api/uptest/latest/$',
-        'deployment.api_views.uptest_latest', name='api_uptest_latest'),
-    url(r'^api/uptest/(?P<run_id>\d+)/$',
-        'deployment.api_views.uptest_run', name='api_uptest_run'),
-    url(r'^api/events/', 'deployment.api_views.event_stream',
-        name='api_event_stream'),
+    url(r'^api/', include('api.urls')),
 )
 
 urlpatterns += staticfiles_urlpatterns()

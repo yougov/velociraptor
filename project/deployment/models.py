@@ -1,6 +1,6 @@
 import xmlrpclib
-import logging
 import hashlib
+import json
 from copy import copy
 
 from django.db import models
@@ -15,6 +15,7 @@ from django.utils import timezone
 import yaml
 
 from deployment.fields import YAMLDictField
+from deployment import events
 
 
 LOG_ENTRY_TYPES = (
@@ -27,6 +28,7 @@ LOG_ENTRY_TYPES = (
 def no_spaces(value):
     if ' ' in value:
         raise ValidationError(u'spaces not allowed')
+
 
 def no_dashes(value):
     if '-' in value:
@@ -241,7 +243,7 @@ class Host(models.Model):
         url = 'http://%s:%s' % (self.name, settings.SUPERVISOR_PORT)
         return xmlrpclib.Server(url).supervisor
 
-    def procdata(self, use_cache=False):
+    def procdata(self, use_cache=False, publish=True):
         key = self.name + '_procdata'
         data = None
         if use_cache:
@@ -260,6 +262,31 @@ class Host(models.Model):
                 p['time'] = now
 
         cache.set(key, data, 30)
+
+        if publish:
+            s = events.Sender(
+                settings.EVENTS_PUBSUB_URL,
+                settings.HOST_EVENTS_CHANNEL,
+                buffer_key=settings.HOST_EVENTS_BUFFER,
+            )
+            s.publish(json.dumps(self.get_apidata(data)))
+        return data
+
+    def get_apidata(self, data=None, use_cache=True):
+        """
+        Return a JSON-friendly dict to use for showing this Host's data
+        (including procs) in API views.
+        """
+        # TODO: use Cache-Control header to determine whether to pass use_cache
+        # into procdata()
+        data = data or self.procdata(use_cache=use_cache)
+
+        # add in the hostname
+        data['host'] = self.name
+
+        # add in things parsed from each procname
+        data['procs'] = [make_proc(p['name'], self, p).as_dict() for p in
+                         data['procs']]
         return data
 
     def get_used_ports(self):
