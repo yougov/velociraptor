@@ -57,17 +57,19 @@ BALANCERS = {
     }
 }
 
-
-CACHES = {
-    'default': {
-        'BACKEND': 'redis_cache.RedisCache',
-        'LOCATION': 'localhost:6379',
-        'KEY_PREFIX': 'vrcache_',
-        'OPTIONS': {
-            'DB': 0,
+# Without this, the build host will choke when trying to connect to a local
+# redis that doesn't exist.
+if 'collectstatic' not in sys.argv:
+    CACHES = {
+        'default': {
+            'BACKEND': 'redis_cache.RedisCache',
+            'LOCATION': 'localhost:6379',
+            'KEY_PREFIX': 'vrcache_',
+            'OPTIONS': {
+                'DB': 0,
+            },
         },
-    },
-}
+    }
 
 # UI Customization.  It's good to make your non-production instances look
 # different from production.
