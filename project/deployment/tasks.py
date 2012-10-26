@@ -6,6 +6,8 @@ import posixpath
 import datetime
 import contextlib
 import re
+import traceback
+import functools
 from collections import defaultdict
 
 import yaml
@@ -40,64 +42,82 @@ def send_event(title, msg, tags=None):
     sender.close()
 
 
+class event_on_exception(object):
+    """
+    Decorator that puts a message on the pubsub for any exception raised in the
+    decorated function.
+    """
+    def __init__(self, tags=None):
+        self.tags = tags or []
+        self.tags.append('failed')
+
+    def __call__(self, func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                func(*args, **kwargs)
+            except Exception as e:
+                send_event(title=str(e), msg=traceback.format_exc(),
+                           tags=self.tags)
+                raise
+        return wrapper
+
+
 @task
+@event_on_exception(['deploy'])
 def deploy(release_id, recipe_name, hostname, proc, port):
-    try:
-        with remove_port_lock(hostname, port):
-            release = Release.objects.get(id=release_id)
-            msg_title = '%s-%s-%s -> %s' % (release, proc, port, hostname)
-            logging.info('beginning deploy of %s-%s-%s to %s' % (release, proc,
-                                                                 port,
-                                                                 hostname))
-            send_event(title=msg_title, msg='deploying %s-%s-%s to %s' %
-                  (release, proc, port, hostname), tags=['deploy'])
+    with remove_port_lock(hostname, port):
+        release = Release.objects.get(id=release_id)
+        msg_title = '%s-%s-%s -> %s' % (release, proc, port, hostname)
+        logging.info('beginning deploy of %s-%s-%s to %s' % (release, proc,
+                                                             port,
+                                                             hostname))
+        send_event(title=msg_title, msg='deploying %s-%s-%s to %s' %
+              (release, proc, port, hostname), tags=['deploy'])
 
-            assert release.build.file, "Build %s has no file" % release.build
-            assert release.hash, "Release %s has not been hashed" % release
+        assert release.build.file, "Build %s has no file" % release.build
+        assert release.hash, "Release %s has not been hashed" % release
 
-            # Set up env for Fabric
-            env.host_string = hostname
-            env.abort_on_prompts = True
-            env.task = deploy
-            env.user = settings.DEPLOY_USER
-            env.password = settings.DEPLOY_PASSWORD
-            env.linewise = True
+        # Set up env for Fabric
+        env.host_string = hostname
+        env.abort_on_prompts = True
+        env.task = deploy
+        env.user = settings.DEPLOY_USER
+        env.password = settings.DEPLOY_PASSWORD
+        env.linewise = True
 
-            with tmpdir():
-                f = open('settings.yaml', 'wb')
-                f.write(release.config)
-                f.close()
-                # pull the build out of gridfs, write it to a temporary location,
-                # and deploy it.
-                build_name = posixpath.basename(release.build.file.name)
-                local_build = open(build_name, 'wb')
-                build = default_storage.open(release.build.file.name)
-                local_build.write(build.read())
+        with tmpdir():
+            f = open('settings.yaml', 'wb')
+            f.write(release.config)
+            f.close()
+            # pull the build out of gridfs, write it to a temporary location,
+            # and deploy it.
+            build_name = posixpath.basename(release.build.file.name)
+            local_build = open(build_name, 'wb')
+            build = default_storage.open(release.build.file.name)
+            local_build.write(build.read())
 
-                local_build.close()
-                build.close()
+            local_build.close()
+            build.close()
 
-                proc_user = getattr(settings, 'PROC_USER', 'nobody')
+            proc_user = getattr(settings, 'PROC_USER', 'nobody')
 
-                with always_disconnect():
-                    deploy_parcel(build_name,
-                                  'settings.yaml',
-                                  recipe_name,
-                                  proc,
-                                  port,
-                                  proc_user,
-                                  release.hash,
-                                  use_syslog=getattr(settings, 'PROC_SYSLOG',
-                                                     False))
+            with always_disconnect():
+                deploy_parcel(build_name,
+                              'settings.yaml',
+                              recipe_name,
+                              proc,
+                              port,
+                              proc_user,
+                              release.hash,
+                              use_syslog=getattr(settings, 'PROC_SYSLOG',
+                                                 False))
 
-        _update_host_cache(hostname)
-    except:
-        send_event(title=msg_title, msg='error in deploy of %s-%s-%s to %s' %
-              (release, proc, port, hostname), tags=['deploy', 'failed'])
-        raise
+    _update_host_cache(hostname)
 
 
 @task
+@event_on_exception(['build'])
 def build_hg(build_id, callback=None):
     # call the assemble_hg function.
     build = Build.objects.get(id=build_id)
@@ -126,11 +146,6 @@ def build_hg(build_id, callback=None):
             build.status = 'success'
             send_event(str(build), "Completed build %s" % build, tags=['build',
                                                                   'success'])
-        except:
-            build.status = 'failed'
-            send_event(str(build), "Build %s failed" % build, tags=['build',
-                                                               'failed'])
-            raise
         finally:
             build.save()
 
@@ -152,6 +167,7 @@ def update_tags():
 
 
 @task
+@event_on_exception(['proc', 'deleted'])
 def delete_proc(host, proc, callback=None):
     env.host_string = host
     env.abort_on_prompts = True
@@ -315,7 +331,7 @@ def swarm_post_deploy(deploy_results, swarm_id):
     if any(isinstance(r, Exception) for r in deploy_results):
         swarm = Swarm.objects.get(id=swarm_id)
         msg = "Error in deployments for swarm %s" % swarm
-        send_event('DEPLOY ERROR', msg, tags=['failed'])
+        send_event('Swarm %s aborted' % swarm, msg, tags=['failed'])
         raise Exception(msg)
 
     swarm_assign_uptests(swarm_id)
