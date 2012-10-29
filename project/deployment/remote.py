@@ -58,7 +58,7 @@ def upload_release(build_path, config_path, release_path, user='nobody'):
     colors.green('Uploading config')
     # If we let Fabric upload settings.yaml, it might step on its own toes when
     # there are simultaneous deployments.  So handle that ourselves.
-    with SSHConnection(env.host, env.user, env.password) as ssh:
+    with SSHConnection(env.host_string, env.user, env.password) as ssh:
         ssh.put_file(config_path, posixpath.join(release_path,
                                                  'settings.yaml'), owner=user)
 

@@ -484,10 +484,11 @@ def swarm_post_uptest(uptest_results, swarm_id):
             correct_nodes.add('%s:%s' % (host, procname.split('-')[-1]))
 
     callback = swarm_cleanup.subtask((swarm_id,))
-    swarm_route(swarm_id, list(correct_nodes), callback)
+    swarm_route.delay(swarm_id, list(correct_nodes), callback)
 
 
 @task
+@event_on_exception(['route'])
 def swarm_route(swarm_id, correct_nodes, callback=None):
     """
     Given a list of nodes for the current swarm, make sure those nodes and
