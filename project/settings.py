@@ -13,6 +13,7 @@ import os
 import warnings
 
 import djcelery
+from celery.schedules import crontab
 import pymongo
 
 
@@ -122,6 +123,13 @@ CELERYBEAT_SCHEDULE = {
     'test_all_the_things': {
         'task': 'deployment.tasks.uptest_all_procs',
         'schedule': timedelta(minutes=30),
+        'options': {
+            'expires': 120,
+        },
+    },
+    'clean_old_builds': {
+        'task': 'deployment.tasks.clean_old_builds',
+        'schedule': crontab(hour=2),
         'options': {
             'expires': 120,
         },
