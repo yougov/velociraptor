@@ -1,6 +1,7 @@
 import xmlrpclib
 import hashlib
 import json
+import datetime
 from copy import copy
 
 from django.db import models
@@ -159,12 +160,35 @@ class Build(models.Model):
     status = models.CharField(max_length=20, choices=build_status_choices,
                               default='pending')
 
+    def is_usable(self):
+        return self.file.name and self.status == 'success'
+
+    def in_progress(self):
+        if self.status not in ('pending', 'started'):
+            return False
+
+        if self.end_time or not self.start_time:
+            # If build ended, or never started, then it's not in progress
+            return False
+
+        # settings.BUILD_WAIT_AGE is the max number of seconds between starting
+        # a build and considering that it must have failed because it's been so
+        # long since hearing from it.  Defaults to one hour.
+        max_age = getattr(settings, 'BUILD_WAIT_AGE', 3600)
+        min_start = timezone.now() - datetime.timedelta(0, max_age, 0)
+        if self.start_time < min_start:
+            return False
+
+        return True
+
     def __unicode__(self):
         # Return the app name and version
         return u'-'.join([self.app.name, self.tag])
 
     class Meta:
         ordering = ['-id']
+
+
 
 
 class Release(models.Model):

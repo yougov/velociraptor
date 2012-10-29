@@ -223,6 +223,10 @@ th.rowlabel {
   content: "\f017"; /* clock icon */
 }
 
+.wait .event-icon::before {
+  content: "\f017"; /* clock icon */
+}
+
 .warning .event-icon::before {
   content: "\f071"; /* warning icon */
   color: #fc0;

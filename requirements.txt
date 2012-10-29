@@ -13,6 +13,7 @@ gunicorn==0.14.6
 keyring==0.7.1
 mongoscheduler==0.0.1
 Paver==1.0.5
+paramiko==1.8.0
 psycopg2==2.4.4
 pymongo==2.1.1
 redis==2.6.2

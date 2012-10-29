@@ -12,6 +12,7 @@ from collections import defaultdict
 
 import yaml
 import fabric.network
+import redis
 from celery.task import subtask, chord, task
 from fabric.api import env
 from django.core.files.storage import default_storage
@@ -20,11 +21,9 @@ from django.utils import timezone
 
 from deployment.models import (Release, Build, Swarm, Host, PortLock, App,
                                TestRun, TestResult)
-from deployment import balancer, events
-
-from yg.deploy.fabric.system import (deploy_parcel, run_uptests,
-                                     clean_releases, delete_proc as
-                                     fab_delete_proc)
+from deployment import balancer, events, utils
+from deployment.remote import (deploy_parcel, run_uptests, clean_releases,
+                               delete_proc as fab_delete_proc)
 from yg.deploy.paver import build as paver_build
 
 
@@ -57,9 +56,11 @@ class event_on_exception(object):
             try:
                 func(*args, **kwargs)
             except Exception as e:
-                send_event(title=str(e), msg=traceback.format_exc(),
-                           tags=self.tags)
-                raise
+                try:
+                    send_event(title=str(e), msg=traceback.format_exc(),
+                               tags=self.tags)
+                finally:
+                    raise
         return wrapper
 
 
@@ -92,10 +93,10 @@ def deploy(release_id, recipe_name, hostname, proc, port):
             f.close()
             # pull the build out of gridfs, write it to a temporary location,
             # and deploy it.
-            build_name = posixpath.basename(release.build.file.name)
-            local_build = open(build_name, 'wb')
+            build_filename = posixpath.basename(release.build.file.name)
+            local_build = open(build_filename, 'wb')
             build = default_storage.open(release.build.file.name)
-            local_build.write(build.read())
+            local_build.write(release.build.file.read())
 
             local_build.close()
             build.close()
@@ -103,7 +104,7 @@ def deploy(release_id, recipe_name, hostname, proc, port):
             proc_user = getattr(settings, 'PROC_USER', 'nobody')
 
             with always_disconnect():
-                deploy_parcel(build_name,
+                deploy_parcel(build_filename,
                               'settings.yaml',
                               recipe_name,
                               proc,
@@ -153,6 +154,9 @@ def build_hg(build_id, callback=None):
     if callback is not None:
         subtask(callback).delay()
 
+    # If there were any other swarms waiting on this build, kick them off
+    build_start_waiting_swarms(build.id)
+
 
 @task
 def update_tags():
@@ -184,6 +188,29 @@ def delete_proc(host, proc, callback=None):
     _update_host_cache(host)
 
 
+def swarm_wait_for_build(swarm, build):
+    """
+    Given a swarm ID that you want to have swarmed ASAP, and a build ID that
+    the swarm is waiting to finish, push the swarm's ID onto the build's
+    waiting list.
+    """
+    msg = 'Swarm %s waiting for completion of build %s' % (swarm, build)
+    send_event('%s waiting' % swarm, msg, ['wait'])
+    with tmpredis() as r:
+        key = getattr(settings, 'BUILD_WAIT_PREFIX', 'buildwait_') + str(build.id)
+        r.lpush(key, swarm.id)
+        r.expire(key, getattr(settings, 'BUILD_WAIT_AGE', 3600))
+
+
+def build_start_waiting_swarms(build_id):
+    with tmpredis() as r:
+        key = getattr(settings, 'BUILD_WAIT_PREFIX', 'buildwait_') + str(build_id)
+        swarm_id = r.lpop(key)
+        while swarm_id:
+            swarm_start.delay(swarm_id)
+            swarm_id = r.lpop(key)
+
+
 @task
 def swarm_start(swarm_id):
     """
@@ -191,12 +218,16 @@ def swarm_start(swarm_id):
     deployed.
     """
     swarm = Swarm.objects.get(id=swarm_id)
-
-    # is there a build for this app and tag?  If so, call next step.  If not,
-    # build it, then call next step.
     build = swarm.release.build
-    if build.file.name:
+
+    if build.is_usable():
+        # Build is good.  Do a release.
         swarm_release.delay(swarm_id)
+    elif build.in_progress():
+        # Another swarm call already started a build for this app/tag.  Instead
+        # of starting a duplicate, just push the swarm ID onto the build's
+        # waiting list.
+        swarm_wait_for_build(swarm, build)
     else:
         callback = swarm_release.subtask((swarm.id,))
         build_hg.delay(build.id, callback)
@@ -667,6 +698,16 @@ class tmpdir(object):
     def __exit__(self, type, value, traceback):
         os.chdir(self.orig_path)
         shutil.rmtree(self.temp_path, ignore_errors=True)
+
+
+class tmpredis(object):
+    def __enter__(self):
+        self.conn = redis.StrictRedis(
+            **utils.parse_redis_url(settings.EVENTS_PUBSUB_URL))
+        return self.conn
+
+    def __exit__(self, type, value, tb):
+        self.conn.connection_pool.disconnect()
 
 
 class remove_port_lock(object):
