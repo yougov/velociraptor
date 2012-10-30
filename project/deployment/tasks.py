@@ -147,6 +147,9 @@ def build_hg(build_id, callback=None):
             build.status = 'success'
             send_event(str(build), "Completed build %s" % build, tags=['build',
                                                                   'success'])
+        except:
+            build.status = 'failed'
+            raise
         finally:
             build.save()
 
