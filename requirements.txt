@@ -1,4 +1,5 @@
 baton==0.1.5
+celery-schedulers==0.0.2
 Django==1.4
 django-celery==3.0.4
 django-extensions==0.7.1
@@ -11,7 +12,6 @@ gevent==0.13.8
 gevent-psycopg2==0.0.3
 gunicorn==0.14.6
 keyring==0.7.1
-mongoscheduler==0.0.1
 Paver==1.0.5
 paramiko==1.8.0
 psycopg2==2.4.4

@@ -94,8 +94,8 @@ warnings.filterwarnings('ignore', category=UserWarning,
 MONGODB_URL = 'mongodb://localhost/velociraptor'
 
 CELERY_ENABLE_UTC = True
-CELERYBEAT_SCHEDULER = 'mongoscheduler.MongoScheduler'
-CELERY_MONGO_SCHEDULER_URI = 'mongodb://localhost:27017/velociraptor.scheduler'
+CELERYBEAT_SCHEDULER = 'celery_schedulers.redis_scheduler.RedisScheduler'
+CELERYBEAT_SCHEDULE_FILENAME = 'redis://localhost:6379/0'
 
 # Use Redis broker and results backend by default.  The RabbitMQ one isn't as
 # nice for chords.
