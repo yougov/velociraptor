@@ -66,7 +66,7 @@ class event_on_exception(object):
 
 @task
 @event_on_exception(['deploy'])
-def deploy(release_id, recipe_name, hostname, proc, port):
+def deploy(release_id, recipe_name, hostname, proc, port, chroot=False):
     with remove_port_lock(hostname, port):
         release = Release.objects.get(id=release_id)
         msg_title = '%s-%s-%s -> %s' % (release, proc, port, hostname)
@@ -112,7 +112,8 @@ def deploy(release_id, recipe_name, hostname, proc, port):
                               proc_user,
                               release.hash,
                               use_syslog=getattr(settings, 'PROC_SYSLOG',
-                                                 False))
+                                                 False),
+                              chroot=chroot)
 
     _update_host_cache(hostname)
 
@@ -193,9 +194,9 @@ def delete_proc(host, proc, callback=None):
 
 def swarm_wait_for_build(swarm, build):
     """
-    Given a swarm ID that you want to have swarmed ASAP, and a build ID that
-    the swarm is waiting to finish, push the swarm's ID onto the build's
-    waiting list.
+    Given a swarm that you want to have swarmed ASAP, and a build that the
+    swarm is waiting to finish, push the swarm's ID onto the build's waiting
+    list.
     """
     msg = 'Swarm %s waiting for completion of build %s' % (swarm, build)
     send_event('%s waiting' % swarm, msg, ['wait'])

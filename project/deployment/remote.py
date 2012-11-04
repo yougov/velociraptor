@@ -10,7 +10,6 @@ import traceback
 import tempfile
 import shutil
 import hashlib
-import pkg_resources
 import paramiko
 import random
 import string
@@ -21,10 +20,12 @@ from fabric.contrib import files
 from fabric import colors
 from fabric.context_managers import settings
 
-# TODO: make these passed in so we can have a separate library of deployment
-# tools that's free of YouGov-isms
+# TODO: Change these to /apps/ so that we don't have YG-isms in the code and
+# can more safely bind-mount /opt into app environments.  It's tricky, because
+# cleanup code will have to check both the old and new locations when it runs.
 PROCS_ROOT = '/opt/yg/procs'
 RELEASES_ROOT = '/opt/yg/releases'
+CHROOT_MOUNTS = ('/bin', '/dev', '/etc', '/lib', '/lib64', '/opt', '/usr')
 
 
 @task
@@ -70,8 +71,10 @@ class chdir(object):
     def __init__(self, folder):
         self.orig_path = os.getcwd()
         self.temp_path = folder
+
     def __enter__(self):
         os.chdir(self.temp_path)
+
     def __exit__(self, type, value, traceback):
         os.chdir(self.orig_path)
 
@@ -95,115 +98,165 @@ def _quotevar(val):
     return val
 
 
-def _env_to_str(env_dict):
-    """Given a dictionary, return a string formatted appropriately for
-    supervisord's 'env' config.  Non-alphanumeric values will be placed in
-    quotes.
-    """
-    return ",".join("%s=%s" % (k, _quotevar(v)) for k, v in env_dict.items())
+def get_template(name):
+    here = os.path.dirname(__file__)
+    return os.path.join(here, 'templates', name)
 
 
-def _expand_env_vars(cmd, env_vars):
-    """Given a command string and a dictionary of environment variables, look
-    for any environment variables (like $PORT), and replace them with values
-    from the dict if possible.
-    """
-    # If the var is in the dict, return the value from the dict.  Else return
-    # the original var name.
-    def sub(m):
-        key = m.group(0)[1:]# strip off dollar sign
-        if key in env_vars:
-            return _quotevar(env_vars[key])
-        return m.group(0)
-    # env vars will be strings starting with a dollar sign followed by
-    # continuous UPPERCASE, digits, and underscores.
-    p = re.compile('\$[A-Z0-9_]+')
-    return re.sub(p, sub, cmd)
+def write_chroot_sh(proc_path, tmpl_vars):
+    sh_script = get_template('start_chrooted.sh')
+    sh_remote = posixpath.join(proc_path, 'start_chrooted.sh')
+    files.upload_template(sh_script, sh_remote, tmpl_vars, use_sudo=True)
 
 
-def _create_proc_path(proc_path):
-    # Create remote proc directory
-    sudo('mkdir -p ' + proc_path)
+def bind_mount(src, dst):
+    sudo('mkdir -p %s' % dst)
+    sudo('mount -r --bind %s %s' % (src, dst))
+    # Now remount as readonly.  See http://lwn.net/Articles/281157/
+    sudo('mount -o remount,ro %s' % dst)
+
+
+def unmount_chroot_env(proc_path):
+    mounts = CHROOT_MOUNTS + ('/release',)
+    for m in mounts:
+        mount_point = proc_path + m
+        if files.exists(mount_point):
+            sudo('umount %s' % mount_point)
+
+
+class Deployment(object):
+    def __init__(self, release_name, proc, port, user, use_syslog, chroot):
+        self.release_name = release_name
+        self.proc = proc
+        self.port = port
+        self.user = user
+        self.use_syslog = use_syslog
+        self.chroot = chroot
+        self.proc_name = '-'.join([release_name, proc, str(port)])
+        self.proc_path = posixpath.join(PROCS_ROOT, self.proc_name)
+        self.proc_tmp_path = posixpath.join(self.proc_path, 'tmp')
+        self.release_path = posixpath.join(RELEASES_ROOT, self.release_name)
+        self.env_bin_path = self.release_path + '/env/bin'
+        self.yaml_settings_path = self.release_path + "/settings.yaml"
+        self.env_vars = {
+            'APP_SETTINGS_YAML': self.yaml_settings_path,
+            'PORT': str(self.port)}
+        self.proc_line = self.get_proc_line()
+
+    def run(self):
+
+        sudo('mkdir -p ' + self.proc_path)
+
+        self.write_proc_conf()
+        self.write_start_proc_sh()
+        self.create_proc_tmpdir()
+
+        if self.chroot:
+            self.mount_chroot_env()
+
+        # For this to work, the host must have /opt/yg/procs/*/proc.conf in
+        # the files include line in the main supervisord.conf
+        sudo('supervisorctl reread')
+        sudo('supervisorctl add ' + self.proc_name)
+
+    def write_proc_conf(self):
+        if self.use_syslog:
+            stdout_log = stderr_log = "syslog"
+        else:
+            stdout_log = posixpath.join(self.proc_path, 'stdout.log')
+            stderr_log = posixpath.join(self.proc_path, 'stderr.log')
+        proc_conf_vars = {
+            'release_name': self.release_name,
+            'proc': self.proc,
+            'port': self.port,
+            'proc_path': self.proc_path,
+            'stdout_log': stdout_log,
+            'stderr_log': stderr_log,
+            'user': 'root' if self.chroot else self.user,
+            'release_path': self.release_path,
+            'env_string': ",".join("%s=%s" % (k, _quotevar(v)) for k, v in
+                                   self.env_vars.items()),
+        }
+        proc_conf_tmpl = get_template('proc.conf')
+        remote_supd = posixpath.join(self.proc_path, 'proc.conf')
+        files.upload_template(proc_conf_tmpl, remote_supd, proc_conf_vars,
+                              use_sudo=True)
+
+    def write_start_proc_sh(self):
+        chroot_cmd = ('chroot %s su -c "/start_chrooted.sh" %s' %
+                      (self.proc_path, self.user))
+
+        tmpl_vars = {
+            'env_bin_path': self.env_bin_path,
+            'settings_path': self.release_path + "/settings.yaml",
+            'port': self.port,
+            'cmd': chroot_cmd if self.chroot else self.proc_line,
+            'tmpdir': self.proc_tmp_path,
+        }
+        sh_script = get_template('start_proc.sh')
+        sh_remote = posixpath.join(self.proc_path, 'start_proc.sh')
+        files.upload_template(sh_script, sh_remote, tmpl_vars, use_sudo=True)
+        sudo('chmod +x %s' % sh_remote)
+
+        if self.chroot:
+            # If we're going to run chrooted, we also need a script to set env
+            # vars (specifically $PATH) after entering the chroot environment.
+            chroot_script = get_template('start_chrooted.sh')
+            remote_chroot_script_path = posixpath.join(self.proc_path,
+                                                       'start_chrooted.sh')
+            files.upload_template(chroot_script,
+                                  remote_chroot_script_path,
+                                  {'port': self.port, 'cmd': self.proc_line},
+                                  use_sudo=True)
+            sudo('chmod +x %s' % remote_chroot_script_path)
+
+    def create_proc_tmpdir(self):
+        # Create a place for the proc to stick temporary files if it needs to.
+        sudo('mkdir -p ' + self.proc_tmp_path)
+        sudo('chown %s %s' % (self.user, self.proc_tmp_path))
+
+    def get_proc_line(self):
+        try:
+            # Make a temporary copy of the Procfile for parsing.  Fetch it from
+            # the host so we don't even need to have a local copy of the build
+            # in order to add a new deploy of an existing release.
+            tempdir = tempfile.mkdtemp()
+            local_procfile = posixpath.join(tempdir, 'Procfile')
+            get(posixpath.join(self.release_path, 'Procfile'), local_procfile)
+
+            procs = parse_procfile(local_procfile)
+            if not self.proc in procs:
+                proc_names = ', '.join(procs.keys())
+                raise KeyError("%s not found in Procfile (%s defined)" %
+                               (self.proc, proc_names))
+            # From the parsed Procfile, pull out the command that should be
+            # used to start the actual proc.
+            return procs[self.proc]
+        finally:
+            # Clean up our tempdir
+            shutil.rmtree(tempdir)
+
+    def mount_chroot_env(self):
+
+        # Mount essential system dirs
+        for m in CHROOT_MOUNTS:
+            bind_mount(m, self.proc_path + m)
+
+        # mount the release folder
+        bind_mount(self.release_path, self.proc_path + '/release')
 
 
 @task
-def configure_proc(release_name, proc, port, user='nobody', use_syslog=False):
+def configure_proc(release_name, proc, port, user='nobody', use_syslog=False,
+                   chroot=False):
 
-    # Define some paths for using below.
-    # procs have names like gryphon-2.2.3-d5338b8a07-web-5678
-    proc_name = '-'.join([release_name, proc, str(port)])
-    proc_path = posixpath.join(PROCS_ROOT, proc_name)
-    proc_tmp_path = posixpath.join(proc_path, 'tmp')
-    release_path = posixpath.join(RELEASES_ROOT, release_name)
-    fabfile_path = os.path.dirname(os.path.abspath(__file__))
-    env_bin_path = '%(release_path)s/env/bin' % vars()
-
-    _create_proc_path(proc_path)
-
-    env_vars = {'APP_SETTINGS_YAML': "%(release_path)s/settings.yaml" % vars(),
-                'PORT': str(port),
-                'PATH': ':'.join([
-                    env_bin_path,
-                    '/usr/local/sbin',
-                    '/usr/local/bin',
-                    '/usr/sbin',
-                    '/usr/bin',
-                    '/sbin:/bin']),
-                'TMPDIR': proc_tmp_path}
-    env = _env_to_str(env_vars)
-
-    # Make a temporary copy of the Procfile for parsing.  Fetch it from the
-    # host so we don't even need to have a local copy of the build in order to
-    # add a new deploy of an existing release.
-    tempdir = tempfile.mkdtemp()
-    local_procfile = posixpath.join(tempdir, 'Procfile')
-    get(posixpath.join(release_path, 'Procfile'), local_procfile)
-
-    procs = parse_procfile(local_procfile)
-    if not proc in procs:
-        proc_names = ', '.join(procs.keys())
-        raise KeyError("{proc} not found in Procfile ({proc_names} defined)"
-            .format(**vars()))
-    cmd = _expand_env_vars(procs[proc], env_vars)
-    tmpl = pkg_resources.resource_filename('yg.deploy', 'fabric/proc.conf')
-    remote_supd = posixpath.join(proc_path, 'proc.conf')
-
-    # XXX Note that using 'syslog' here breaks supervisord's ability to show
-    # the logs through its web and cmd line interfaces.  We should fix
-    # supervisord so syslog can live alongside file logs rather than displacing
-    # them.
-    if use_syslog:
-        stdout_log = stderr_log = "syslog"
-    else:
-        stdout_log = posixpath.join(proc_path, 'stdout.log')
-        stderr_log = posixpath.join(proc_path, 'stderr.log')
-    files.upload_template(tmpl, remote_supd, vars(), use_sudo=True)
-
-    # write start_proc.sh from template
-    sh_script = pkg_resources.resource_filename('yg.deploy',
-                                                'fabric/start_proc.sh')
-    sh_remote = posixpath.join(proc_path, 'start_proc.sh')
-    sh_vars = dict(**env_vars)
-    sh_vars.update(vars())
-    files.upload_template(sh_script, sh_remote, sh_vars, use_sudo=True)
-    sudo('chmod +x %s' % sh_remote)
-
-    # Create a place for the proc to stick temporary files if it needs to.
-    sudo('mkdir -p ' + proc_tmp_path)
-    sudo('chown %(user)s %(proc_tmp_path)s' % vars())
-
-    # Clean up our tempdir
-    shutil.rmtree(tempdir)
-
-    # For this to work, the host must have /opt/yg/procs/*/proc.conf in
-    # the files include line in the main supervisord.conf
-    sudo('supervisorctl reread')
-    sudo('supervisorctl add ' + proc_name)
+    d = Deployment(release_name, proc, port, user, use_syslog, chroot)
+    d.run()
 
 
 @task
 def deploy_parcel(build_path, config_path, profile, proc, port, user='nobody',
-                  checksum=None, use_syslog=False):
+                  checksum=None, use_syslog=False, chroot=False):
     # Builds have timstamps, but releases really don't care about them.  Two
     # releases created at different times with the same build and settings
     # should be treated the same.  So throw away the timestamp portion of the
@@ -231,11 +284,12 @@ def deploy_parcel(build_path, config_path, profile, proc, port, user='nobody',
     # prevent a race condition with the scooper.
     proc_name = '-'.join([release_name, proc, str(port)])
     proc_path = posixpath.join(PROCS_ROOT, proc_name)
-    _create_proc_path(proc_path)
+    sudo('mkdir -p ' + proc_path)
 
     upload_release(build_path, config_path, release_path)
 
-    configure_proc(release_name, proc, port, user, use_syslog=use_syslog)
+    configure_proc(release_name, proc, port, user, use_syslog=use_syslog,
+                   chroot=chroot)
 
 
 def parse_procname(proc):
@@ -308,8 +362,11 @@ def delete_proc(proc):
     sudo('supervisorctl stop %s' % proc)
     # remove the proc
     sudo('supervisorctl remove %s' % proc)
+
     # delete the proc dir
-    sudo('rm -rf /opt/yg/procs/%s' % proc)
+    proc_dir = '/opt/yg/procs/%s' % proc
+    unmount_chroot_env(proc_dir)
+    sudo('rm -rf %s' % proc_dir)
 
 
 @task

@@ -112,7 +112,7 @@ Structure
 Velociraptor is a Django project, and organized as such.  Most of the code is
 in the 'deployment' app inside the 'project'.  The 'deployment' app contains
 models.py, views.py, etc.  The Celery tasks that handle actual deployment
-actions are in deployment/tasks.py.
+actions are in project/deployment/tasks.py.
 
 All the URL routes are in project/urls.py.
 
