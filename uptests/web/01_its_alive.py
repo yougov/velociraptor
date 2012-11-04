@@ -4,10 +4,13 @@ import sys
 
 import requests
 
+
 def check_login_required(host, port):
     r = requests.get('http://%(host)s:%(port)s/' % vars(),
                      allow_redirects=False)
-    assert r.status_code == 302
+    assert r.status_code == 302, ("Status code should be 302, was %s" %
+                                  r.status_code)
+
 
 def main():
     host, port = sys.argv[1], sys.argv[2]
