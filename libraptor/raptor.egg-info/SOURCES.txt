@@ -1,5 +1,4 @@
 raptor/__init__.py
-raptor/jobs.py
 raptor/remote.py
 raptor.egg-info/PKG-INFO
 raptor.egg-info/SOURCES.txt

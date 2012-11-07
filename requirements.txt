@@ -22,4 +22,4 @@ South==0.7.6
 suds==0.4
 yg.ldap==2.2
 yg.deploy>=13.2.2,<14.0
--e ./libraptor
+./libraptor
