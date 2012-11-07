@@ -13,6 +13,7 @@ export PORT=%(port)s
 export TMPDIR=/tmp
 
 CMD="%(cmd)s"
-PROCNAME=%(procname)s
+PROCNAME=%(proc_name)s
 PROCS_ROOT=%(procs_root)s
-lxc-execute --name $PROCNAME -f $PROCS_ROOT/$PROCNAME/proc.lxc -- su --preserve-environment -c "PATH=/app/env/bin:$PATH cd /app;$CMD" %(user)s
+PATH=/app/env/bin:$PATH
+exec lxc-execute --name $PROCNAME -f $PROCS_ROOT/$PROCNAME/proc.lxc -- su --preserve-environment -c "cd /app;$CMD" %(user)s

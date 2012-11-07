@@ -74,7 +74,7 @@ def release(request):
 @login_required
 def deploy(request):
     # will need a form that lets you create a new deployment.
-    form = forms.DeploymentForm(request.POST or None)
+    form = forms.DeploymentForm(request.POST or None, initial={'contain': True})
 
     if form.is_valid():
         # We made the form fields exactly match the arguments to the celery
@@ -86,7 +86,8 @@ def deploy(request):
                                  recipe_name=release.recipe.name,
                                  hostname=data['hostname'],
                                  proc=data['proc'],
-                                 port=data['port'])
+                                 port=data['port'],
+                                 contain=data['contain'])
         logging.info('started job %s' % str(job))
         form.cleaned_data['release'] = str(release)
         proc = '%(release)s-%(proc)s-%(port)s to %(hostname)s' % data

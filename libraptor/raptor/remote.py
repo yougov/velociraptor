@@ -119,8 +119,8 @@ class Deployment(object):
         if self.contain:
             # Make container mount points.  lxc-execute will handle the actual
             # mounts, but we need to make the mount points.
-            mountpoints = ('/bin', '/dev', '/etc', '/lib', '/lib64', '/opt',
-                           '/usr', '/proc')
+            mountpoints = ('/app', '/bin', '/dev', '/etc', '/lib', '/lib64',
+                           '/opt', '/usr', '/proc')
             for m in mountpoints:
                 sudo('mkdir -p %s%s' % (self.proc_path, m))
 
@@ -133,7 +133,7 @@ class Deployment(object):
         if self.use_syslog:
             stdout_log = "syslog"
         else:
-            stdout_log = posixpath.join(self.proc_path, 'stdout.log')
+            stdout_log = posixpath.join(self.proc_path, 'log')
         proc_conf_vars = {
             'release_name': self.release_name,
             'proc': self.proc,
@@ -168,7 +168,7 @@ class Deployment(object):
             'port': self.port,
             'cmd': self.proc_line,
             'tmpdir': self.proc_tmp_path,
-            'procname': self.proc,
+            'proc_name': self.proc_name,
             'procs_root': PROCS_ROOT,
             'user': self.user,
         }, use_sudo=True)
@@ -203,15 +203,15 @@ class Deployment(object):
 
 @task
 def configure_proc(release_name, proc, port, user='nobody', use_syslog=False,
-                   chroot=False):
+                   contain=False):
 
-    d = Deployment(release_name, proc, port, user, use_syslog, chroot)
+    d = Deployment(release_name, proc, port, user, use_syslog, contain)
     d.run()
 
 
 @task
 def deploy_parcel(build_path, config_path, profile, proc, port, user='nobody',
-                  checksum=None, use_syslog=False, chroot=False):
+                  checksum=None, use_syslog=False, contain=False):
     # Builds have timstamps, but releases really don't care about them.  Two
     # releases created at different times with the same build and settings
     # should be treated the same.  So throw away the timestamp portion of the
@@ -244,7 +244,7 @@ def deploy_parcel(build_path, config_path, profile, proc, port, user='nobody',
     upload_release(build_path, config_path, release_path)
 
     configure_proc(release_name, proc, port, user, use_syslog=use_syslog,
-                   chroot=chroot)
+                   contain=contain)
 
 
 def parse_procname(proc):
@@ -307,7 +307,7 @@ def run_uptests(proc):
             'return_code': 1,
             'passed': False,
         }]
-import time
+
 
 @task
 def delete_proc(proc):
@@ -317,7 +317,6 @@ def delete_proc(proc):
     sudo('supervisorctl stop %s' % proc)
     # remove the proc
     sudo('supervisorctl remove %s' % proc)
-    time.sleep(5)
 
     # delete the proc dir
     proc_dir = posixpath.join(PROCS_ROOT, proc)

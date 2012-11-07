@@ -79,6 +79,7 @@ class DeploymentForm(forms.Form):
 
     hostname = forms.ChoiceField(choices=[])
     port = forms.IntegerField()
+    contain = forms.BooleanField(help_text="Run inside LXC container?")
 
     def __init__(self, *args, **kwargs):
         super(DeploymentForm, self).__init__(*args, **kwargs)

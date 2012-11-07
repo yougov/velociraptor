@@ -66,7 +66,7 @@ class event_on_exception(object):
 
 @task
 @event_on_exception(['deploy'])
-def deploy(release_id, recipe_name, hostname, proc, port, chroot=False):
+def deploy(release_id, recipe_name, hostname, proc, port, contain=False):
     with remove_port_lock(hostname, port):
         release = Release.objects.get(id=release_id)
         msg_title = '%s-%s-%s -> %s' % (release, proc, port, hostname)
@@ -113,7 +113,7 @@ def deploy(release_id, recipe_name, hostname, proc, port, chroot=False):
                               release.hash,
                               use_syslog=getattr(settings, 'PROC_SYSLOG',
                                                  False),
-                              chroot=chroot)
+                              contain=contain)
 
     _update_host_cache(hostname)
 
@@ -349,7 +349,7 @@ def swarm_deploy_to_host(swarm_id, host_id, ports):
             host.name,
             swarm.proc_name,
             port,
-            chroot=False,  # XXX Just for debug
+            contain=True,
         )
 
     procnames = ["%s-%s-%s" % (swarm.release, swarm.proc_name, port) for port
