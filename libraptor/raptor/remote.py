@@ -4,7 +4,6 @@ SSH.
 """
 
 import os
-import re
 import sys
 import traceback
 import tempfile
@@ -25,7 +24,6 @@ from fabric.context_managers import settings
 # cleanup code will have to check both the old and new locations when it runs.
 PROCS_ROOT = '/opt/yg/procs'
 RELEASES_ROOT = '/opt/yg/releases'
-CHROOT_MOUNTS = ('/bin', '/dev', '/etc', '/lib', '/lib64', '/opt', '/usr')
 
 
 @task
@@ -89,58 +87,25 @@ def parse_procfile(path):
     return procs
 
 
-def _quotevar(val):
-    """Given a string, check whether it contains any non-alphanumeric chars,
-    and wrap in quotes if so.  Else return the original.
-    """
-    if any((not c.isdigit() and not c.isalpha()) for c in val):
-        return '"%s"' % val
-    return val
-
-
 def get_template(name):
     here = os.path.dirname(__file__)
     return os.path.join(here, 'templates', name)
 
 
-def write_chroot_sh(proc_path, tmpl_vars):
-    sh_script = get_template('start_chrooted.sh')
-    sh_remote = posixpath.join(proc_path, 'start_chrooted.sh')
-    files.upload_template(sh_script, sh_remote, tmpl_vars, use_sudo=True)
-
-
-def bind_mount(src, dst):
-    sudo('mkdir -p %s' % dst)
-    sudo('mount -r --bind %s %s' % (src, dst))
-    # Now remount as readonly.  See http://lwn.net/Articles/281157/
-    sudo('mount -o remount,ro %s' % dst)
-
-
-def unmount_chroot_env(proc_path):
-    mounts = CHROOT_MOUNTS + ('/release',)
-    for m in mounts:
-        mount_point = proc_path + m
-        if files.exists(mount_point):
-            sudo('umount %s' % mount_point)
-
-
 class Deployment(object):
-    def __init__(self, release_name, proc, port, user, use_syslog, chroot):
+    def __init__(self, release_name, proc, port, user, use_syslog, contain):
         self.release_name = release_name
         self.proc = proc
         self.port = port
         self.user = user
         self.use_syslog = use_syslog
-        self.chroot = chroot
+        self.contain = contain
         self.proc_name = '-'.join([release_name, proc, str(port)])
         self.proc_path = posixpath.join(PROCS_ROOT, self.proc_name)
         self.proc_tmp_path = posixpath.join(self.proc_path, 'tmp')
         self.release_path = posixpath.join(RELEASES_ROOT, self.release_name)
         self.env_bin_path = self.release_path + '/env/bin'
         self.yaml_settings_path = self.release_path + "/settings.yaml"
-        self.env_vars = {
-            'APP_SETTINGS_YAML': self.yaml_settings_path,
-            'PORT': str(self.port)}
         self.proc_line = self.get_proc_line()
 
     def run(self):
@@ -151,8 +116,13 @@ class Deployment(object):
         self.write_start_proc_sh()
         self.create_proc_tmpdir()
 
-        if self.chroot:
-            self.mount_chroot_env()
+        if self.contain:
+            # Make container mount points.  lxc-execute will handle the actual
+            # mounts, but we need to make the mount points.
+            mountpoints = ('/bin', '/dev', '/etc', '/lib', '/lib64', '/opt',
+                           '/usr', '/proc')
+            for m in mountpoints:
+                sudo('mkdir -p %s%s' % (self.proc_path, m))
 
         # For this to work, the host must have /opt/yg/procs/*/proc.conf in
         # the files include line in the main supervisord.conf
@@ -161,21 +131,17 @@ class Deployment(object):
 
     def write_proc_conf(self):
         if self.use_syslog:
-            stdout_log = stderr_log = "syslog"
+            stdout_log = "syslog"
         else:
             stdout_log = posixpath.join(self.proc_path, 'stdout.log')
-            stderr_log = posixpath.join(self.proc_path, 'stderr.log')
         proc_conf_vars = {
             'release_name': self.release_name,
             'proc': self.proc,
             'port': self.port,
             'proc_path': self.proc_path,
             'stdout_log': stdout_log,
-            'stderr_log': stderr_log,
-            'user': 'root' if self.chroot else self.user,
+            'user': 'root' if self.contain else self.user,
             'release_path': self.release_path,
-            'env_string': ",".join("%s=%s" % (k, _quotevar(v)) for k, v in
-                                   self.env_vars.items()),
         }
         proc_conf_tmpl = get_template('proc.conf')
         remote_supd = posixpath.join(self.proc_path, 'proc.conf')
@@ -183,32 +149,30 @@ class Deployment(object):
                               use_sudo=True)
 
     def write_start_proc_sh(self):
-        chroot_cmd = ('chroot %s su -c "/start_chrooted.sh" %s' %
-                      (self.proc_path, self.user))
+        if self.contain:
+            sh_script = get_template('start_contained.sh')
+            # write the lxc config.
+            lxc_tmpl = get_template('proc.lxc')
+            remote_lxc_path = posixpath.join(self.proc_path, 'proc.lxc')
+            files.upload_template(lxc_tmpl, remote_lxc_path, {
+                'proc_path': self.proc_path,
+                'release_path': self.release_path,
+            }, use_sudo=True)
+        else:
+            sh_script = get_template('start_proc.sh')
 
-        tmpl_vars = {
+        sh_remote = posixpath.join(self.proc_path, 'start_proc.sh')
+        files.upload_template(sh_script, sh_remote, {
             'env_bin_path': self.env_bin_path,
             'settings_path': self.release_path + "/settings.yaml",
             'port': self.port,
-            'cmd': chroot_cmd if self.chroot else self.proc_line,
+            'cmd': self.proc_line,
             'tmpdir': self.proc_tmp_path,
-        }
-        sh_script = get_template('start_proc.sh')
-        sh_remote = posixpath.join(self.proc_path, 'start_proc.sh')
-        files.upload_template(sh_script, sh_remote, tmpl_vars, use_sudo=True)
+            'procname': self.proc,
+            'procs_root': PROCS_ROOT,
+            'user': self.user,
+        }, use_sudo=True)
         sudo('chmod +x %s' % sh_remote)
-
-        if self.chroot:
-            # If we're going to run chrooted, we also need a script to set env
-            # vars (specifically $PATH) after entering the chroot environment.
-            chroot_script = get_template('start_chrooted.sh')
-            remote_chroot_script_path = posixpath.join(self.proc_path,
-                                                       'start_chrooted.sh')
-            files.upload_template(chroot_script,
-                                  remote_chroot_script_path,
-                                  {'port': self.port, 'cmd': self.proc_line},
-                                  use_sudo=True)
-            sudo('chmod +x %s' % remote_chroot_script_path)
 
     def create_proc_tmpdir(self):
         # Create a place for the proc to stick temporary files if it needs to.
@@ -235,15 +199,6 @@ class Deployment(object):
         finally:
             # Clean up our tempdir
             shutil.rmtree(tempdir)
-
-    def mount_chroot_env(self):
-
-        # Mount essential system dirs
-        for m in CHROOT_MOUNTS:
-            bind_mount(m, self.proc_path + m)
-
-        # mount the release folder
-        bind_mount(self.release_path, self.proc_path + '/release')
 
 
 @task
@@ -352,7 +307,7 @@ def run_uptests(proc):
             'return_code': 1,
             'passed': False,
         }]
-
+import time
 
 @task
 def delete_proc(proc):
@@ -362,10 +317,10 @@ def delete_proc(proc):
     sudo('supervisorctl stop %s' % proc)
     # remove the proc
     sudo('supervisorctl remove %s' % proc)
+    time.sleep(5)
 
     # delete the proc dir
-    proc_dir = '/opt/yg/procs/%s' % proc
-    unmount_chroot_env(proc_dir)
+    proc_dir = posixpath.join(PROCS_ROOT, proc)
     sudo('rm -rf %s' % proc_dir)
 
 

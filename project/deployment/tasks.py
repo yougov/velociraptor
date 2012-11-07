@@ -22,7 +22,7 @@ from django.utils import timezone
 from deployment.models import (Release, Build, Swarm, Host, PortLock, App,
                                TestRun, TestResult)
 from deployment import balancer, events, utils
-from deployment.remote import (deploy_parcel, run_uptests, clean_releases,
+from raptor.remote import (deploy_parcel, run_uptests, clean_releases,
                                delete_proc as fab_delete_proc)
 from yg.deploy.paver import build as paver_build
 
@@ -349,6 +349,7 @@ def swarm_deploy_to_host(swarm_id, host_id, ports):
             host.name,
             swarm.proc_name,
             port,
+            chroot=False,  # XXX Just for debug
         )
 
     procnames = ["%s-%s-%s" % (swarm.release, swarm.proc_name, port) for port

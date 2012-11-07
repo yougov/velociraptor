@@ -1,0 +1,9 @@
+lxc.mount.entry = /bin %(proc_path)s/bin none ro,bind 0 0 
+lxc.mount.entry = /dev %(proc_path)s/dev none ro,bind 0 0 
+lxc.mount.entry = /etc %(proc_path)s/etc none ro,bind 0 0 
+lxc.mount.entry = /lib %(proc_path)s/lib none ro,bind 0 0 
+lxc.mount.entry = /lib64 %(proc_path)s/lib64 none ro,bind 0 0 
+lxc.mount.entry = /opt %(proc_path)s/opt none ro,bind 0 0 
+lxc.mount.entry = /usr %(proc_path)s/usr none ro,bind 0 0
+lxc.mount.entry = %(release_path)s %(proc_path)s/app none ro,bind 0 0
+lxc.rootfs = %(proc_path)s
