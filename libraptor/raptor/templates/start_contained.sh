@@ -16,4 +16,4 @@ CMD="%(cmd)s"
 PROCNAME=%(proc_name)s
 PROCS_ROOT=%(procs_root)s
 PATH=/app/env/bin:$PATH
-exec lxc-execute --name $PROCNAME -f $PROCS_ROOT/$PROCNAME/proc.lxc -- su --preserve-environment -c "cd /app;$CMD" %(user)s
+exec lxc-start --name $PROCNAME -f $PROCS_ROOT/$PROCNAME/proc.lxc -- su --preserve-environment -c "cd /app;exec $CMD" %(user)s

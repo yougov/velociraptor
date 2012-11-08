@@ -22,6 +22,7 @@ from fabric.context_managers import settings
 # TODO: Change these to /apps/ so that we don't have YG-isms in the code and
 # can more safely bind-mount /opt into app environments.  It's tricky, because
 # cleanup code will have to check both the old and new locations when it runs.
+# OR we do a one-time migration.
 PROCS_ROOT = '/opt/yg/procs'
 RELEASES_ROOT = '/opt/yg/releases'
 
@@ -117,14 +118,14 @@ class Deployment(object):
         self.create_proc_tmpdir()
 
         if self.contain:
-            # Make container mount points.  lxc-execute will handle the actual
-            # mounts, but we need to make the mount points.
+            # Make container mount points.  lxc will handle the actual mounts,
+            # but we need to make the mount points.
             mountpoints = ('/app', '/bin', '/dev', '/etc', '/lib', '/lib64',
                            '/opt', '/usr', '/proc')
             for m in mountpoints:
                 sudo('mkdir -p %s%s' % (self.proc_path, m))
 
-        # For this to work, the host must have /opt/yg/procs/*/proc.conf in
+        # For this to work, the host must have PROCS_ROOT/*/proc.conf in
         # the files include line in the main supervisord.conf
         sudo('supervisorctl reread')
         sudo('supervisorctl add ' + self.proc_name)
@@ -325,7 +326,7 @@ def delete_proc(proc):
 
 @task
 def delete_release(release, cascade=False):
-    procs = sudo('ls -1 /opt/yg/procs').split()
+    procs = sudo('ls -1 %s' % PROCS_ROOT).split()
 
     # this folder name parsing depends on procs being named like
     # dm2-0.0.4-2e257bb8-web-9009, and releases being named like
@@ -349,22 +350,23 @@ def delete_release(release, cascade=False):
             # message doesn't seem to show at all.
             raise SystemExit('NOT DELETING %s. Release is currently in use, '
                              'and cascade=False' % release)
-    sudo('rm -rf /opt/yg/releases/%s' % release)
+    sudo('rm -rf %s/%s' % (RELEASES_ROOT, release))
+
 
 @task
 def clean_releases(execute=True):
-    """ Check on /opt/yg/releases/ for releases without /opt/yg/procs/
-    in use so we can clean them up.
+    """ Check in RELEASES_ROOT for releases not being used by procs, so we can
+    clean them up.
 
     You may choose not to execute the actual delete (to test for example), and
     if you choose to be verbose it will print out the releases it will delete.
 
     Finally if one of the directory doesn't exist we return raise a SystemExit.
     """
-    if files.exists('/opt/yg/procs', use_sudo=True) and \
-        files.exists('/opt/yg/releases', use_sudo=True):
-        procs = sudo('ls -1 /opt/yg/procs').split()
-        releases = sudo('ls -1 /opt/yg/releases').split()
+    if files.exists(PROCS_ROOT, use_sudo=True) and \
+        files.exists(RELEASES_ROOT, use_sudo=True):
+        procs = sudo('ls -1 %s' % PROCS_ROOT).split()
+        releases = sudo('ls -1 %s' % RELEASES_ROOT).split()
         releases_in_use = set([
             '%(app)s-%(version)s-%(profile)s-%(release_hash)s' %
             parse_procname(p) for p in procs])
@@ -376,8 +378,8 @@ def clean_releases(execute=True):
                     delete_release(release, False)
         colors.green("Cleaned up %i releases." % len(deleted))
     else:
-        raise SystemExit("Either /opt/yg/procs or /opt/yg/releases directory "\
-                         "doesn't exist")
+        raise SystemExit("Either %s or %s doesn't exist" % (PROCS_ROOT,
+                                                            RELEASES_ROOT))
 
 
 class SSHConnection(object):
