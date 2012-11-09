@@ -191,6 +191,34 @@ class currentmongo {
   }
 }
 
+# 
+class lxc {
+  Package {ensure => present}
+  package {
+    automake:;
+    libcap-dev:;
+    libapparmor-dev:;
+  }
+
+  # put the build script into /tmp
+  file { 'install_lxc.sh':
+    path    => '/tmp/install_lxc.sh',
+    ensure  => file,
+    require => Package['automake', 'libcap-dev', 'libapparmor-dev'],
+    source  => 'puppet:///modules/lxc/install_lxc.sh';
+  }
+
+  exec {
+    build_lxc:
+      command => "sh /tmp/install_lxc.sh",
+      timeout => "300",
+      require => File['install_lxc.sh'];
+    mount_cgroup:
+      command => "mkdir -p /cgroup; mount none -t cgroup /cgroup",
+      require => Exec['build_lxc'];
+  }
+}
+
 package { 
   foreman:
     ensure => present,
@@ -212,3 +240,4 @@ class {'py27': }
 class {'pg91': }
 class {'currentmongo': }
 class {'newredis': }
+class {'lxc': }
