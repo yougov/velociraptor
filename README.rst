@@ -31,7 +31,7 @@ Now go make a sandwich while you wait for the lucid64 VM image to download
 
 Installation of system-level dependencies inside the VM is done automatically
 using Vagrant's Puppet provisioner.  This includes some normal apt packages,
-(RabbitMQ), some from Ubuntu PPAs (Postgres 9.1 and Python 2.7), and some
+(curl, Vim), some from Ubuntu PPAs (Postgres 9.1 and Python 2.7), and some
 installed with pip (Mercurial and Virtualenv).  You can see the Puppet manifest
 at manifests/yhost.pp.
 
