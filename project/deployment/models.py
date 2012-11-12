@@ -103,7 +103,7 @@ class ConfigRecipe(models.Model):
     ingredients = models.ManyToManyField(ConfigIngredient,
                                          through='RecipeIngredient')
 
-    config_vars = YAMLDictField(help_text=("YAML dict of env vars to be set "
+    env_vars = YAMLDictField(help_text=("YAML dict of env vars to be set "
                                            "at runtime"), null=True, blank=True)
 
     def __unicode__(self):
@@ -213,12 +213,13 @@ class Build(models.Model):
 class Release(models.Model):
     recipe = models.ForeignKey(ConfigRecipe)
     build = models.ForeignKey(Build)
-    config = models.TextField(blank=True, null=True)
+    config = models.TextField(blank=True, null=True, help_text="YAML text to "
+                             "be written to settings.yaml at deploy time.")
 
     # Hash will be computed on saving the model.
     hash = models.CharField(max_length=32, blank=True, null=True)
 
-    config_vars = YAMLDictField(help_text=("YAML dict of env vars to be set "
+    env_vars = YAMLDictField(help_text=("YAML dict of env vars to be set "
                                            "at runtime"), null=True, blank=True)
 
     def __unicode__(self):
@@ -229,7 +230,8 @@ class Release(models.Model):
         # Compute self.hash from the config contents and build file.
         buildcontents = default_storage.open(self.build.file.name, 'rb').read()
 
-        md5chars = hashlib.md5(buildcontents + bytes(self.config)).hexdigest()
+        md5chars = hashlib.md5(buildcontents + bytes(self.config) +
+                               bytes(self.env_vars)).hexdigest()
         return md5chars[:8]
 
     def save(self, *args, **kwargs):
