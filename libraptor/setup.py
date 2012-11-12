@@ -10,6 +10,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'paramiko>=1.8.0,<2.0',
+        'vcstools==0.1.20',
     ],
     description=('Libraries and command line tools for deploying with '
                  'Velociraptor'),

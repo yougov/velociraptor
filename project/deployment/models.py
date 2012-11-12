@@ -60,6 +60,14 @@ class ConfigIngredient(models.Model):
         ordering = ['label', ]
 
 
+class BuildPack(models.Model):
+    repo_url = models.CharField(max_length=200, unique=True)
+    desc = models.TextField(blank=True, null=True)
+
+    def __unicode__(self):
+        return self.url
+
+
 class App(models.Model):
     namehelp = ("Used in release name.  Good app names are short and use "
                 "no spaces or dashes (underscores are OK).")
@@ -67,11 +75,14 @@ class App(models.Model):
         validators=[no_spaces, no_dashes])
     repo_url = models.CharField(max_length=200, blank=True, null=True)
 
+    buildpack = models.ForeignKey(BuildPack, blank=True, null=True)
+
     def __unicode__(self):
         return self.name
 
     class Meta:
         ordering = ('name',)
+
 
 class Tag(models.Model):
     """ Storage for latest tags for a given app. This model is filled up by a
@@ -80,6 +91,7 @@ class Tag(models.Model):
     """
     app = models.ForeignKey(App)
     name = models.CharField(max_length=20)
+
 
 class ConfigRecipe(models.Model):
     app = models.ForeignKey(App)
@@ -90,6 +102,9 @@ class ConfigRecipe(models.Model):
                             validators=[no_spaces, no_dashes])
     ingredients = models.ManyToManyField(ConfigIngredient,
                                          through='RecipeIngredient')
+
+    config_vars = YAMLDictField(help_text=("YAML dict of env vars to be set "
+                                           "at runtime"), null=True, blank=True)
 
     def __unicode__(self):
         return '%s-%s' % (self.app.name, self.name)
@@ -160,6 +175,12 @@ class Build(models.Model):
     status = models.CharField(max_length=20, choices=build_status_choices,
                               default='pending')
 
+    config_vars = YAMLDictField(help_text=("YAML dict of env vars from "
+                                           "buildpack"), null=True, blank=True)
+
+    buildpack_url = models.CharField(max_length=200) # XXX Null?
+    buildpack_revision = models.CharField(max_length=50)
+
     def is_usable(self):
         return self.file.name and self.status == 'success'
 
@@ -189,8 +210,6 @@ class Build(models.Model):
         ordering = ['-id']
 
 
-
-
 class Release(models.Model):
     recipe = models.ForeignKey(ConfigRecipe)
     build = models.ForeignKey(Build)
@@ -198,6 +217,9 @@ class Release(models.Model):
 
     # Hash will be computed on saving the model.
     hash = models.CharField(max_length=32, blank=True, null=True)
+
+    config_vars = YAMLDictField(help_text=("YAML dict of env vars to be set "
+                                           "at runtime"), null=True, blank=True)
 
     def __unicode__(self):
         return u'-'.join([self.build.app.name, self.build.tag,

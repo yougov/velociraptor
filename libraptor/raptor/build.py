@@ -1,0 +1,123 @@
+import os
+import subprocess
+import hashlib
+
+import yaml
+from envoy import run
+
+from raptor import repo
+
+
+HOME = os.path.expanduser('~/.raptor')
+PACKS_HOME = os.path.join(HOME, 'buildpacks')
+CACHE_HOME = os.path.join(HOME, 'cache')
+CONFIG_FILE = os.path.join(HOME, 'config.yaml')
+
+
+class BuildPack(repo.Repo):
+
+    def detect(self, app):
+        """
+        Given an app, run detect script on it to determine whether it can be
+        built with this pack.  Return True/False.
+        """
+        script = os.path.join(self.folder, 'bin', 'detect')
+        result = run('%s %s' % (script, app.folder))
+        return result.status_code == 0
+
+    def compile(self, app):
+        script = os.path.join(self.folder, 'bin', 'compile')
+
+        app_url_hash = hashlib.md5(app.url).hexdigest()
+        cache_folder = os.path.join(CACHE_HOME, '%s-%s' % (self.basename,
+                                                           app_url_hash))
+
+        # use ordinary subprocess here instead of envoy because we want stdout
+        # to be printed to the terminal.
+        retcode = subprocess.call([script, app.folder, cache_folder])
+        assert retcode == 0, ("Failed compiling %s with %s buildpack" % (app,
+                                                                         self.name))
+
+    def release(self, app):
+        script = os.path.join(self.folder, 'bin', 'release')
+        result = run('%s %s' % (script, app.folder))
+        assert result.status_code == 0, ("Failed release on %s with %s "
+                                         "buildpack" % (app, self.basename))
+        return yaml.safe_load(result.std_out)
+
+
+class App(repo.Repo):
+    """
+    A Repo that contains a buildpack-compatible project.
+    """
+
+    def __init__(self, folder, buildpack=None, *args, **kwargs):
+        super(App, self).__init__(folder, *args, **kwargs)
+        # If buildpack is None here, we'll try self.detect_buildpack later.
+        self.buildpack = buildpack
+
+    def detect_buildpack(self):
+        """
+        Loop over installed build packs and run each one's 'detect' script on
+        the project until one succeeds, and set as self.buildpack.  Raise
+        exception if nothing matches.
+        """
+        detected = next(
+            (bp for bp in list_buildpacks() if bp.detect(self)),
+            None)
+        if detected is None:
+            raise ValueError("Cannot determine app's buildpack.")
+        self.buildpack = detected
+
+    def compile(self):
+        if self.buildpack is None:
+            self.detect_buildpack()
+        self.buildpack.compile(self)
+
+    def release(self):
+        if self.buildpack is None:
+            self.detect_buildpack()
+        return self.buildpack.release(self)
+
+
+def list_buildpacks(packs_dir=PACKS_HOME):
+    configured_order = get_config().get('buildpack_order')
+    # if we have a configured_order, then use that first, and filesystem order
+    # second.
+    buildpacks = os.listdir(packs_dir)
+    if configured_order:
+        # This is inefficient.  It doesn't matter.
+        new = []
+        for bp in configured_order:
+            if bp in buildpacks:
+                # something from the configured order is installed.  Append to
+                # new list so it's in proper position, and delete from old
+                # list.
+                new.append(bp)
+                buildpacks.remove(bp)
+        # Anything left in 'buildpacks' must not have been specified in the
+        # configured order, so just tack it on at the end
+        new.extend(buildpacks)
+        buildpacks = new
+
+    return [BuildPack(os.path.join(packs_dir, d)) for d in buildpacks]
+
+
+def add_buildpack(url, packs_dir=PACKS_HOME):
+    # Check whether the pack exists
+    dest = os.path.join(packs_dir, repo.basename(url))
+    # If folder already exists, assume that we've already checked out the
+    # buildpack there.  TODO: check for whether the buildpack in the folder is
+    # really the same as the one we've been asked to add.
+    if not os.path.exists(packs_dir):
+        run('mkdir -p %s' % packs_dir)
+    bp = BuildPack(dest, url)
+    bp.update()
+
+
+def get_config(file_path=CONFIG_FILE):
+    try:
+        with open(file_path, 'rb') as f:
+            return yaml.safe_load(f)
+    except IOError:
+        return {}
