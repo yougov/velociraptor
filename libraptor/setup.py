@@ -11,6 +11,7 @@ setup(
     install_requires=[
         'paramiko>=1.8.0,<2.0',
         'vcstools==0.1.20',
+        'envoy==0.0.2',
     ],
     description=('Libraries and command line tools for deploying with '
                  'Velociraptor'),

@@ -10,6 +10,7 @@ import traceback
 import functools
 from collections import defaultdict
 
+import envoy
 import yaml
 import fabric.network
 import redis
@@ -21,11 +22,15 @@ from django.utils import timezone
 
 from deployment.models import (Release, Build, Swarm, Host, PortLock, App,
                                TestRun, TestResult)
+from deployment import models
 from deployment import balancer, events, utils
-from raptor.remote import (deploy_parcel, run_uptests, clean_releases,
+from raptor.jobs import (deploy_parcel, run_uptests, clean_releases,
                                delete_proc as fab_delete_proc)
-from yg.deploy.paver import build as paver_build
+from raptor import build as rbuild
+from raptor import repo
 
+
+logger = logging.getLogger('velociraptor')
 
 def send_event(title, msg, tags=None):
     logging.info(msg)
@@ -66,7 +71,7 @@ class event_on_exception(object):
 
 @task
 @event_on_exception(['deploy'])
-def deploy(release_id, recipe_name, hostname, proc, port, contain=False):
+def deploy(release_id, recipe_name, hostname, proc, port, chroot=False):
     with remove_port_lock(hostname, port):
         release = Release.objects.get(id=release_id)
         msg_title = '%s-%s-%s -> %s' % (release, proc, port, hostname)
@@ -113,46 +118,87 @@ def deploy(release_id, recipe_name, hostname, proc, port, contain=False):
                               release.hash,
                               use_syslog=getattr(settings, 'PROC_SYSLOG',
                                                  False),
-                              contain=contain)
+                              chroot=chroot)
 
     _update_host_cache(hostname)
 
 
+class CmdError(Exception):
+    """
+    Exception subclass for when we shell out to the cmd line with envoy and the
+    cmd fails.
+    """
+    def __init__(self, envoy_result, *args, **kwargs):
+        msg = ("'%(command)s' returned code %(status_code)s. \n"
+               "stdout: %(std_out)s\n"
+               "stderr: %(std_err)s") % envoy_result.__dict__
+        super(CmdError, self).__init__(msg, *args, **kwargs)
+
+
+def run(cmd):
+    """
+    Wrap envoy.run to raise helpful exception if a command doesn't exit with
+    status 0.
+    """
+    result = envoy.run(cmd)
+    if result.status_code == 0:
+        return result
+    else:
+        raise CmdError(result)
+
+
+@task
+def update_buildpacks():
+    # update all the buildpacks
+    # TODO: allow marking buildpacks as inactive so they won't be used here.
+    for bp in models.BuildPack.objects.all():
+        rbuild.add_buildpack(bp.repo_url)
+
+
 @task
 @event_on_exception(['build'])
-def build_hg(build_id, callback=None):
-    # call the assemble_hg function.
+def build_app(build_id, callback=None):
     build = Build.objects.get(id=build_id)
     send_event(str(build), "Started build %s" % build, tags=['build'])
     app = build.app
-    url = '%s#%s' % (build.app.repo_url, build.tag)
-    with tmpdir():
-        build.status = 'started'
-        build.start_time = timezone.now()
+    # remember when we started building
+    build.status = 'started'
+    build.start_time = timezone.now()
+    build.save()
+    try:
+        update_buildpacks()
+        with tmpdir() as here:
+            # Check out project and update to specified version
+            app_path = os.path.join(here, repo.basename(app.repo_url))
+            app_repo = rbuild.App(app_path, app.repo_url,
+                                  vcs_type=app.repo_type)
+            app_repo.update(build.tag)
+            app_repo.compile()
+            # tar the build
+            name_tmpl = '%(app)s-%(version)s-%(time)s.tar.bz2'
+            time = datetime.datetime.utcnow()
+            name = name_tmpl % {'app': build.app,
+                                'version': build.tag,
+                                'time': time.strftime('%Y-%m-%dT%H-%M')}
+
+            run('tar -cjf %s %s' % (name, app_repo.folder))
+            filepath = 'builds/' + name
+            with open(name, 'rb') as localfile:
+                default_storage.save(filepath, localfile)
+            build.file = filepath
+            build.end_time = time
+            build.status = 'success'
+            build.env_vars = app_repo.release().get('config_vars')
+            build.buildpack_url = app_repo.buildpack.url
+            build.buildpack_version = app_repo.buildpack.version
+    except:
+        build.status = 'failed'
+        raise
+    finally:
         build.save()
 
-        try:
-            build_path = paver_build.assemble_hg_raw(url)
-            # Save the file to Mongo GridFS
-            localfile = open(build_path, 'r')
-            name = posixpath.basename(build_path)
-
-            # the name that comes out will start with whatever the last
-            # component in the hg repo url is.  We'd rather use the app name.
-            name = re.sub('^[^-]*', app.name, name)
-            filepath = 'builds/' + name
-            default_storage.save(filepath, localfile)
-            localfile.close()
-            build.file = filepath
-            build.end_time = datetime.datetime.now()
-            build.status = 'success'
-            send_event(str(build), "Completed build %s" % build, tags=['build',
-                                                                  'success'])
-        except:
-            build.status = 'failed'
-            raise
-        finally:
-            build.save()
+    send_event(str(build), "Completed build %s" % build, tags=['build',
+                                                               'success'])
 
     # start callback if there is one.
     if callback is not None:
@@ -160,6 +206,50 @@ def build_hg(build_id, callback=None):
 
     # If there were any other swarms waiting on this build, kick them off
     build_start_waiting_swarms(build.id)
+
+
+#@task
+#@event_on_exception(['build'])
+#def build_hg(build_id, callback=None):
+    ## call the assemble_hg function.
+    #build = Build.objects.get(id=build_id)
+    #send_event(str(build), "Started build %s" % build, tags=['build'])
+    #app = build.app
+    #url = '%s#%s' % (build.app.repo_url, build.tag)
+    #with tmpdir():
+        #build.status = 'started'
+        #build.start_time = timezone.now()
+        #build.save()
+
+        #try:
+            #build_path = paver_build.assemble_hg_raw(url)
+            ## Save the file to Mongo GridFS
+            #localfile = open(build_path, 'r')
+            #name = posixpath.basename(build_path)
+
+            ## the name that comes out will start with whatever the last
+            ## component in the hg repo url is.  We'd rather use the app name.
+            #name = re.sub('^[^-]*', app.name, name)
+            #filepath = 'builds/' + name
+            #default_storage.save(filepath, localfile)
+            #localfile.close()
+            #build.file = filepath
+            #build.end_time = datetime.datetime.now()
+            #build.status = 'success'
+            #send_event(str(build), "Completed build %s" % build, tags=['build',
+                                                                  #'success'])
+        #except:
+            #build.status = 'failed'
+            #raise
+        #finally:
+            #build.save()
+
+    ## start callback if there is one.
+    #if callback is not None:
+        #subtask(callback).delay()
+
+    ## If there were any other swarms waiting on this build, kick them off
+    #build_start_waiting_swarms(build.id)
 
 
 @task
@@ -234,7 +324,7 @@ def swarm_start(swarm_id):
         swarm_wait_for_build(swarm, build)
     else:
         callback = swarm_release.subtask((swarm.id,))
-        build_hg.delay(build.id, callback)
+        build_app.delay(build.id, callback)
 
 
 # This task should only be used as a callback after swarm_start
@@ -263,10 +353,7 @@ def swarm_release(swarm_id):
     elif swarm.release.parsed_config() != swarm.recipe.assemble():
         # Our frozen release doesn't have current config.  We'll need to make a
         # new release, with the same build, and link the swarm to that.
-        release = Release(recipe=swarm.recipe, build=build,
-                          config=swarm.recipe.to_yaml())
-        release.save()
-        swarm.release = release
+        swarm.release = swarm.recipe.get_current_release(build.tag)
         swarm.save()
 
     # OK we have a release.  Next: see if we need to do a deployment.
@@ -349,7 +436,7 @@ def swarm_deploy_to_host(swarm_id, host_id, ports):
             host.name,
             swarm.proc_name,
             port,
-            contain=True,
+            chroot=True,
         )
 
     procnames = ["%s-%s-%s" % (swarm.release, swarm.proc_name, port) for port
@@ -700,6 +787,7 @@ class tmpdir(object):
     def __enter__(self):
         self.temp_path = tempfile.mkdtemp()
         os.chdir(self.temp_path)
+        return self.temp_path
 
     def __exit__(self, type, value, traceback):
         os.chdir(self.orig_path)

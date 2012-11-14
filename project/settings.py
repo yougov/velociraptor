@@ -11,6 +11,7 @@ from socket import getfqdn
 from datetime import timedelta
 import os
 import warnings
+import logging
 
 import djcelery
 from celery.schedules import crontab
@@ -284,6 +285,27 @@ GRIDFS_COLLECTION = mongoparts['collection'] or 'fs'
 
 djcelery.setup_loader()
 
+
+def setup_logger():
+    """
+    creates a logger 'velociraptor'
+    """
+    logger = logging.getLogger('velociraptor')
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler()
+    handler.setLevel(logging.INFO)
+
+    # create formatter
+    template = '%(levelname)s [%(name)s] %(message)s'
+    formatter = logging.Formatter(template)
+    # add formatter to handler
+    handler.setFormatter(formatter)
+
+    # add handler to logger
+    logger.addHandler(handler)
+
+
+setup_logger()
 # Now that production settings have been patched in, schedule a task for build
 # cleanup if necessary.
 if BUILD_EXPIRATION_DAYS is not None:

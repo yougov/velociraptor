@@ -38,6 +38,9 @@ def guess_folder_vcs(folder):
 class Repo(object):
 
     def __init__(self, folder, url=None, vcs_type=None):
+        # strip trailing slash from folder if present
+        if folder.endswith('/'):
+            folder = folder[:-1]
         self.folder = folder
 
         vcs_type = vcs_type or guess_folder_vcs(folder) or guess_url_vcs(url)
@@ -52,22 +55,29 @@ class Repo(object):
             raise ValueError('Must provide repo url if folder does not exist')
         self.url = url or self.vcs.get_url()
 
-    def update(self):
+    def update(self, rev=None):
         # If folder already exists, try updating the repo.  Else do a new
         # checkout
-        if os.path.exists(self.folder):
-            tip = {
-                'git': 'HEAD',
-                'hg': 'tip',
-                'svn': None,
-            }[self.vcs_type]
-            self.vcs.update(tip)
-        else:
+        tip = {
+            'git': 'HEAD',
+            'hg': 'tip',
+            'svn': None,  # not really implemented
+        }[self.vcs_type]
+        if not os.path.exists(self.folder):
             self.vcs.checkout(self.url)
+        # Note: Until
+        # https://github.com/tkruse/vcstools/commit/f74273e08966bd45f9f594b3fa0e26668a68ecbf
+        # is merged into a release of vcstools, Repo.update() will not force a
+        # git fetch to sync the local repo from master.
+        self.vcs.update(rev or tip)
 
     @property
     def basename(self):
         return basename(self.url)
+
+    @property
+    def version(self):
+        return self.vcs.get_version()
 
     def __repr__(self):
         values = {'classname': self.__class__.__name__, 'folder':

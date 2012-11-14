@@ -19,9 +19,6 @@ listener = Listener(r, channels=['foo'])
 for message in listener:
     do_something(message)
 
-In a Django view, you should actually just be able to do this:
-def some_view(request):
-
 """
 
 import json

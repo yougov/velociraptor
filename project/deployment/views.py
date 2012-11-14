@@ -21,13 +21,13 @@ def dash(request):
 
 
 @login_required
-def build_hg(request):
+def build_app(request):
     form = forms.BuildForm(request.POST or None)
     if form.is_valid():
         app = models.App.objects.get(id=form.cleaned_data['app_id'])
         build = models.Build(app=app, tag=form.cleaned_data['tag'])
         build.save()
-        tasks.build_hg.delay(build_id=build.id)
+        tasks.build_app.delay(build_id=build.id)
         events.eventify(request.user, 'build', build)
         return redirect('dash')
     return render(request, 'basic_form.html', {
@@ -60,9 +60,7 @@ def release(request):
     if form.is_valid():
         build = models.Build.objects.get(id=form.cleaned_data['build_id'])
         recipe = models.ConfigRecipe.objects.get(id=form.cleaned_data['recipe_id'])
-        release = models.Release(recipe=recipe, build=build,
-                           config=recipe.to_yaml(),)
-        release.save()
+        release = recipe.get_current_release(build.tag)
         events.eventify(request.user, 'release', release)
         return HttpResponseRedirect(reverse('deploy'))
     return render(request, 'basic_form.html', {
@@ -97,34 +95,6 @@ def deploy(request):
     return render(request, 'basic_form.html', vars())
 
 
-def get_or_create_release(recipe, tag):
-    # If there's a release linked to the given recipe, that uses the given
-    # build, and has current config, then return that.  Else make a new release
-    # that satisfies those constraints, and return that.
-    releases = models.Release.objects.filter(recipe=recipe,
-                                      build__tag=tag)
-
-    # XXX This relies on the Releases model having ordering set to '-id'
-    if releases and releases[0].parsed_config() == recipe.assemble():
-        return releases[0]
-
-    # If we got here, there's no existing release with the specified recipe,
-    # tag, and current config.  Is there at least a build?
-    builds = models.Build.objects.filter(
-            app=recipe.app, tag=tag
-        ).exclude(status='expired'
-        ).exclude(status='failed')
-    if builds:
-        build = builds[0]
-    else:
-        # Save a build record.  The actual building will be done later.
-        build = models.Build(app=recipe.app, tag=tag)
-        build.save()
-    release = models.Release(recipe=recipe, build=build,
-                      config=recipe.to_yaml())
-    release.save()
-    return release
-
 
 @login_required
 def edit_swarm(request, swarm_id=None):
@@ -156,7 +126,7 @@ def edit_swarm(request, swarm_id=None):
         swarm.balancer = data['balancer'] or None
         swarm.active = data['active']
 
-        swarm.release = get_or_create_release(swarm.recipe, data['tag'])
+        swarm.release = models.get_or_create_release(swarm.recipe, data['tag'])
 
         swarm.save()
         tasks.swarm_start.delay(swarm.id)

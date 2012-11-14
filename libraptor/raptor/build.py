@@ -3,7 +3,7 @@ import subprocess
 import hashlib
 
 import yaml
-from envoy import run
+import envoy
 
 from raptor import repo
 
@@ -14,6 +14,7 @@ CACHE_HOME = os.path.join(HOME, 'cache')
 CONFIG_FILE = os.path.join(HOME, 'config.yaml')
 
 
+
 class BuildPack(repo.Repo):
 
     def detect(self, app):
@@ -22,7 +23,8 @@ class BuildPack(repo.Repo):
         built with this pack.  Return True/False.
         """
         script = os.path.join(self.folder, 'bin', 'detect')
-        result = run('%s %s' % (script, app.folder))
+        cmd = '%s %s' % (script, app.folder)
+        result = envoy.run(cmd)
         return result.status_code == 0
 
     def compile(self, app):
@@ -40,7 +42,7 @@ class BuildPack(repo.Repo):
 
     def release(self, app):
         script = os.path.join(self.folder, 'bin', 'release')
-        result = run('%s %s' % (script, app.folder))
+        result = envoy.run('%s %s' % (script, app.folder))
         assert result.status_code == 0, ("Failed release on %s with %s "
                                          "buildpack" % (app, self.basename))
         return yaml.safe_load(result.std_out)
@@ -51,10 +53,13 @@ class App(repo.Repo):
     A Repo that contains a buildpack-compatible project.
     """
 
-    def __init__(self, folder, buildpack=None, *args, **kwargs):
-        super(App, self).__init__(folder, *args, **kwargs)
+    def __init__(self, folder, url=None, buildpack=None, buildpack_order=None, *args,
+                 **kwargs):
+        super(App, self).__init__(folder, url, *args, **kwargs)
         # If buildpack is None here, we'll try self.detect_buildpack later.
         self.buildpack = buildpack
+        self.buildpack_order = (buildpack_order or
+                                get_config().get('buildpack_order'))
 
     def detect_buildpack(self):
         """
@@ -63,8 +68,8 @@ class App(repo.Repo):
         exception if nothing matches.
         """
         detected = next(
-            (bp for bp in list_buildpacks() if bp.detect(self)),
-            None)
+            (bp for bp in list_buildpacks(preferred_order=self.buildpack_order)
+             if bp.detect(self)), None)
         if detected is None:
             raise ValueError("Cannot determine app's buildpack.")
         self.buildpack = detected
@@ -80,15 +85,16 @@ class App(repo.Repo):
         return self.buildpack.release(self)
 
 
-def list_buildpacks(packs_dir=PACKS_HOME):
-    configured_order = get_config().get('buildpack_order')
-    # if we have a configured_order, then use that first, and filesystem order
+def list_buildpacks(packs_dir=PACKS_HOME, preferred_order=None):
+
+    preferred_order = preferred_order or None
+    # if we have a preferred_order, then use that first, and filesystem order
     # second.
     buildpacks = os.listdir(packs_dir)
-    if configured_order:
+    if preferred_order:
         # This is inefficient.  It doesn't matter.
         new = []
-        for bp in configured_order:
+        for bp in preferred_order:
             if bp in buildpacks:
                 # something from the configured order is installed.  Append to
                 # new list so it's in proper position, and delete from old
@@ -107,10 +113,11 @@ def add_buildpack(url, packs_dir=PACKS_HOME):
     # Check whether the pack exists
     dest = os.path.join(packs_dir, repo.basename(url))
     # If folder already exists, assume that we've already checked out the
-    # buildpack there.  TODO: check for whether the buildpack in the folder is
-    # really the same as the one we've been asked to add.
+    # buildpack there.
+    # TODO: check for whether the buildpack in the folder is really the same as
+    # the one we've been asked to add.
     if not os.path.exists(packs_dir):
-        run('mkdir -p %s' % packs_dir)
+        envoy.run('mkdir -p %s' % packs_dir)
     bp = BuildPack(dest, url)
     bp.update()
 

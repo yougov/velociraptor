@@ -8,14 +8,14 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        db.rename_column('deployment_release', 'config_vars', 'env_vars')
-        db.rename_column('deployment_configrecipe', 'config_vars', 'env_vars')
-        db.rename_column('deployment_build', 'config_vars', 'env_vars')
+
+        # Changing field 'App.repo_url'
+        db.alter_column('deployment_app', 'repo_url', self.gf('django.db.models.fields.CharField')(default='I AM BROKEN.  SET A URL HERE', max_length=200))
 
     def backwards(self, orm):
-        db.rename_column('deployment_release', 'env_vars', 'config_vars')
-        db.rename_column('deployment_configrecipe', 'env_vars', 'config_vars')
-        db.rename_column('deployment_build', 'env_vars', 'config_vars')
+
+        # Changing field 'App.repo_url'
+        db.alter_column('deployment_app', 'repo_url', self.gf('django.db.models.fields.CharField')(max_length=200, null=True))
 
     models = {
         'auth.group': {
@@ -59,15 +59,16 @@ class Migration(SchemaMigration):
             'buildpack': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['deployment.BuildPack']", 'null': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
-            'repo_url': ('django.db.models.fields.CharField', [], {'max_length': '200', 'null': 'True', 'blank': 'True'})
+            'repo_type': ('django.db.models.fields.CharField', [], {'max_length': '10'}),
+            'repo_url': ('django.db.models.fields.CharField', [], {'max_length': '200'})
         },
         'deployment.build': {
             'Meta': {'ordering': "['-id']", 'object_name': 'Build'},
             'app': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['deployment.App']"}),
             'buildpack_revision': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
             'buildpack_url': ('django.db.models.fields.CharField', [], {'max_length': '200'}),
-            'config_vars': ('deployment.fields.YAMLDictField', [], {'null': 'True', 'blank': 'True'}),
             'end_time': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
+            'env_vars': ('deployment.fields.YAMLDictField', [], {'null': 'True', 'blank': 'True'}),
             'file': ('django.db.models.fields.files.FileField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'start_time': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
@@ -75,9 +76,11 @@ class Migration(SchemaMigration):
             'tag': ('django.db.models.fields.CharField', [], {'max_length': '50'})
         },
         'deployment.buildpack': {
-            'Meta': {'object_name': 'BuildPack'},
+            'Meta': {'ordering': "['order']", 'object_name': 'BuildPack'},
             'desc': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'order': ('django.db.models.fields.IntegerField', [], {}),
+            'repo_type': ('django.db.models.fields.CharField', [], {'default': "'git'", 'max_length': '10'}),
             'repo_url': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '200'})
         },
         'deployment.configingredient': {
@@ -89,7 +92,7 @@ class Migration(SchemaMigration):
         'deployment.configrecipe': {
             'Meta': {'ordering': "('app__name',)", 'unique_together': "(('app', 'name'),)", 'object_name': 'ConfigRecipe'},
             'app': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['deployment.App']"}),
-            'config_vars': ('deployment.fields.YAMLDictField', [], {'null': 'True', 'blank': 'True'}),
+            'env_vars': ('deployment.fields.YAMLDictField', [], {'null': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'ingredients': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['deployment.ConfigIngredient']", 'through': "orm['deployment.RecipeIngredient']", 'symmetrical': 'False'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '20'})
@@ -127,7 +130,7 @@ class Migration(SchemaMigration):
             'Meta': {'ordering': "['-id']", 'object_name': 'Release'},
             'build': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['deployment.Build']"}),
             'config': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            'config_vars': ('deployment.fields.YAMLDictField', [], {'null': 'True', 'blank': 'True'}),
+            'env_vars': ('deployment.fields.YAMLDictField', [], {'null': 'True', 'blank': 'True'}),
             'hash': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'recipe': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['deployment.ConfigRecipe']"})

@@ -60,12 +60,24 @@ class ConfigIngredient(models.Model):
         ordering = ['label', ]
 
 
+repo_choices = (
+    ('git', 'git'),
+    ('hg', 'hg'),
+)
+
+
 class BuildPack(models.Model):
     repo_url = models.CharField(max_length=200, unique=True)
+    repo_type = models.CharField(max_length=10, choices=repo_choices,
+                                 default='git')
     desc = models.TextField(blank=True, null=True)
+    order = models.IntegerField()
 
     def __unicode__(self):
-        return self.url
+        return self.repo_url
+
+    class Meta:
+        ordering = ['order']
 
 
 class App(models.Model):
@@ -73,7 +85,8 @@ class App(models.Model):
                 "no spaces or dashes (underscores are OK).")
     name = models.CharField(max_length=50, help_text=namehelp,
         validators=[no_spaces, no_dashes])
-    repo_url = models.CharField(max_length=200, blank=True, null=True)
+    repo_url = models.CharField(max_length=200)
+    repo_type = models.CharField(max_length=10, choices=repo_choices)
 
     buildpack = models.ForeignKey(BuildPack, blank=True, null=True)
 
@@ -103,8 +116,8 @@ class ConfigRecipe(models.Model):
     ingredients = models.ManyToManyField(ConfigIngredient,
                                          through='RecipeIngredient')
 
-    env_vars = YAMLDictField(help_text=("YAML dict of env vars to be set "
-                                           "at runtime"), null=True, blank=True)
+    env_vars = YAMLDictField(help_text=("YAML dict of env vars to be set at "
+                                        "runtime"), null=True, blank=True)
 
     def __unicode__(self):
         return '%s-%s' % (self.app.name, self.name)
@@ -133,6 +146,43 @@ class ConfigRecipe(models.Model):
             return yaml.safe_dump(self.assemble(), default_flow_style=False)
         else:
             return yaml.safe_dump(custom_dict, default_flow_style=False)
+
+    def get_current_release(self, tag):
+        """
+        Retrieve or create a Release that has current config and a build with
+        the specified tag.
+        """
+        # First check if there's a build for our app and the given tag
+        builds = Build.objects.filter(
+                app=self.app, tag=tag
+            ).exclude(status='expired'
+            ).exclude(status='failed'
+            ).order_by('-id')
+        if builds:
+            # we found a qualifying build (either successful or in progress of
+            # being built right this moment).  Use that.
+            build = builds[0]
+        else:
+            # Save a build record.  The actual building will be done later.
+            build = Build(app=self.app, tag=tag)
+            build.save()
+
+        # If there's a release linked to the given recipe, that uses the given
+        # build, and has current config, then return that.  Else make a new
+        # release that satisfies those constraints, and return that.
+        releases = Release.objects.filter(recipe=self,
+                                          build__tag=tag).order_by('-id')
+
+        # only re-use a release if it has current env vars too
+        env_vars = dict(build.env_vars or {})
+        env_vars.update(self.env_vars or {})
+
+        if (releases and releases[0].parsed_config() == self.assemble()
+            and dict(releases[0].env_vars) == env_vars):
+            return releases[0]
+        release = Release(recipe=self, build=build, config=self.to_yaml())
+        release.save()
+        return release
 
     class Meta:
         unique_together = ('app', 'name')
@@ -175,11 +225,11 @@ class Build(models.Model):
     status = models.CharField(max_length=20, choices=build_status_choices,
                               default='pending')
 
-    config_vars = YAMLDictField(help_text=("YAML dict of env vars from "
-                                           "buildpack"), null=True, blank=True)
+    env_vars = YAMLDictField(help_text=("YAML dict of env vars from "
+                                        "buildpack"), null=True, blank=True)
 
-    buildpack_url = models.CharField(max_length=200) # XXX Null?
-    buildpack_revision = models.CharField(max_length=50)
+    buildpack_url = models.CharField(max_length=200, null=True, blank=True)
+    buildpack_version = models.CharField(max_length=50, null=True, blank=True)
 
     def is_usable(self):
         return self.file.name and self.status == 'success'
@@ -235,8 +285,13 @@ class Release(models.Model):
         return md5chars[:8]
 
     def save(self, *args, **kwargs):
-        # If there's a build, then compute the hash
+        # If there's a build, then copy the env vars and compute the hash
         if self.build.file.name:
+            # copy env vars from build
+            self.env_vars = dict(self.build.env_vars or {})
+
+            # update with env vars from recipe
+            self.env_vars.update(self.recipe.env_vars or {})
             self.hash = self.compute_hash()
         super(Release, self).save(*args, **kwargs)
 
