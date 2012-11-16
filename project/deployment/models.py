@@ -17,6 +17,7 @@ import yaml
 
 from deployment.fields import YAMLDictField
 from deployment import events
+from raptor import repo, build
 
 
 LOG_ENTRY_TYPES = (
@@ -78,6 +79,17 @@ class BuildPack(models.Model):
 
     class Meta:
         ordering = ['order']
+
+    @classmethod
+    def get_order(cls):
+        """
+        Return the order in which the build packs should be checked as a list
+        of folder name strings.
+        """
+        return [repo.basename(bp.repo_url) for bp in cls.objects.all()]
+
+    def get_repo(self):
+        return build.add_buildpack(self.repo_url)
 
 
 class App(models.Model):

@@ -13,11 +13,12 @@ import paramiko
 import random
 import string
 import posixpath
+import pkg_resources
+import json
 
-from fabric.api import run, sudo, get, put, task, env
+from fabric.api import sudo, get, put, task, env
 from fabric.contrib import files
 from fabric import colors
-from fabric.context_managers import settings
 
 # TODO: Change these to /apps/ so that we don't have YG-isms in the code and
 # can more safely bind-mount /opt into app environments.  It's tricky, because
@@ -28,7 +29,9 @@ RELEASES_ROOT = '/opt/yg/releases'
 
 
 @task
-def upload_release(build_path, config_path, release_path, user='nobody'):
+def upload_release(build_path, config_path, release_path, envsh_path, user='nobody'):
+    # TODO: accept env_path that points to an env.sh file that can be sourced
+    # by the proc at startup to provide env vars.
 
     remote_procfile = posixpath.join(release_path, 'Procfile')
 
@@ -40,7 +43,6 @@ def upload_release(build_path, config_path, release_path, user='nobody'):
     sudo('mkdir -p ' + release_path)
 
     colors.green('Uploading build')
-    #build_file = os.path.basename(build_path)
     # Make a random filename for the remote tmp file.
     rname = ''.join(random.choice(string.ascii_letters) for x in xrange(20))
     remote_build_path = posixpath.join('/tmp', rname)
@@ -49,7 +51,8 @@ def upload_release(build_path, config_path, release_path, user='nobody'):
     colors.green('Unpacking build')
 
     tar_cmd = 'tar xjf {remote_build_path} -C {release_path} --strip-components 1'
-    sudo(tar_cmd.format(**vars()))
+    tar_cmd = tar_cmd.format(**vars())
+    sudo(tar_cmd)
     sudo('chown -R {user} {release_path}'.format(**vars()))
     sudo('chgrp -R admin {release_path}'.format(**vars()))
     sudo('chmod -R g+w {release_path}'.format(**vars()))
@@ -61,6 +64,8 @@ def upload_release(build_path, config_path, release_path, user='nobody'):
     with SSHConnection(env.host_string, env.user, env.password) as ssh:
         ssh.put_file(config_path, posixpath.join(release_path,
                                                  'settings.yaml'), owner=user)
+        ssh.put_file(envsh_path, posixpath.join(release_path, 'env.sh'),
+                     owner=user)
 
     colors.green('Deleting build tarball')
     sudo('rm ' + remote_build_path)
@@ -105,8 +110,9 @@ class Deployment(object):
         self.proc_path = posixpath.join(PROCS_ROOT, self.proc_name)
         self.proc_tmp_path = posixpath.join(self.proc_path, 'tmp')
         self.release_path = posixpath.join(RELEASES_ROOT, self.release_name)
-        self.env_bin_path = self.release_path + '/env/bin'
-        self.yaml_settings_path = self.release_path + "/settings.yaml"
+        self.envsh_path = posixpath.join(self.release_path, 'env.sh')
+        self.yaml_settings_path = posixpath.join(self.release_path,
+                                                 "settings.yaml")
         self.proc_line = self.get_proc_line()
 
     def run(self):
@@ -116,6 +122,7 @@ class Deployment(object):
         self.write_proc_conf()
         self.write_start_proc_sh()
         self.create_proc_tmpdir()
+        self.upload_uptester()
 
         if self.contain:
             # Make container mount points.  lxc will handle the actual mounts,
@@ -164,7 +171,7 @@ class Deployment(object):
 
         sh_remote = posixpath.join(self.proc_path, 'start_proc.sh')
         files.upload_template(sh_script, sh_remote, {
-            'env_bin_path': self.env_bin_path,
+            'envsh_path': '/app/env.sh' if self.contain else self.envsh_path,
             'settings_path': self.release_path + "/settings.yaml",
             'port': self.port,
             'cmd': self.proc_line,
@@ -201,6 +208,16 @@ class Deployment(object):
             # Clean up our tempdir
             shutil.rmtree(tempdir)
 
+    def upload_uptester(self):
+        """
+        Upload libraptor's "uptester" program to the proc root.
+        """
+        uptester = pkg_resources.resource_filename('raptor',
+                                                   'uptester/uptester')
+        remote_path = posixpath.join(self.proc_path, 'uptester')
+        put(uptester, remote_path, use_sudo=True)
+        sudo('chmod +x %s' % remote_path)
+
 
 @task
 def configure_proc(release_name, proc, port, user='nobody', use_syslog=False,
@@ -211,8 +228,9 @@ def configure_proc(release_name, proc, port, user='nobody', use_syslog=False,
 
 
 @task
-def deploy_parcel(build_path, config_path, profile, proc, port, user='nobody',
-                  checksum=None, use_syslog=False, contain=False):
+def deploy_parcel(build_path, config_path, envsh_path, recipe, proc, port,
+                  user='nobody', use_syslog=False, contain=False,
+                  release_hash=None):
     # Builds have timstamps, but releases really don't care about them.  Two
     # releases created at different times with the same build and settings
     # should be treated the same.  So throw away the timestamp portion of the
@@ -225,16 +243,12 @@ def deploy_parcel(build_path, config_path, profile, proc, port, user='nobody',
     # A release name should look like gryphon-2.2.3-ldc-d5338b8a07, where the
     # random looking chars at the end come from a hash of the build tarball and
     # settings.yaml used for the release.
-    chars = open(build_path, 'rb').read() + open(config_path, 'rb').read()
-    release_hash = hashlib.md5(chars).hexdigest()[:8]
-
-    # If a checksum has been passed, compare it to the computed release hash.
-    # If they're not equal, bail out.
-    if checksum:
-        assert checksum == release_hash, "checksum != release_hash"
-
-    release_name = '-'.join([app_name, version, profile, release_hash])
+    if release_hash is None:
+        chars = open(build_path, 'rb').read() + open(config_path, 'rb').read()
+        release_hash = hashlib.md5(chars).hexdigest()[:8]
+    release_name = '-'.join([app_name, version, recipe, release_hash])
     release_path = posixpath.join(RELEASES_ROOT, release_name)
+
 
     # Ensure that the proc path is written before the release is uploaded, to
     # prevent a race condition with the scooper.
@@ -242,7 +256,7 @@ def deploy_parcel(build_path, config_path, profile, proc, port, user='nobody',
     proc_path = posixpath.join(PROCS_ROOT, proc_name)
     sudo('mkdir -p ' + proc_path)
 
-    upload_release(build_path, config_path, release_path)
+    upload_release(build_path, config_path, release_path, envsh_path)
 
     configure_proc(release_name, proc, port, user, use_syslog=use_syslog,
                    contain=contain)
@@ -253,65 +267,97 @@ def parse_procname(proc):
     return vars()
 
 
-@task
-def run_uptests(proc):
-    # SSH to host, find the release for the proc, and look for files in its
-    # 'uptests/<procname>' folder.  Run each one, passing in the hostname and
-    # port.
+def build_contained_uptests_command(proc_path, proc, host, port, user):
+    """
+    Build the command string for uptesting the given proc inside its lxc
+    container.
+    """
+    tmpl = """lxc-start --name %(procname)s-uptest -f %(lxc_config)s -- su --preserve-environment -c "cd /app;source /app/env.sh; exec /uptester %(folder)s %(host)s %(port)s" %(user)s"""
+    return tmpl % {
+        'procname': posixpath.basename(proc_path),
+        'lxc_config': posixpath.join(proc_path, 'proc.lxc'),
+        'folder': posixpath.join('/app/uptests', proc),
+        'host': host,
+        'port': port,
+        'user': user,
+    }
 
-    # Note that while we're currently using the proc's own copy of the release
-    # code, this is not guaranteed to be the case in the future. The uptests
-    # could be executed on any host, though we'll guarantee that the
-    # environment's bin folder will be first on the path.
+
+def build_uncontained_uptests_command(release_path, proc_path, proc, host,
+                                      port, user):
+    """
+    Build the command string for uptesting a proc that's not inside an lxc
+    container.
+    """
+    tmpl = """su -c "cd %(release_path)s;source %(envsh_path)s;%(uptester)s %(folder)s %(host)s %(port)s" %(user)s"""
+    return tmpl % {
+        'release_path': release_path,
+        'envsh_path': posixpath.join(release_path, 'env.sh'),
+        'folder': posixpath.join(release_path, 'uptests', proc),
+        'host': host,
+        'port': port,
+        'user': user,
+        'uptester': posixpath.join(proc_path, 'uptester'),
+    }
+
+
+@task
+def ensure_uptester(proc_path):
+    # If there's no uptester in the proc folder, put one there.
+    uptester_path = posixpath.join(proc_path, 'uptester')
+    if not files.exists(uptester_path):
+        uptester = pkg_resources.resource_filename('raptor',
+                                                   'uptester/uptester')
+        put(uptester, uptester_path, use_sudo=True)
+
+
+@task
+def run_uptests(proc, user='nobody'):
     procdata = parse_procname(proc)
     procname = procdata['procname']
-    release_path = (RELEASES_ROOT + '/%(app)s-%(version)s-%(profile)s-%(release_hash)s' %
-                    procdata)
-    tests_path = '%s/uptests/%s/' % (release_path, procname)
+    release_path = posixpath.join(RELEASES_ROOT,
+                                  '%(app)s-%(version)s-%(profile)s-%(release_hash)s'
+                                  % procdata)
+    procdata['release_path'] = release_path
+    proc_path = posixpath.join(PROCS_ROOT, proc)
+    tests_path = posixpath.join(release_path, 'uptests', procname)
+    lxc_conf_path = posixpath.join(proc_path, 'proc.lxc')
     try:
-        if not files.exists(tests_path):
-            return []
+        ensure_uptester(proc_path)
+        if files.exists(tests_path):
+            # determine whether we're running contained or uncontained
+            if files.exists(lxc_conf_path):
+                cmd = build_contained_uptests_command(proc_path, procname,
+                                                      env.host_string,
+                                                      procdata['port'], user)
+            else:
+                cmd = build_uncontained_uptests_command(release_path,
+                                                        proc_path, procname,
+                                                        env.host_string,
+                                                        procdata['port'], user)
+
+            # the remote uptester will dump json to stdout
+            return json.loads(sudo(cmd))
         else:
-            # now look for all files in the uptests folder
-            test_files = sudo('ls -1 ' + tests_path).split()
-            results = []
-            for filename in test_files:
-                # Build up command, with env vars and command line arguments.
-                # Should look like:
-                # <ENV> test_script <host> <port>
-                cmd = ' '.join([
-                    'PATH="%s/env/bin:$PATH"' % release_path,
-                    'APP_SETTINGS_YAML="%s/settings.yaml"' % release_path,
-                    tests_path + filename,
-                    env.host or env.host_string,
-                    procdata['port']
-                ])
-                with settings(warn_only=True):
-                    result = run(cmd)
-                results.append({
-                    'uptest': filename,
-                    'output': str(result),
-                    'return_code': result.return_code,
-                    'passed': result.return_code == 0,
-                })
-            return results
+            return []
+
     except (Exception, SystemExit):
         # Fabric will raise SystemExit if we don't supply the right password
         # and abort_on_prompts is True.  Here we catch any exception raised
         # during the uptests and pass it back in the same format as other test
         # results.
-        exc_type, exc_value, exc_traceback = sys.exc_info()
+        exc_type, exc_value, exc_sraceback = sys.exc_info()
         return [{
-            'uptest': None,
-            'output': repr(traceback.format_exception(exc_type, exc_value,
-                                          exc_traceback)),
-            'return_code': 1,
-            'passed': False,
+            'Name': None,
+            'Output': traceback.format_exc(),
+            'Passed': False,
         }]
 
 
 @task
 def delete_proc(proc):
+    # TODO: support checking in the /opt/yg/releases and /opt/yg/procs legacy
+    # locations so we have a clean migration path.
     if not proc:
         raise SystemExit("You must supply a proc name")
     # stop the proc
@@ -326,6 +372,8 @@ def delete_proc(proc):
 
 @task
 def delete_release(release, cascade=False):
+    # TODO: support checking in the /opt/yg/releases and /opt/yg/procs legacy
+    # locations so we have a clean migration path.
     procs = sudo('ls -1 %s' % PROCS_ROOT).split()
 
     # this folder name parsing depends on procs being named like
@@ -363,6 +411,9 @@ def clean_releases(execute=True):
 
     Finally if one of the directory doesn't exist we return raise a SystemExit.
     """
+
+    # TODO: support checking in the /opt/yg/releases and /opt/yg/procs legacy
+    # locations so we have a clean migration path.
     if files.exists(PROCS_ROOT, use_sudo=True) and \
         files.exists(RELEASES_ROOT, use_sudo=True):
         procs = sudo('ls -1 %s' % PROCS_ROOT).split()
@@ -390,6 +441,11 @@ class SSHConnection(object):
     You can also instantiate this object without using it as a context manager.
     If you do, it's up to you to call close() when you're done.
     """
+    # This class began life with grand ambitions to be a Fabric replacement.
+    # Then I realized how much ugliness Fabric was hiding from me.  Now this
+    # class is just used for writing the settings.yaml file inside a release,
+    # because Fabric jobs would delete each other's temp files if two workers
+    # happened to try deploying the same file at the same time
     def __init__(self, host, user, password, tmpdir='/tmp'):
         self.host = host
         self.user = user

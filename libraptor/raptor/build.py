@@ -8,11 +8,10 @@ import envoy
 from raptor import repo
 
 
-HOME = os.path.expanduser('~/.raptor')
+HOME = (os.environ.get('RAPTOR_HOME') or os.path.expanduser('~/.raptor'))
 PACKS_HOME = os.path.join(HOME, 'buildpacks')
 CACHE_HOME = os.path.join(HOME, 'cache')
 CONFIG_FILE = os.path.join(HOME, 'config.yaml')
-
 
 
 class BuildPack(repo.Repo):
@@ -38,7 +37,7 @@ class BuildPack(repo.Repo):
         # to be printed to the terminal.
         retcode = subprocess.call([script, app.folder, cache_folder])
         assert retcode == 0, ("Failed compiling %s with %s buildpack" % (app,
-                                                                         self.name))
+                                                                         self.basename))
 
     def release(self, app):
         script = os.path.join(self.folder, 'bin', 'release')
@@ -120,6 +119,7 @@ def add_buildpack(url, packs_dir=PACKS_HOME):
         envoy.run('mkdir -p %s' % packs_dir)
     bp = BuildPack(dest, url)
     bp.update()
+    return bp
 
 
 def get_config(file_path=CONFIG_FILE):

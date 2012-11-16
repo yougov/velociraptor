@@ -24,10 +24,7 @@ from deployment.models import (Release, Build, Swarm, Host, PortLock, App,
                                TestRun, TestResult)
 from deployment import models
 from deployment import balancer, events, utils
-from raptor.jobs import (deploy_parcel, run_uptests, clean_releases,
-                               delete_proc as fab_delete_proc)
-from raptor import build as rbuild
-from raptor import repo
+from raptor import repo, remote, build as rbuild
 
 
 logger = logging.getLogger('velociraptor')
@@ -60,7 +57,7 @@ class event_on_exception(object):
         def wrapper(*args, **kwargs):
             try:
                 func(*args, **kwargs)
-            except Exception as e:
+            except (Exception, SystemExit) as e:
                 try:
                     send_event(title=str(e), msg=traceback.format_exc(),
                                tags=self.tags)
@@ -71,7 +68,7 @@ class event_on_exception(object):
 
 @task
 @event_on_exception(['deploy'])
-def deploy(release_id, recipe_name, hostname, proc, port, chroot=False):
+def deploy(release_id, recipe_name, hostname, proc, port, contain=False):
     with remove_port_lock(hostname, port):
         release = Release.objects.get(id=release_id)
         msg_title = '%s-%s-%s -> %s' % (release, proc, port, hostname)
@@ -93,9 +90,18 @@ def deploy(release_id, recipe_name, hostname, proc, port, chroot=False):
         env.linewise = True
 
         with tmpdir():
-            f = open('settings.yaml', 'wb')
-            f.write(release.config)
-            f.close()
+            # write the settings.yaml locally
+            with open('settings.yaml', 'wb') as f:
+                f.write(release.config)
+
+            # write the env.sh locally
+            with open('env.sh', 'wb') as f:
+                def format_var(key, val):
+                    return '%(key)s="%(val)s"' % vars()
+                e = release.env_vars
+                env_str = '\n'.join(format_var(k, e[k]) for k in e)
+                f.write(env_str)
+
             # pull the build out of gridfs, write it to a temporary location,
             # and deploy it.
             build_filename = posixpath.basename(release.build.file.name)
@@ -106,19 +112,21 @@ def deploy(release_id, recipe_name, hostname, proc, port, chroot=False):
             local_build.close()
             build.close()
 
-            proc_user = getattr(settings, 'PROC_USER', 'nobody')
-
             with always_disconnect():
-                deploy_parcel(build_filename,
-                              'settings.yaml',
-                              recipe_name,
-                              proc,
-                              port,
-                              proc_user,
-                              release.hash,
+                print "deploying"
+                remote.deploy_parcel(
+                              build_path=build_filename,
+                              config_path='settings.yaml',
+                              envsh_path='env.sh',
+                              recipe=recipe_name,
+                              proc=proc,
+                              release_hash=release.hash,
+                              port=port,
+                              user=getattr(settings, 'PROC_USER', 'nobody'),
                               use_syslog=getattr(settings, 'PROC_SYSLOG',
                                                  False),
-                              chroot=chroot)
+                              contain=contain)
+                print "deployed"
 
     _update_host_cache(hostname)
 
@@ -148,14 +156,6 @@ def run(cmd):
 
 
 @task
-def update_buildpacks():
-    # update all the buildpacks
-    # TODO: allow marking buildpacks as inactive so they won't be used here.
-    for bp in models.BuildPack.objects.all():
-        rbuild.add_buildpack(bp.repo_url)
-
-
-@task
 @event_on_exception(['build'])
 def build_app(build_id, callback=None):
     build = Build.objects.get(id=build_id)
@@ -166,25 +166,44 @@ def build_app(build_id, callback=None):
     build.start_time = timezone.now()
     build.save()
     try:
-        update_buildpacks()
         with tmpdir() as here:
             # Check out project and update to specified version
             app_path = os.path.join(here, repo.basename(app.repo_url))
-            app_repo = rbuild.App(app_path, app.repo_url,
-                                  vcs_type=app.repo_type)
+            repo_kwargs = {
+                'folder': app_path,
+                'url': app.repo_url,
+                'vcs_type': app.repo_type,
+            }
+
+            # If the app specifies a buildpack, just use that.  Else make sure
+            # all buildpacks are cloned and specify the order in which they
+            # should be checked against the repo.
+            if app.buildpack:
+                repo_kwargs['buildpack'] = app.buildpack.get_repo()
+            else:
+                for bp in models.BuildPack.objects.all():
+                    bp.get_repo()
+                repo_kwargs['buildpack_order'] = models.BuildPack.get_order()
+
+            app_repo = rbuild.App(**repo_kwargs)
             app_repo.update(build.tag)
             app_repo.compile()
             # tar the build
             name_tmpl = '%(app)s-%(version)s-%(time)s.tar.bz2'
-            time = datetime.datetime.utcnow()
+            time = timezone.now()
             name = name_tmpl % {'app': build.app,
                                 'version': build.tag,
                                 'time': time.strftime('%Y-%m-%dT%H-%M')}
 
-            run('tar -cjf %s %s' % (name, app_repo.folder))
+            tar_params = {'filename': name, 'folder': app_repo.folder}
+            run('tar -C %(folder)s -cjf %(filename)s .' % tar_params)
             filepath = 'builds/' + name
             with open(name, 'rb') as localfile:
                 default_storage.save(filepath, localfile)
+
+            # XXX DEBUG.  Also write a copy locally so we can test untarring
+            envoy.run('cp %s /tmp/build.tar.bz2' % name)
+
             build.file = filepath
             build.end_time = time
             build.status = 'success'
@@ -273,7 +292,7 @@ def delete_proc(host, proc, callback=None):
     env.password = settings.DEPLOY_PASSWORD
     env.linewise = True
     with always_disconnect():
-        fab_delete_proc(proc)
+        remote.delete_proc(proc)
     send_event(proc, 'deleted %s on %s' % (proc, host), tags=['proc', 'deleted'])
 
     if callback:
@@ -436,7 +455,7 @@ def swarm_deploy_to_host(swarm_id, host_id, ports):
             host.name,
             swarm.proc_name,
             port,
-            chroot=True,
+            contain=True,
         )
 
     procnames = ["%s-%s-%s" % (swarm.release, swarm.proc_name, port) for port
@@ -488,7 +507,7 @@ def uptest_host_procs(hostname, procs):
     env.linewise = True
 
     with always_disconnect():
-        results = {p: run_uptests(p) for p in procs}
+        results = {p: remote.run_uptests(p) for p in procs}
     return hostname, results
 
 
@@ -507,7 +526,7 @@ def uptest_host(hostname, test_run_id=None):
         for procname, resultlist in results.items():
             testcount = len(resultlist)
             if testcount:
-                passed = all(r['passed'] for r in resultlist)
+                passed = all(r['Passed'] for r in resultlist)
             else:
                 # There were no tests :(
                 passed = True
@@ -549,12 +568,11 @@ def swarm_post_uptest(uptest_results, swarm_id):
         for proc, results in proc_results.items():
             for result in results:
                 test_counter += 1
-                # XXX This checking/formatting relies on each uptest result
-                # being a dict with 'passed', 'uptest', 'return_code', and
-                # 'output' keys.
-                if result['passed'] != True:
-                    msg = (proc + ": {uptest} failed with code {return_code} "
-                           "and output '{output}'".format(**result))
+                # This checking/formatting relies on each uptest result being a
+                # dict with 'Passed', 'Name', and 'Output' keys.
+                if result['Passed'] != True:
+                    msg = (proc + ": {Name} failed with output "
+                           "'{Output}'".format(**result))
                     send_event(str(swarm), msg, tags=['failed', 'uptest'])
                     raise FailedUptest(msg)
 
@@ -566,9 +584,7 @@ def swarm_post_uptest(uptest_results, swarm_id):
         send_event(str(swarm), 'No uptests for swarm %s' % swarm,
                    tags=['warning', 'uptest'])
 
-
     # Also check for captured failures in the results
-
     correct_nodes = set()
     for host, results in uptest_results:
         # results is now a dictionary keyed by procname
@@ -696,7 +712,7 @@ def _clean_host_releases(hostname):
     env.linewise = True
 
     with always_disconnect():
-        clean_releases(execute=True)
+        remote.clean_releases(execute=True)
 
 
 @task

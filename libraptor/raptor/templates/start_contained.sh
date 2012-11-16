@@ -7,7 +7,6 @@
 # that will be used to write a real start script at deploy time.  The magic
 # strings will be substituted with real values at that time.
 
-source /etc/profile
 export APP_SETTINGS_YAML="/app/settings.yaml"
 export PORT=%(port)s
 export TMPDIR=/tmp
@@ -15,5 +14,4 @@ export TMPDIR=/tmp
 CMD="%(cmd)s"
 PROCNAME=%(proc_name)s
 PROCS_ROOT=%(procs_root)s
-PATH=/app/env/bin:$PATH
-exec lxc-start --name $PROCNAME -f $PROCS_ROOT/$PROCNAME/proc.lxc -- su --preserve-environment -c "cd /app;exec $CMD" %(user)s
+exec lxc-start --name $PROCNAME -f $PROCS_ROOT/$PROCNAME/proc.lxc -- su --preserve-environment -c "cd /app;source %(envsh_path)s; exec $CMD" %(user)s

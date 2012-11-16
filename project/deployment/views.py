@@ -126,7 +126,7 @@ def edit_swarm(request, swarm_id=None):
         swarm.balancer = data['balancer'] or None
         swarm.active = data['active']
 
-        swarm.release = models.get_or_create_release(swarm.recipe, data['tag'])
+        swarm.release = swarm.recipe.get_current_release(data['tag'])
 
         swarm.save()
         tasks.swarm_start.delay(swarm.id)
