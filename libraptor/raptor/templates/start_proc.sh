@@ -10,6 +10,7 @@
 export APP_SETTINGS_YAML="%(settings_path)s"
 export PORT=%(port)s
 export TMPDIR=%(tmpdir)s
+export HOME=%(tmpdir)s
 
 source %(envsh_path)s
 exec %(cmd)s 

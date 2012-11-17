@@ -15,6 +15,7 @@ import string
 import posixpath
 import pkg_resources
 import json
+import re
 
 from fabric.api import sudo, get, put, task, env
 from fabric.contrib import files
@@ -301,6 +302,48 @@ def build_uncontained_uptests_command(release_path, proc_path, proc, host,
     }
 
 
+def build_legacy_uptests_command(release_path, proc_path, proc, host, port,
+                                 user):
+    tmpl = """su -c "cd %(release_path)s;%(env_vars)s;%(uptester)s %(folder)s %(host)s %(port)s" %(user)s"""
+    env_vars = ('APP_SETTINGS_YAML=%(settings_path)s PATH=%(env_bin)s:$PATH'
+        % {
+            'settings_path': posixpath.join(release_path, 'settings.yaml'),
+            'env_bin': posixpath.join(release_path, 'env', 'bin'),
+        })
+    return tmpl % {
+        'release_path': release_path,
+        'env_vars': env_vars,
+        'folder': posixpath.join(release_path, 'uptests', proc),
+        'host': host,
+        'port': port,
+        'user': user,
+        'uptester': posixpath.join(proc_path, 'uptester'),
+    }
+
+
+def build_uptests_command(release_path, proc_path, proc, host, port, user):
+    """
+    Pick from the available uptest command builders based on what's present in
+    the proc and release dirs.  Run that builder and return its result.
+    """
+    lxc_conf_path = posixpath.join(proc_path, 'proc.lxc')
+    envsh_path = posixpath.join(release_path, 'env.sh')
+    if files.exists(lxc_conf_path):
+        return build_contained_uptests_command(proc_path, proc,
+                                              env.host_string,
+                                              port, user)
+    elif files.exists(envsh_path):
+        return build_uncontained_uptests_command(release_path,
+                                                proc_path, proc,
+                                                env.host_string,
+                                                port, user)
+
+    return build_legacy_uptests_command(release_path,
+                                                proc_path, proc,
+                                                env.host_string,
+                                                port, user)
+
+
 @task
 def ensure_uptester(proc_path):
     # If there's no uptester in the proc folder, put one there.
@@ -309,6 +352,7 @@ def ensure_uptester(proc_path):
         uptester = pkg_resources.resource_filename('raptor',
                                                    'uptester/uptester')
         put(uptester, uptester_path, use_sudo=True)
+        sudo('chmod +x %s' % uptester_path)
 
 
 @task
@@ -321,23 +365,55 @@ def run_uptests(proc, user='nobody'):
     procdata['release_path'] = release_path
     proc_path = posixpath.join(PROCS_ROOT, proc)
     tests_path = posixpath.join(release_path, 'uptests', procname)
-    lxc_conf_path = posixpath.join(proc_path, 'proc.lxc')
     try:
         ensure_uptester(proc_path)
         if files.exists(tests_path):
             # determine whether we're running contained or uncontained
-            if files.exists(lxc_conf_path):
-                cmd = build_contained_uptests_command(proc_path, procname,
-                                                      env.host_string,
-                                                      procdata['port'], user)
-            else:
-                cmd = build_uncontained_uptests_command(release_path,
-                                                        proc_path, procname,
-                                                        env.host_string,
-                                                        procdata['port'], user)
+            cmd = build_uptests_command(release_path, proc_path,
+                                                    procname, env.host_string,
+                                                    procdata['port'], user)
 
-            # the remote uptester will dump json to stdout
-            return json.loads(sudo(cmd))
+            result = sudo(cmd)
+
+            # Though the uptester emits JSON to stdout, it's possible for the
+            # container or env var setup to emit some other output before the
+            # uptester even runs.  Stuff like this:
+
+            # 'bash: /app/env.sh: No such file or directory'
+
+            # Split that off and prepend it as an extra first uptest result.
+            # Since results should be a JSON list, look for any characters
+            # preceding the first square bracket.
+
+            m = re.match('(?P<prefix>[^\[]*)(?P<json>.*)', result, re.S)
+
+            # If the regular expression doesn't even match, return the raw
+            # string.
+            if m is None:
+                return [{
+                    'Passed': False,
+                    'Name': 'uptester',
+                    'Output': result,
+                }]
+
+            parts = m.groupdict()
+            try:
+                parsed = json.loads(parts['json'])
+                if len(parts['prefix']):
+                    parsed.insert(0, {
+                        'Passed': False,
+                        'Name': 'uptester',
+                        'Output': parts['prefix']
+                    })
+                return parsed
+            except ValueError:
+                # If we still fail parsing the json, return a dict of our own
+                # with all the output inside.
+                return [{
+                    'Passed': False,
+                    'Name': 'uptester',
+                    'Output': result
+                }]
         else:
             return []
 

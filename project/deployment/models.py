@@ -91,6 +91,14 @@ class BuildPack(models.Model):
     def get_repo(self):
         return build.add_buildpack(self.repo_url)
 
+    def check_current(self, version):
+        """
+        Given a version hash (like one attached to an old build), tell whether
+        it's equal to this buildpack's latest version.
+        """
+        bp = build.add_buildpack(self.repo_url)
+        return bp.version == version
+
 
 class App(models.Model):
     namehelp = ("Used in release name.  Good app names are short and use "
@@ -148,7 +156,6 @@ class ConfigRecipe(models.Model):
 
         for i in ingredients:
             out.update(i.value)
-
         return out
 
     def to_yaml(self, custom_dict=None):
@@ -164,21 +171,11 @@ class ConfigRecipe(models.Model):
         Retrieve or create a Release that has current config and a build with
         the specified tag.
         """
-        # First check if there's a build for our app and the given tag
-        builds = Build.objects.filter(
-                app=self.app, tag=tag
-            ).exclude(status='expired'
-            ).exclude(status='failed'
-            ).order_by('-id')
-        if builds:
-            # we found a qualifying build (either successful or in progress of
-            # being built right this moment).  Use that.
-            build = builds[0]
-        else:
-            # Save a build record.  The actual building will be done later.
+
+        build = Build.get_current(self.app, tag)
+        if build is None:
             build = Build(app=self.app, tag=tag)
             build.save()
-
         # If there's a release linked to the given recipe, that uses the given
         # build, and has current config, then return that.  Else make a new
         # release that satisfies those constraints, and return that.
@@ -190,7 +187,7 @@ class ConfigRecipe(models.Model):
         env_vars.update(self.env_vars or {})
 
         if (releases and releases[0].parsed_config() == self.assemble()
-            and dict(releases[0].env_vars) == env_vars):
+            and dict(releases[0].env_vars or {}) == env_vars):
             return releases[0]
         release = Release(recipe=self, build=build, config=self.to_yaml())
         release.save()
@@ -263,6 +260,43 @@ class Build(models.Model):
             return False
 
         return True
+
+    @classmethod
+    def get_current(cls, app, tag):
+        """
+        Given an app and a tag, look for a build that matches both, was
+        successfully built (or is currently building), and uses the latest
+        version of its buildpack.  If not found, return None.
+        """
+        # First check if there's a build for our app and the given tag
+        builds = cls.objects.filter(
+                app=app, tag=tag
+            ).exclude(status='expired'
+            ).exclude(status='failed'
+            ).order_by('-id')
+
+        if not builds:
+            return None
+
+        # we found a qualifying build (either successful or in progress of
+        # being built right this moment).
+        build = builds[0]
+
+        # If build is in progress, that's ok.
+        if build.in_progress():
+            return build
+
+        # If it's fully built, only return it if it uses the current version of
+        # the buildpack.
+        try:
+            bp = BuildPack.objects.get(repo_url=build.buildpack_url)
+        except BuildPack.DoesNotExist:
+            return None
+
+        if bp.check_current(build.buildpack_version):
+            return build
+
+        return None
 
     def __unicode__(self):
         # Return the app name and version

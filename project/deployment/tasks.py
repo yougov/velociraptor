@@ -98,7 +98,7 @@ def deploy(release_id, recipe_name, hostname, proc, port, contain=False):
             with open('env.sh', 'wb') as f:
                 def format_var(key, val):
                     return '%(key)s="%(val)s"' % vars()
-                e = release.env_vars
+                e = release.env_vars or {}
                 env_str = '\n'.join(format_var(k, e[k]) for k in e)
                 f.write(env_str)
 

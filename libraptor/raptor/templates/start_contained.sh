@@ -10,6 +10,7 @@
 export APP_SETTINGS_YAML="/app/settings.yaml"
 export PORT=%(port)s
 export TMPDIR=/tmp
+export HOME=/tmp
 
 CMD="%(cmd)s"
 PROCNAME=%(proc_name)s
