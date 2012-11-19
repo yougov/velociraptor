@@ -195,7 +195,7 @@ class ConfigRecipe(models.Model):
 
     class Meta:
         unique_together = ('app', 'name')
-        ordering = ('app__name',)
+        ordering = ('app__name', 'name')
 
 
 class RecipeIngredient(models.Model):
