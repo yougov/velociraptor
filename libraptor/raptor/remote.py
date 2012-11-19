@@ -4,7 +4,6 @@ SSH.
 """
 
 import os
-import sys
 import traceback
 import tempfile
 import shutil
@@ -25,8 +24,14 @@ from fabric import colors
 # can more safely bind-mount /opt into app environments.  It's tricky, because
 # cleanup code will have to check both the old and new locations when it runs.
 # OR we do a one-time migration.
-PROCS_ROOT = '/opt/yg/procs'
-RELEASES_ROOT = '/opt/yg/releases'
+PROCS_ROOT = '/apps/procs'
+RELEASES_ROOT = '/apps/releases'
+
+# Must check these locations as well when doing anything with existing procs
+# (uptests, cleanups).
+# TODO: remove this feature once YG is fully in the new locations.
+LEGACY_PROCS_ROOT = '/opt/yg/procs'
+LEGACY_RELEASES_ROOT = '/opt/yg/releases'
 
 
 @task
@@ -348,9 +353,8 @@ def build_uptests_command(release_path, proc_path, proc, host, port, user):
 def ensure_uptester(proc_path):
     # If there's no uptester in the proc folder, put one there.
     uptester_path = posixpath.join(proc_path, 'uptester')
-    if not files.exists(uptester_path):
-        uptester = pkg_resources.resource_filename('raptor',
-                                                   'uptester/uptester')
+    uptester = pkg_resources.resource_filename('raptor', 'uptester/uptester')
+    if files.exists(proc_path) and not files.exists(uptester_path):
         put(uptester, uptester_path, use_sudo=True)
         sudo('chmod +x %s' % uptester_path)
 
@@ -359,11 +363,23 @@ def ensure_uptester(proc_path):
 def run_uptests(proc, user='nobody'):
     procdata = parse_procname(proc)
     procname = procdata['procname']
+    release_name = ('%(app)s-%(version)s-%(profile)s-%(release_hash)s' %
+                    procdata)
     release_path = posixpath.join(RELEASES_ROOT,
-                                  '%(app)s-%(version)s-%(profile)s-%(release_hash)s'
-                                  % procdata)
+                                  release_name)
     procdata['release_path'] = release_path
     proc_path = posixpath.join(PROCS_ROOT, proc)
+
+    # XXX LEGACY STUFF
+    legacy_release_path = posixpath.join(LEGACY_RELEASES_ROOT, release_name)
+    if (not files.exists(release_path)) and files.exists(legacy_release_path):
+        release_path = legacy_release_path
+
+    legacy_proc_path = posixpath.join(LEGACY_PROCS_ROOT, proc)
+    if (not files.exists(proc_path)) and files.exists(legacy_proc_path):
+        proc_path = legacy_proc_path
+    # XXX END LEGACY STUFF
+
     tests_path = posixpath.join(release_path, 'uptests', procname)
     try:
         ensure_uptester(proc_path)
@@ -374,7 +390,6 @@ def run_uptests(proc, user='nobody'):
                                                     procdata['port'], user)
 
             result = sudo(cmd)
-
             # Though the uptester emits JSON to stdout, it's possible for the
             # container or env var setup to emit some other output before the
             # uptester even runs.  Stuff like this:
@@ -422,7 +437,6 @@ def run_uptests(proc, user='nobody'):
         # and abort_on_prompts is True.  Here we catch any exception raised
         # during the uptests and pass it back in the same format as other test
         # results.
-        exc_type, exc_value, exc_sraceback = sys.exc_info()
         return [{
             'Name': None,
             'Output': traceback.format_exc(),
@@ -432,8 +446,6 @@ def run_uptests(proc, user='nobody'):
 
 @task
 def delete_proc(proc):
-    # TODO: support checking in the /opt/yg/releases and /opt/yg/procs legacy
-    # locations so we have a clean migration path.
     if not proc:
         raise SystemExit("You must supply a proc name")
     # stop the proc
@@ -443,14 +455,18 @@ def delete_proc(proc):
 
     # delete the proc dir
     proc_dir = posixpath.join(PROCS_ROOT, proc)
-    sudo('rm -rf %s' % proc_dir)
+    if files.exists(proc_dir):
+        sudo('rm -rf %s' % proc_dir)
+
+    # TODO: remove this when legacy is no longer needed
+    legacy_proc_dir = posixpath.join(LEGACY_PROCS_ROOT, proc)
+    if files.exists(legacy_proc_dir):
+        sudo('rm -rf %s' % legacy_proc_dir)
 
 
 @task
-def delete_release(release, cascade=False):
-    # TODO: support checking in the /opt/yg/releases and /opt/yg/procs legacy
-    # locations so we have a clean migration path.
-    procs = sudo('ls -1 %s' % PROCS_ROOT).split()
+def delete_release(releases_root, procs_root, release, cascade=False):
+    procs = sudo('ls -1 %s' % procs_root).split()
 
     # this folder name parsing depends on procs being named like
     # dm2-0.0.4-2e257bb8-web-9009, and releases being named like
@@ -469,31 +485,24 @@ def delete_release(release, cascade=False):
             for proc in procs_to_delete:
                 delete_proc(proc)
         else:
-            # Hi Jason.  I wanted to use Fabric's 'red' function to make this
-            # error message stand out, but when running through yg-fab the
-            # message doesn't seem to show at all.
             raise SystemExit('NOT DELETING %s. Release is currently in use, '
                              'and cascade=False' % release)
-    sudo('rm -rf %s/%s' % (RELEASES_ROOT, release))
+    sudo('rm -rf %s/%s' % (releases_root, release))
 
 
 @task
-def clean_releases(execute=True):
-    """ Check in RELEASES_ROOT for releases not being used by procs, so we can
+def clean_releases_folders(releases_root, procs_root, execute=True):
+    """ Check in releases_root for releases not being used by procs, so we can
     clean them up.
 
     You may choose not to execute the actual delete (to test for example), and
     if you choose to be verbose it will print out the releases it will delete.
-
-    Finally if one of the directory doesn't exist we return raise a SystemExit.
     """
 
-    # TODO: support checking in the /opt/yg/releases and /opt/yg/procs legacy
-    # locations so we have a clean migration path.
-    if files.exists(PROCS_ROOT, use_sudo=True) and \
-        files.exists(RELEASES_ROOT, use_sudo=True):
-        procs = sudo('ls -1 %s' % PROCS_ROOT).split()
-        releases = sudo('ls -1 %s' % RELEASES_ROOT).split()
+    if files.exists(procs_root, use_sudo=True) and \
+        files.exists(releases_root, use_sudo=True):
+        procs = sudo('ls -1 %s' % procs_root).split()
+        releases = sudo('ls -1 %s' % releases_root).split()
         releases_in_use = set([
             '%(app)s-%(version)s-%(profile)s-%(release_hash)s' %
             parse_procname(p) for p in procs])
@@ -502,11 +511,14 @@ def clean_releases(execute=True):
             if release not in releases_in_use:
                 deleted.append(release)
                 if execute:
-                    delete_release(release, False)
+                    delete_release(releases_root, procs_root, release, False)
         colors.green("Cleaned up %i releases." % len(deleted))
-    else:
-        raise SystemExit("Either %s or %s doesn't exist" % (PROCS_ROOT,
-                                                            RELEASES_ROOT))
+
+
+@task
+def clean_releases(execute=True):
+    clean_releases_folders(RELEASES_ROOT, PROCS_ROOT, execute)
+    clean_releases_folders(LEGACY_RELEASES_ROOT, LEGACY_PROCS_ROOT, execute)
 
 
 class SSHConnection(object):
