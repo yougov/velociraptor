@@ -805,7 +805,7 @@ class tmpdir(object):
 
     def __exit__(self, type, value, traceback):
         os.chdir(self.orig_path)
-        #shutil.rmtree(self.temp_path, ignore_errors=True)
+        shutil.rmtree(self.temp_path, ignore_errors=True)
 
 
 class tmpredis(object):
