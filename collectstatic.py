@@ -34,6 +34,14 @@ def sh(cmd):
     subprocess.check_call(shlex.split(cmd))
 
 
+def indent(msg):
+    print "       %s" % msg
+
+
+def heading(msg):
+    print "-----> %s" % msg
+
+
 def upload_file(fs, localname, remotename):
 
     with open(localname, 'rb') as f:
@@ -45,9 +53,9 @@ def upload_file(fs, localname, remotename):
             md5 = ''
 
         if md5 == hashlib.md5(contents).hexdigest():
-            print "%(remotename)s unchanged.  Skipping." % vars()
+            indent("%(remotename)s unchanged.  Skipping." % vars())
         else:
-            print "Copying %(localname)s to gridfs:%(remotename)s" % vars()
+            indent("Copying %(localname)s to gridfs:%(remotename)s" % vars())
             fs.put(contents, filename=remotename)
 
 
@@ -72,12 +80,12 @@ def main():
     sys.path.insert(0, os.path.join(here, 'project'))
 
     os.environ['DJANGO_SETTINGS_MODULE'] = 'project.settings'
-    sh('env/bin/python project/manage.py collectstatic --noinput')
+    sh('python project/manage.py collectstatic --noinput')
 
     # look for static/ folder.  If found, copy each file therein into mongo
     # gridfs.
     if os.path.exists(STATICFILES_ROOT):
-        print "SYNCING STATIC FILES TO GRIDFS"
+        heading("Syncing static files to GridFS")
 
         connection = Connection(MONGO_HOST, MONGO_PORT)
         db = connection[MONGO_DB]
