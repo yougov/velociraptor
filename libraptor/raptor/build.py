@@ -24,6 +24,8 @@ class BuildPack(repo.Repo):
         script = os.path.join(self.folder, 'bin', 'detect')
         cmd = '%s %s' % (script, app.folder)
         result = envoy.run(cmd)
+        print "DETECT %s %s %s %s" % (self.url, self.folder, result.std_out, result.std_err)
+        print "CMD %s" % cmd
         return result.status_code == 0
 
     def compile(self, app):
@@ -118,6 +120,7 @@ def add_buildpack(url, packs_dir=PACKS_HOME, vcs_type=None):
     if not os.path.exists(packs_dir):
         envoy.run('mkdir -p %s' % packs_dir)
     bp = BuildPack(dest, url, vcs_type=vcs_type)
+    print "ADDING %s" % bp.url
     bp.update()
     return bp
 

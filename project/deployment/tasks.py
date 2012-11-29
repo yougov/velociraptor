@@ -113,7 +113,6 @@ def deploy(release_id, recipe_name, hostname, proc, port, contain=False):
             build.close()
 
             with always_disconnect():
-                print "deploying"
                 remote.deploy_parcel(
                               build_path=build_filename,
                               config_path='settings.yaml',
@@ -126,7 +125,6 @@ def deploy(release_id, recipe_name, hostname, proc, port, contain=False):
                               use_syslog=getattr(settings, 'PROC_SYSLOG',
                                                  False),
                               contain=contain)
-                print "deployed"
 
     _update_host_cache(hostname)
 
@@ -807,7 +805,7 @@ class tmpdir(object):
 
     def __exit__(self, type, value, traceback):
         os.chdir(self.orig_path)
-        shutil.rmtree(self.temp_path, ignore_errors=True)
+        #shutil.rmtree(self.temp_path, ignore_errors=True)
 
 
 class tmpredis(object):

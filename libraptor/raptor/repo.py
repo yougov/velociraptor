@@ -41,6 +41,7 @@ class Repo(object):
         # strip trailing slash from folder if present
         if folder.endswith('/'):
             folder = folder[:-1]
+
         self.folder = folder
 
         vcs_type = vcs_type or guess_folder_vcs(folder) or guess_url_vcs(url)
@@ -53,7 +54,10 @@ class Repo(object):
 
         if url is None and not os.path.isdir(folder):
             raise ValueError('Must provide repo url if folder does not exist')
-        self.url = url or self.vcs.get_url()
+        url = url or self.vcs.get_url()
+        if url.endswith('/'):
+            url = url[:-1]
+        self.url = url
 
     def update(self, rev=None):
         # If folder already exists, try updating the repo.  Else do a new
@@ -90,4 +94,8 @@ def basename(url):
     Return the name of the folder that you'd get if you cloned 'url' into the
     current working directory.
     """
+    # Remove trailing slash from url if present
+    if url.endswith('/'):
+        url = url[:-1]
+    # Also strip .git from url if it ends in that.
     return re.sub('\.git$', '', url.split('/')[-1])
