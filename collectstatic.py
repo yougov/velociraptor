@@ -1,9 +1,18 @@
+#!/usr/bin/env python
+"""
+This script is used to run "manage.py collectstatic" and then push the
+collected files up to GridFS. It should be called by the post_compile hook in
+the Heroku python buildpack.  Post compile hooks may change.
+
+See https://github.com/heroku/heroku-buildpack-python/pull/42
+"""
+
 import os
 import posixpath
 import sys
 import hashlib
-
-from paver.easy import task, sh
+import subprocess
+import shlex
 
 from pymongo import Connection
 from gridfs import GridFS, NoFile
@@ -19,6 +28,10 @@ STATICFILES_ROOT = 'project/static'
 # Prefix for all uploaded file paths.
 # XXX THIS MUST BE CHANGED FOR OTHER BUILDS
 BASEPATH = 'raptor'
+
+
+def sh(cmd):
+    subprocess.check_call(shlex.split(cmd))
 
 
 def upload_file(fs, localname, remotename):
@@ -42,14 +55,15 @@ class chdir(object):
     def __init__(self, folder):
         self.orig_path = os.getcwd()
         self.temp_path = folder
+
     def __enter__(self):
         os.chdir(self.temp_path)
+
     def __exit__(self, type, value, traceback):
         os.chdir(self.orig_path)
 
 
-@task
-def build():
+def main():
     # We need both the current directory and the parent directory on sys.path
     # in order for collectstatic to work.
     here = os.path.dirname(os.path.realpath(__file__))
@@ -79,3 +93,6 @@ def build():
                     upload_file(fs, localname, remotename)
     else:
         print "no static/ folder found"
+
+if __name__ == '__main__':
+    main()
