@@ -108,7 +108,7 @@ def list_buildpacks(packs_dir=PACKS_HOME, preferred_order=None):
     return [BuildPack(os.path.join(packs_dir, d)) for d in buildpacks]
 
 
-def add_buildpack(url, packs_dir=PACKS_HOME):
+def add_buildpack(url, packs_dir=PACKS_HOME, vcs_type=None):
     # Check whether the pack exists
     dest = os.path.join(packs_dir, repo.basename(url))
     # If folder already exists, assume that we've already checked out the
@@ -117,7 +117,7 @@ def add_buildpack(url, packs_dir=PACKS_HOME):
     # the one we've been asked to add.
     if not os.path.exists(packs_dir):
         envoy.run('mkdir -p %s' % packs_dir)
-    bp = BuildPack(dest, url)
+    bp = BuildPack(dest, url, vcs_type=vcs_type)
     bp.update()
     return bp
 

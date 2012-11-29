@@ -89,7 +89,7 @@ class BuildPack(models.Model):
         return [repo.basename(bp.repo_url) for bp in cls.objects.all()]
 
     def get_repo(self):
-        return build.add_buildpack(self.repo_url)
+        return build.add_buildpack(self.repo_url, vcs_type=self.repo_type)
 
     def check_current(self, version):
         """
