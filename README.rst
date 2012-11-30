@@ -56,7 +56,7 @@ Velociraptor contains a requirements.txt file listing its Python dependencies.
 You can install the dependencies with this::
 
     cd /vagrant
-    pip install -r requirements.txt -i http://cheese.yougov.net
+    pip install -r requirements.txt
 
 Database
 ~~~~~~~~
@@ -64,7 +64,7 @@ Database
 There is a dbsetup.sql file included that contains commands for creating the
 Postgres database used by Velociraptor::
 
-    psql -U postgres < dbsetup.sql
+    psql -U postgres -f dbsetup.sql
 
 Once your database is created, you'll need to create the tables::
 
