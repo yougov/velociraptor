@@ -56,7 +56,7 @@ class App(repo.Repo):
                  **kwargs):
         super(App, self).__init__(folder, url, *args, **kwargs)
         # If buildpack is None here, we'll try self.detect_buildpack later.
-        self.buildpack = buildpack
+        self._buildpack = buildpack
         self.buildpack_order = (buildpack_order or
                                 get_config().get('buildpack_order'))
 
@@ -71,16 +71,18 @@ class App(repo.Repo):
              if bp.detect(self)), None)
         if detected is None:
             raise ValueError("Cannot determine app's buildpack.")
-        self.buildpack = detected
+        return detected
+
+    @property
+    def buildpack(self):
+        if not self._buildpack:
+            self._buildpack = self.detect_buildpack()
+        return self._buildpack
 
     def compile(self):
-        if self.buildpack is None:
-            self.detect_buildpack()
         self.buildpack.compile(self)
 
     def release(self):
-        if self.buildpack is None:
-            self.detect_buildpack()
         return self.buildpack.release(self)
 
 
