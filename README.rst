@@ -98,6 +98,24 @@ VM.  If you need these ports back for other development, you can stop your
 Vagrant VM with a `vagrant halt`, run from the same location where you ran
 `vagrant up`.)
 
+Tests
+~~~~~
+
+Run the tests with py.test from the root of the repo.  It will automatically
+set up and use separate databases from the default development ones::
+
+    cd /vagrant
+    py.test
+
+While developing, you might want to speed up tests by skipping the database
+creation (and just re-using the database from the last run).  You can do so
+like this::
+
+    py.test --nodb
+
+This should be safe as long as we keep using randomly-generated usernames,
+etc., inside tests.
+
 Editing Code
 ~~~~~~~~~~~~
 

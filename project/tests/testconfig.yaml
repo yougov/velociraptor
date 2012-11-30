@@ -1,0 +1,20 @@
+DATABASES:
+  default:
+    ENGINE: django.db.backends.postgresql_psycopg2
+    HOST: localhost
+    NAME: velotest
+    USER: raptor
+    PASSWORD: MZpuvFzZ
+SOUTH_TESTS_MIGRATE: false
+CACHES:
+    default:
+      BACKEND: redis_cache.RedisCache
+      LOCATION: localhost:6379
+      KEY_PREFIX: vrcache_
+      OPTIONS: 
+          DB: 15
+MONGODB_URL: mongodb://localhost/vrtest
+CELERYBEAT_SCHEDULE_FILENAME: redis://localhost:6379/15
+BROKER_URL: redis://localhost:6379/15
+CELERY_RESULT_BACKEND: redis://localhost:6379/15
+EVENTS_PUBSUB_URL: redis://localhost:6379/15
