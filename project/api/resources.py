@@ -1,3 +1,5 @@
+from django.conf.urls.defaults import url
+
 from tastypie.resources import ModelResource
 from tastypie import fields
 from tastypie import authentication as auth
@@ -10,7 +12,19 @@ from deployment import models
 v1 = Api(api_name='v1')
 
 
-class HostResource(ModelResource):
+class NamedModelResource(ModelResource):
+    """
+    Automatically provides name-based url routes for model-based resources that
+    have a 'name' field with a uniqueness constraint.
+    """
+    def prepend_urls(self):
+        return [url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/$" %
+                         self._meta.resource_name,
+                     self.wrap_view('dispatch_detail'),
+                     name="api_dispatch_detail"), ]
+
+
+class HostResource(NamedModelResource):
     squad = fields.ToOneField('api.resources.SquadResource', 'squad')
 
     class Meta:
@@ -24,7 +38,7 @@ class HostResource(ModelResource):
 v1.register(HostResource())
 
 
-class SquadResource(ModelResource):
+class SquadResource(NamedModelResource):
     hosts = fields.ToManyField('api.resources.HostResource', 'hosts')
 
     class Meta:

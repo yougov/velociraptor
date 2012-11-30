@@ -236,7 +236,6 @@ INSTALLED_APPS = (
     'api',          # Velociraptor API
     'south',
     'reversion',
-    'tastypie',
 )
 
 LOGGING = {

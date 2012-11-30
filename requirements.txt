@@ -1,4 +1,4 @@
-#-i http://cheese.yougov.net
+-i http://cheese.yougov.net
 baton==0.1.5
 celery-schedulers==0.0.2
 Django==1.4

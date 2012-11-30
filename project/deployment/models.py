@@ -104,7 +104,7 @@ class App(models.Model):
     namehelp = ("Used in release name.  Good app names are short and use "
                 "no spaces or dashes (underscores are OK).")
     name = models.CharField(max_length=50, help_text=namehelp,
-        validators=[no_spaces, no_dashes])
+        validators=[no_spaces, no_dashes], unique=True)
     repo_url = models.CharField(max_length=200)
     repo_type = models.CharField(max_length=10, choices=repo_choices)
 
@@ -507,7 +507,7 @@ class Squad(models.Model):
     will be load balanced across the specified squad.  A host may only be in
     one squad.
     """
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=50, unique=True)
 
     def __unicode__(self):
         return self.name
