@@ -134,7 +134,8 @@ class Deployment(object):
             # Make container mount points.  lxc will handle the actual mounts,
             # but we need to make the mount points.
             mountpoints = ('/app', '/bin', '/dev', '/etc', '/lib', '/lib64',
-                           '/opt', '/usr', '/proc')
+                           '/opt', '/usr', '/proc', '/sys', '/dev/pts',
+                           '/dev/shm')
             for m in mountpoints:
                 sudo('mkdir -p %s%s' % (self.proc_path, m))
 
