@@ -19,13 +19,13 @@ Velociraptor automates all of the above steps when you swarm.  All you have to
 do as a developer is include some uptests.
 
 Definition
-----------
+==========
 
 An uptest is a small script or program that checks whether a single instance
 of an app is running correctly.
 
 Running
--------
+=======
 
 Uptests scripts must be executable files.  They accept two command line
 arguments: "host" and "port".  Uptests are run in an environment identical to
@@ -35,14 +35,14 @@ designated proc in some way to check whether it's ready to accept production
 traffic.  
 
 Results
--------
+=======
 
 If successful, the uptest script must exit with status code 0.  Any other
 exit code signifies a failure.  The script may emit debug information to
 stdout or stderr.
 
 Organization
-------------
+============
 
 Each proc in an app has different uptests, organized by subfolders of an
 'uptests' folder in the project root.  In the example below, the web proc has
