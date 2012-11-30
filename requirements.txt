@@ -7,14 +7,14 @@ django-extensions==0.7.1
 django-picklefield==0.2.0
 django-redis-cache==0.9.5
 django-reversion==1.6.1
-django-tastypie==0.9.12alpha
+# Need a version of tastypie that supports MultiAuthentication
+git+https://github.com/toastdriven/django-tastypie.git#eee008f3eef0f756b32635e7b74c1c9732cf593c
 django-yamlfield==0.2
 Fabric==1.4.0
 gevent==0.13.8
 gevent-psycopg2==0.0.3
 gunicorn==0.14.6
 keyring==0.7.1
-Paver==1.0.5
 paramiko==1.8.0
 psycopg2==2.4.4
 pymongo==2.1.1
