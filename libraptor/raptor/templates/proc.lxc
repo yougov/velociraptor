@@ -7,13 +7,16 @@ lxc.mount.entry = /opt %(proc_path)s/opt none ro,bind 0 0
 lxc.mount.entry = /usr %(proc_path)s/usr none ro,bind 0 0
 lxc.mount.entry = /dev %(proc_path)s/dev none ro,bind 0 0 
 
+# Put the actual release at /app.  Unlike the other mounts, this one is *not*
+# readonly, in order to allow .pyc files (for example) to be created.
+# TODO: Instead of mounting the release code/config into the container, just
+# copy it there so apps can safely have write perms.
+lxc.mount.entry = %(release_path)s %(proc_path)s/app none bind 0 0
+
 # Device mounts
 lxc.mount.entry = none %(proc_path)s/dev/shm tmpfs defaults 0 0
 lxc.mount.entry = none %(proc_path)s/dev/pts devpts defaults 0 0
 lxc.mount.entry = none %(proc_path)s/proc    proc   defaults 0 0
 lxc.mount.entry = none %(proc_path)s/sys     sysfs  defaults 0 0
-
-# Put the actual release at /app
-lxc.mount.entry = %(release_path)s %(proc_path)s/app none ro,bind 0 0
 
 lxc.rootfs = %(proc_path)s
