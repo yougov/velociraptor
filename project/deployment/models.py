@@ -334,10 +334,12 @@ class Release(models.Model):
         # If there's a build, then copy the env vars and compute the hash
         if self.build.file.name:
             # copy env vars from build
-            self.env_vars = dict(self.build.env_vars or {})
+            evs = dict(self.build.env_vars or {})
 
             # update with env vars from recipe
-            self.env_vars.update(self.recipe.env_vars or {})
+            evs.update(self.recipe.env_vars or {})
+
+            self.env_vars = evs
             self.hash = self.compute_hash()
         super(Release, self).save(*args, **kwargs)
 
