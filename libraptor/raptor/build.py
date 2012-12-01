@@ -87,6 +87,8 @@ class App(repo.Repo):
 
 
 def list_buildpacks(packs_dir=PACKS_HOME, preferred_order=None):
+    if not os.path.exists(packs_dir):
+        envoy.run('mkdir -p %s' % packs_dir)
 
     preferred_order = preferred_order or None
     # if we have a preferred_order, then use that first, and filesystem order
