@@ -256,14 +256,14 @@ def deploy_parcel(build_path, config_path, envsh_path, recipe, proc, port,
     release_name = '-'.join([app_name, version, recipe, release_hash])
     release_path = posixpath.join(RELEASES_ROOT, release_name)
 
-
     # Ensure that the proc path is written before the release is uploaded, to
     # prevent a race condition with the scooper.
     proc_name = '-'.join([release_name, proc, str(port)])
     proc_path = posixpath.join(PROCS_ROOT, proc_name)
     sudo('mkdir -p ' + proc_path)
 
-    upload_release(build_path, config_path, release_path, envsh_path)
+    upload_release(build_path, config_path, release_path, envsh_path,
+                   user=user)
 
     configure_proc(release_name, proc, port, user, use_syslog=use_syslog,
                    contain=contain)
