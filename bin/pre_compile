@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# By default, Heroku will inject some stuff into the end of your settings.py in
+# order to make it read from the DATABASE_URL environment variable.  We don't
+# want that!  The buildpack supports a hook to disable this though, if you put
+# a file in .heroku/injection_disabled
+
+mkdir -p .heroku
+touch .heroku/injection_disabled
