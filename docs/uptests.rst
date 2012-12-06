@@ -49,11 +49,17 @@ Each proc in an app has different uptests, organized by subfolders of an
 3 uptests, which will be executed in the order listed by the OS.
 
 ::
-  .
-  ├── Procfile
-  ├── README.rst
-  └── uptests
-     └── web
-         ├── 01_its_alive.py
-         ├── 02_login_required.py
-         └── 03_check_rss.py
+  |
+  +-- Procfile
+  |
+  +-- README.rst
+  |
+  +-- uptests/
+     |
+     +-- web/
+        |
+        +-- 01_its_alive.py
+	|
+        +-- 02_login_required.py
+	|
+        +-- 03_check_rss.py
