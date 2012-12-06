@@ -3,12 +3,32 @@ import posixpath
 import random
 import string
 import warnings
+import abc
 
 import ssh
 from django.conf import settings
 
 
-class SshBasedBalancer(object):
+class Balancer(object):
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def __init__(self, config):
+        pass
+
+    @abc.abstractmethod
+    def add_nodes(self, pool_name, nodes):
+        pass
+
+    @abc.abstractmethod
+    def delete_nodes(self, pool_name, nodes):
+        pass
+
+    @abc.abstractmethod
+    def get_nodes(self, pool_name):
+        pass
+
+class SshBasedBalancer(Balancer):
     """
     A helper class for writing balancer backends that are configured by SSHing
     to the balancer hosts, writing config files, and reloading config.

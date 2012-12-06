@@ -2,8 +2,7 @@ import errno
 import posixpath
 import re
 
-from deployment.balancer.base import SshBasedBalancer
-
+from . import base
 
 # Template for 'upstream' directive in nginx config.
 UPSTREAM_TPL = """
@@ -34,7 +33,7 @@ def str_to_pool(upstream):
     return name, nodes
 
 
-class NginxBalancer(SshBasedBalancer):
+class NginxBalancer(base.SshBasedBalancer):
     """
     A Velociraptor balancer backend for writing nginx config on remote servers.
     Uses sftp and ssh for writing files and running reload cmds.

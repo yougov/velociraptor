@@ -6,6 +6,7 @@ import suds.client
 from suds.plugin import MessagePlugin
 from suds import WebFault
 
+from . import base
 
 # Suds has broken array marshaling.  See these links:
 # http://stackoverflow.com/questions/3519818/suds-incorrect-marshaling-of-array-of-arrays
@@ -37,10 +38,7 @@ class FixArrayPlugin(MessagePlugin):
             item.set('xsi:type', 'SOAP-ENC:Array')
 
 
-# This class implements velociraptor's Balancer Interface, which means that it
-# has get_nodes, add_nodes, and delete_nodes functions, and is initted with a
-# dictionary of config pulled from settings.BALANCERS.
-class ZXTMBalancer(object):
+class ZXTMBalancer(base.Balancer):
     def __init__(self, config):
         self.url = config['URL']
         imp = suds.xsd.doctor.Import('http://schemas.xmlsoap.org/soap/encoding/')
