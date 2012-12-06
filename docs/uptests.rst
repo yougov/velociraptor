@@ -46,9 +46,8 @@ Organization
 
 Each proc in an app has different uptests, organized by subfolders of an
 'uptests' folder in the project root.  In the example below, the web proc has
-3 uptests, which will be executed in the order listed by the OS.
+3 uptests, which will be executed in the order listed by the OS. ::
 
-::
   |
   +-- Procfile
   |
@@ -63,3 +62,4 @@ Each proc in an app has different uptests, organized by subfolders of an
         +-- 02_login_required.py
 	|
         +-- 03_check_rss.py
+
