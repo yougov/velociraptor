@@ -1,0 +1,3 @@
+# -i http://cheese.yougov.net
+pytest
+mock
