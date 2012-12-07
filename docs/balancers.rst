@@ -42,20 +42,21 @@ The nginx_ balancer backend can be configured like so::
       - frontend2.mydomain.com
 
 One by one, here's what those config values mean:
+
 - my_nginx_balancer: An artbitrary name for this balancer.  It will be saved
-with swarm records in the database.  If you change it later, you'll have to
-update those records with the new name.
+  with swarm records in the database.  If you change it later, you'll have to
+  update those records with the new name.
 - user: The username to be used by Velociraptor when SSHing to the nginx hosts.
 - password: The password to be used by Velociraptor when SSHing to the nginx
-hosts.
+  hosts.
 - include_dir: The path to a folder that nginx has been configured to use for
-config includes.  The balancer backend will write files there to define
-pools.  It's set to the Ubuntu location by default, so if you're on that OS
-you can omit this setting.
+  config includes.  The balancer backend will write files there to define
+  pools.  It's set to the Ubuntu location by default, so if you're on that OS
+  you can omit this setting.
 - reload_cmd: The command to be used to tell nginx to reload its config.  By
-default this uses the command for the Ubuntu init script.
+  default this uses the command for the Ubuntu init script.
 - tmpdir: A place to put temporary files.  Defaults to /tmp, so you can omit it
-if you don't need to customize it.
+  if you don't need to customize it.
 - hosts: The list of nginx hosts whose config should be updated.
 
 Varnish
@@ -94,6 +95,7 @@ using SSH, so its config looks different::
         POOL_PREFIX: vr-
 
 Those parameters are:
+
 - URL: The URL to the SOAP interface.
 - USER: username to be used for the SOAP connection.
 - PASSWORD: password to be used for the SOAP connection.
@@ -177,17 +179,17 @@ Creating New Balancer Backends
 A balancer is a Python class that provides following interface:
 
 - On init, it accepts a "config" dictionary containing all of the config
-parameters it needs in order to function.
+  parameters it needs in order to function.
 - A get_nodes method, which accepts a single string argument for the name of
-the pool, and returns a list of nodes, which are strings in the form
-"hostname:port".  If the pool does not exist, this method should return an
-empty list.
+  the pool, and returns a list of nodes, which are strings in the form
+  "hostname:port".  If the pool does not exist, this method should return an
+  empty list.
 - An add_nodes method that accepts two arguments: 1) A pool name, and 2) a list
-of nodes.  If the pool does not exist, it should be automatically created by
-this function.
+  of nodes.  If the pool does not exist, it should be automatically created by
+  this function.
 - A delete_nodes method that accepts two arguments: 1) A pool name, and 2) a
-list of nodes.  This function should return successfully even if the pool
-or one of the nodes does not exist.
+  list of nodes.  This function should return successfully even if the pool
+  or one of the nodes does not exist.
 
 Velociraptor doesn't yet have balancer backends for Apache or HAProxy.  It
 probably should!  Patches are welcome if you'd like to submit an additional
