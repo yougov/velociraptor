@@ -161,7 +161,7 @@ files in a directory as nginx does, so the Varnish balancer maintains a
 pools.vcl file with include directives for all of the pool-specific files.  The
 pools.vcl file is updated only when new pools are created.  So there is
 additional risk of overwritten config with the Varnish balancer if two
-Velociraptor workers are trying two create new pools at the same time.  (This
+Velociraptor workers are trying to create new pools at the same time.  (This
 is *probably* an extremely rare occurence, but it will depend on the size of
 your Velociraptor installation.)
 
