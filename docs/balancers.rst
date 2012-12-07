@@ -156,14 +156,14 @@ In the nginx balancer, this risk is mitigated somewhat by use of a separate
 file for each pool.  So you'll only have problems if two workers are both
 trying to update the same pool at the same time.
 
-The Varnish balancer, however, does not support a glob-style include of all
-files in a directory as nginx does, so the Varnish balancer maintains a
-pools.vcl file with include directives for all of the pool-specific files.  The
-pools.vcl file is updated only when new pools are created.  So there is
-additional risk of overwritten config with the Varnish balancer if two
-Velociraptor workers are trying to create new pools at the same time.  (This
-is *probably* an extremely rare occurence, but it will depend on the size of
-your Velociraptor installation.)
+Varnish, however, does not support a glob-style include of all files in a
+directory as nginx does, so the Varnish balancer maintains a pools.vcl file
+with include directives for all of the pool-specific files.  The pools.vcl file
+is updated only when new pools are created.  So there is additional risk of
+overwritten config with the Varnish balancer if two Velociraptor workers are
+trying to create new pools at the same time.  (This is *probably* an extremely
+rare occurence, but it will depend on the size of your Velociraptor
+installation.)
 
 Additionally, if you have multiple nginx or Varnish instances configured for a
 balancer, there will be a few seconds of lag between when the first and last
