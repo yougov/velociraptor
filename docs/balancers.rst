@@ -148,7 +148,6 @@ will do the following:
 3) Write a new config file (or files).
 4) Tell the remote service to reload its config.
 
-
 If two processes are both making changes at the same time, there's opportunity
 for the first one's changes to be overwritten by the second's.  
 
@@ -190,6 +189,39 @@ A balancer is a Python class that provides the following interface:
 - A delete_nodes method that accepts two arguments: 1) A pool name, and 2) a
   list of nodes.  This function should return successfully even if the pool
   or one of the nodes does not exist.
+
+Here's a hand-wavy hypothetical example::
+
+    # the abstract base class in the raptor lib doesn't actually provide any
+    # behavior but does help ensure you've implemented the right methods.
+
+    from raptor.balancer import Balancer
+
+    class ImaginaryBalancer(Balancer):
+        def __init__(self, config):
+            self.config = config
+
+        def get_nodes(self, pool_name):
+            try:
+                pool = go_get_a_pool(pool_name)
+                return pool.nodes
+            except PoolDoesNotExist:
+                return []
+
+        def add_nodes(self, pool_name, nodes):
+            try:
+                pool = go_get_a_pool(pool_name)
+                pool.add_nodes(nodes)
+            except PoolDoesNotExist:
+                go_create_a_pool(pool_name, nodes)
+
+        def delete_nodes(self, pool_name, nodes):
+            try:
+                pool = go_get_a_pool(pool_name)
+                pool.delete_nodes(nodes)
+            except PoolDoesNotExist:
+                pass
+
 
 Velociraptor doesn't yet have balancer backends for Apache or HAProxy.  It
 probably should!  Patches are welcome if you'd like to submit an additional
