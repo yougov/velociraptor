@@ -14,8 +14,6 @@ list of available balancers is configured in the Django settings::
       }
   }
 
-
-
 In the above example, a balancer named "default" is configured, by setting the
 BACKEND parameter to the dotted-path location of the DummyBalancer class in the
 Python path.  The no-op "dummy" balancer doesn't actually route anything.  It
@@ -204,7 +202,7 @@ Here's a hand-wavy hypothetical example. ::
                     - tightrope.mydomain.com
 
                 # config argument
-                {'user': 'some_user_with_sudo',
+                {'user': 'some_user',
                  'password': 'some_password',
                  'hosts': ['tightrope.mydomain.com']}
             """
