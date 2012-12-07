@@ -68,12 +68,17 @@ class TestRunAdmin(admin.ModelAdmin):
     model = models.TestRun
     inlines = [TestResultInline]
 
+
+class ReleaseAdmin(admin.ModelAdmin):
+    search_fields = ['config', 'recipe__app__name']
+
+
 admin.site.register(models.ConfigRecipe, ConfigRecipeAdmin)
 admin.site.register(models.Squad, SquadAdmin)
 admin.site.register(models.ConfigIngredient, ConfigIngredientAdmin)
 admin.site.register(models.App, AppAdmin)
 admin.site.register(models.Build)
-admin.site.register(models.Release)
+admin.site.register(models.Release, ReleaseAdmin)
 admin.site.register(models.Host)
 admin.site.register(models.DeploymentLogEntry)
 admin.site.register(models.Swarm)
