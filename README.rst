@@ -101,8 +101,14 @@ Vagrant VM with a `vagrant halt`, run from the same location where you ran
 Tests
 ~~~~~
 
-Run the tests with py.test from the root of the repo.  It will automatically
-set up and use separate databases from the default development ones::
+Run the tests with py.test from the root of the repo.  You can install
+any test dependencies using the test_requirements.txt::
+
+    cd /vagrant
+    pip install -r test_requirements.txt
+
+It will automatically set up and use separate databases from the
+default development ones::
 
     cd /vagrant
     py.test

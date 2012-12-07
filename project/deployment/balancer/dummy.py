@@ -1,7 +1,9 @@
 from collections import defaultdict
 import logging
 
-class DummyBalancer(object):
+from . import base
+
+class DummyBalancer(base.Balancer):
     """
     Fake balancer class for local development.
     """
@@ -23,4 +25,3 @@ class DummyBalancer(object):
     def log_pool(self, pool):
         msg = 'Dummy Pool "%s": %s' % (pool, list(self.pools[pool]))
         logging.info(msg)
-
