@@ -178,15 +178,15 @@ Creating New Balancer Backends
 A balancer is a Python class that implements the
 `raptor.balancer.Balancer` interface.
 
-Here's a hand-wavy hypothetical example::
+Here's a hand-wavy hypothetical example. ::
 
     # the abstract base class in the raptor lib doesn't actually provide any
     # behavior but does help ensure you've implemented the right methods.
-
+    
     from raptor.balancer import Balancer
     from mythical.tightrope.api imort go_get_a_pool
-
-
+    
+    
     class TightRopeBalancer(Balancer):
         def __init__(self, config):
 	    """
