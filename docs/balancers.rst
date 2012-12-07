@@ -176,7 +176,7 @@ methods for add_nodes and delete_nodes.
 Creating New Balancer Backends
 ------------------------------
 
-A balancer is a Python class that provides following interface:
+A balancer is a Python class that provides the following interface:
 
 - On init, it accepts a "config" dictionary containing all of the config
   parameters it needs in order to function.
