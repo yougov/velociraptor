@@ -177,17 +177,17 @@ Creating New Balancer Backends
 A balancer is a Python class that provides following interface:
 
 - On init, it accepts a "config" dictionary containing all of the config
-  parameters it needs in order to function.
+parameters it needs in order to function.
 - A get_nodes method, which accepts a single string argument for the name of
-  the pool, and returns a list of nodes, which are strings in the form
-  "hostname:port".  If the pool does not exist, this method should return an
-  empty list.
+the pool, and returns a list of nodes, which are strings in the form
+"hostname:port".  If the pool does not exist, this method should return an
+empty list.
 - An add_nodes method that accepts two arguments: 1) A pool name, and 2) a list
-  of nodes.  If the pool does not exist, it should be automatically created by
-  this function.
+of nodes.  If the pool does not exist, it should be automatically created by
+this function.
 - A delete_nodes method that accepts two arguments: 1) A pool name, and 2) a
-  list of nodes.  This function should return successfully even if the pool
-  or one of the nodes does not exist.
+list of nodes.  This function should return successfully even if the pool
+or one of the nodes does not exist.
 
 Velociraptor doesn't yet have balancer backends for Apache or HAProxy.  It
 probably should!  Patches are welcome if you'd like to submit an additional
