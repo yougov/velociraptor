@@ -43,19 +43,19 @@ The nginx_ balancer backend can be configured like so::
 
 One by one, here's what those config values mean:
 - my_nginx_balancer: An artbitrary name for this balancer.  It will be saved
-  with swarm records in the database.  If you change it later, you'll have to
-  update those records with the new name.
+with swarm records in the database.  If you change it later, you'll have to
+update those records with the new name.
 - user: The username to be used by Velociraptor when SSHing to the nginx hosts.
 - password: The password to be used by Velociraptor when SSHing to the nginx
-  hosts.
+hosts.
 - include_dir: The path to a folder that nginx has been configured to use for
-  config includes.  The balancer backend will write files there to define
-  pools.  It's set to the Ubuntu location by default, so if you're on that OS
-  you can omit this setting.
+config includes.  The balancer backend will write files there to define
+pools.  It's set to the Ubuntu location by default, so if you're on that OS
+you can omit this setting.
 - reload_cmd: The command to be used to tell nginx to reload its config.  By
-  default this uses the command for the Ubuntu init script.
+default this uses the command for the Ubuntu init script.
 - tmpdir: A place to put temporary files.  Defaults to /tmp, so you can omit it
-  if you don't need to customize it.
+if you don't need to customize it.
 - hosts: The list of nginx hosts whose config should be updated.
 
 Varnish
