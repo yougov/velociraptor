@@ -175,20 +175,8 @@ methods for add_nodes and delete_nodes.
 Creating New Balancer Backends
 ------------------------------
 
-A balancer is a Python class that provides the following interface:
-
-- On init, it accepts a "config" dictionary containing all of the config
-  parameters it needs in order to function.
-- A get_nodes method, which accepts a single string argument for the name of
-  the pool, and returns a list of nodes, which are strings in the form
-  "hostname:port".  If the pool does not exist, this method should return an
-  empty list.
-- An add_nodes method that accepts two arguments: 1) A pool name, and 2) a list
-  of nodes.  If the pool does not exist, it should be automatically created by
-  this function.
-- A delete_nodes method that accepts two arguments: 1) A pool name, and 2) a
-  list of nodes.  This function should return successfully even if the pool
-  or one of the nodes does not exist.
+A balancer is a Python class that implements the
+`raptor.balancer.Balancer` interface.
 
 Here's a hand-wavy hypothetical example::
 
@@ -196,12 +184,46 @@ Here's a hand-wavy hypothetical example::
     # behavior but does help ensure you've implemented the right methods.
 
     from raptor.balancer import Balancer
+    from mythical.tightrope.api imort go_get_a_pool
 
-    class ImaginaryBalancer(Balancer):
+
+    class TightRopeBalancer(Balancer):
         def __init__(self, config):
+	    """
+            The `config` is the dict representation of YAML config.
+
+	    For example: ::
+
+                # YAML
+                BALANCERS:
+                  my_tightrope_balancer:
+                    BACKEND: deployment.balancer.tightrope.Balancer 
+                    user: some_user_with_sudo
+                    password: some_password
+                    hosts:
+                    - tightrope.mydomain.com
+
+                # config argument
+                {'user': 'some_user_with_sudo',
+                 'password': 'some_password',
+                 'hosts': ['tightrope.mydomain.com']}
+            """
             self.config = config
 
         def get_nodes(self, pool_name):
+            """
+	    Find the list of nodes that exist in a pool. 
+
+            Args:
+             - pool_name: string argument for the name of
+                          the pool
+
+            Return a list of nodes, which are strings in the form
+            "hostname:port".
+
+            If the pool does not exist, this should return an empty
+            list.
+            """
             try:
                 pool = go_get_a_pool(pool_name)
                 return pool.nodes
@@ -209,6 +231,17 @@ Here's a hand-wavy hypothetical example::
                 return []
 
         def add_nodes(self, pool_name, nodes):
+            """
+	    Add nodes to the current pool.
+
+            Args: 
+             - pool_name: the name of the pool as a string
+             - nodes: list of strings in the form "hostname:port"
+
+            If the pool does not exist, it should be automatically
+            created.
+            """
+
             try:
                 pool = go_get_a_pool(pool_name)
                 pool.add_nodes(nodes)
@@ -216,6 +249,16 @@ Here's a hand-wavy hypothetical example::
                 go_create_a_pool(pool_name, nodes)
 
         def delete_nodes(self, pool_name, nodes):
+            """
+            Delete a node from the pool.
+             
+            Args:
+             - pool_name: the name of the pool as a string
+             - nodes: list of nodes as strings in the form "hostname:port"
+             
+            This should return successfully even if the pool
+            or one of the nodes does not exist.
+            """
             try:
                 pool = go_get_a_pool(pool_name)
                 pool.delete_nodes(nodes)
