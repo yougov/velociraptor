@@ -198,13 +198,14 @@ class lxc {
     automake:;
     libcap-dev:;
     libapparmor-dev:;
+    build-essential:;
   }
 
   # put the build script into /tmp
   file { 'install_lxc.sh':
     path    => '/tmp/install_lxc.sh',
     ensure  => file,
-    require => Package['automake', 'libcap-dev', 'libapparmor-dev'],
+    require => Package['build-essential', 'automake', 'libcap-dev', 'libapparmor-dev'],
     source  => 'puppet:///modules/lxc/install_lxc.sh';
   }
 
