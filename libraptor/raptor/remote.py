@@ -20,6 +20,8 @@ from fabric.api import sudo, get, put, task, env
 from fabric.contrib import files
 from fabric import colors
 
+from raptor.util import chdir
+
 # TODO: Change these to /apps/ so that we don't have YG-isms in the code and
 # can more safely bind-mount /opt into app environments.  It's tricky, because
 # cleanup code will have to check both the old and new locations when it runs.
@@ -76,17 +78,6 @@ def upload_release(build_path, config_path, release_path, envsh_path, user='nobo
     colors.green('Deleting build tarball')
     sudo('rm ' + remote_build_path)
 
-
-class chdir(object):
-    def __init__(self, folder):
-        self.orig_path = os.getcwd()
-        self.temp_path = folder
-
-    def __enter__(self):
-        os.chdir(self.temp_path)
-
-    def __exit__(self, type, value, traceback):
-        os.chdir(self.orig_path)
 
 
 def parse_procfile(path):

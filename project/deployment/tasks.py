@@ -25,6 +25,7 @@ from deployment.models import (Release, Build, Swarm, Host, PortLock, App,
 from deployment import models
 from deployment import balancer, events, utils
 from raptor import repo, remote, build as rbuild
+from raptor.util import tmpdir
 
 
 logger = logging.getLogger('velociraptor')
@@ -790,22 +791,6 @@ def always_disconnect():
     finally:
         fabric.network.disconnect_all()
 
-
-class tmpdir(object):
-    """Context manager for putting you into a temporary directory on enter
-    and deleting the directory on exit
-    """
-    def __init__(self):
-        self.orig_path = os.getcwd()
-
-    def __enter__(self):
-        self.temp_path = tempfile.mkdtemp()
-        os.chdir(self.temp_path)
-        return self.temp_path
-
-    def __exit__(self, type, value, traceback):
-        os.chdir(self.orig_path)
-        shutil.rmtree(self.temp_path, ignore_errors=True)
 
 
 class tmpredis(object):

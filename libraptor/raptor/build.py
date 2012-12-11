@@ -1,6 +1,7 @@
 import os
 import subprocess
 import hashlib
+import logging
 
 import yaml
 import envoy
@@ -12,6 +13,9 @@ HOME = (os.environ.get('RAPTOR_HOME') or os.path.expanduser('~/.raptor'))
 PACKS_HOME = os.path.join(HOME, 'buildpacks')
 CACHE_HOME = os.path.join(HOME, 'cache')
 CONFIG_FILE = os.path.join(HOME, 'config.yaml')
+
+
+log = logging.getLogger(__name__)
 
 
 class BuildPack(repo.Repo):
@@ -27,6 +31,7 @@ class BuildPack(repo.Repo):
         return result.status_code == 0
 
     def compile(self, app):
+        log.info('Compiling %s with %s' % (app.basename, self.basename))
         script = os.path.join(self.folder, 'bin', 'compile')
 
         app_url_hash = hashlib.md5(app.url).hexdigest()

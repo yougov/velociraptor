@@ -1,2 +1,3 @@
 recursive-include raptor/templates *
 recursive-include raptor/uptester *
+include LICENSE

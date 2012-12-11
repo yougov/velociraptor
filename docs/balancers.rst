@@ -173,8 +173,8 @@ methods for add_nodes and delete_nodes.
 Creating New Balancer Backends
 ------------------------------
 
-A balancer is a Python class that implements the
-`raptor.balancer.Balancer` interface.
+A balancer is a Python class that implements the `raptor.balancer.Balancer`
+interface.
 
 Here's a hand-wavy hypothetical example. ::
 

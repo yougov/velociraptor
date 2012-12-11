@@ -17,6 +17,8 @@ import shlex
 from pymongo import Connection
 from gridfs import GridFS, NoFile
 
+from raptor.util import chdir
+
 MONGO_HOST = 'vdeploydb.paix.yougov.local'
 MONGO_PORT = 27017
 MONGO_DB = 'yfiles'
@@ -57,18 +59,6 @@ def upload_file(fs, localname, remotename):
         else:
             indent("Copying %(localname)s to gridfs:%(remotename)s" % vars())
             fs.put(contents, filename=remotename)
-
-
-class chdir(object):
-    def __init__(self, folder):
-        self.orig_path = os.getcwd()
-        self.temp_path = folder
-
-    def __enter__(self):
-        os.chdir(self.temp_path)
-
-    def __exit__(self, type, value, traceback):
-        os.chdir(self.orig_path)
 
 
 def main():

@@ -2,8 +2,14 @@
 import os
 import urlparse
 import re
+import logging
 
-import vcstools
+import envoy
+
+from raptor.util import CommandException, chdir
+
+
+log = logging.getLogger(__name__)
 
 
 def guess_url_vcs(url):
@@ -35,6 +41,13 @@ def guess_folder_vcs(folder):
         return None
 
 
+class VcsError(CommandException):
+    """
+    Raise this when you fail to update/clone a repo.
+    """
+    pass
+
+
 class Repo(object):
 
     def __init__(self, folder, url=None, vcs_type=None):
@@ -50,30 +63,62 @@ class Repo(object):
                              '(%s) ' % (folder, url))
 
         self.vcs_type = vcs_type
-        self.vcs = vcstools.VcsClient(vcs_type, folder)
 
         if url is None and not os.path.isdir(folder):
             raise ValueError('Must provide repo url if folder does not exist')
-        url = url or self.vcs.get_url()
+        url = url or self.get_url()
         if url.endswith('/'):
             url = url[:-1]
         self.url = url
 
+    def run(self, command):
+        r = envoy.run(command)
+        if r.status_code != 0:
+            raise VcsError(r)
+        return r
+
+    def get_url(self):
+        """
+        Assuming that the repo has been cloned locally, get its default
+        upstream URL.
+        """
+        cmd = {
+            'hg': 'hg paths default',
+            'git': 'git config --get remote.origin.url',
+        }[self.vcs_type]
+        with chdir(self.folder):
+            r = self.run(cmd)
+        return r.std_out.replace('\n', '')
+
+    def clone(self):
+        log.info('Cloning %s to %s' % (self.url, self.folder))
+        cmd = {
+            'hg': 'hg clone %s %s' % (self.url, self.folder),
+            'git': 'git clone %s %s' % (self.url, self.folder),
+        }[self.vcs_type]
+        self.run(cmd)
+
     def update(self, rev=None):
-        # If folder already exists, try updating the repo.  Else do a new
-        # checkout
+        # If folder doesn't exist, do a clone.  Else pull and update.
+        if not os.path.exists(self.folder):
+            self.clone()
+
+        log.info('Updating %s from %s' % (self.folder, self.url))
+
         tip = {
             'git': 'HEAD',
             'hg': 'tip',
-            'svn': None,  # not really implemented
         }[self.vcs_type]
-        if not os.path.exists(self.folder):
-            self.vcs.checkout(self.url)
-        # Note: Until
-        # https://github.com/tkruse/vcstools/commit/f74273e08966bd45f9f594b3fa0e26668a68ecbf
-        # is merged into a release of vcstools, Repo.update() will not force a
-        # git fetch to sync the local repo from master.
-        self.vcs.update(rev or tip)
+
+        rev = rev or tip
+
+        with chdir(self.folder):
+            if self.vcs_type == 'hg':
+                self.run('hg pull')
+                self.run('hg up %s' % rev).std_out
+            elif self.vcs_type == 'git':
+                self.run('git pull origin master')
+                self.run('git checkout %s' % rev)
 
     @property
     def basename(self):
@@ -81,7 +126,13 @@ class Repo(object):
 
     @property
     def version(self):
-        return self.vcs.get_version()
+        if self.vcs_type == 'hg':
+            r = self.run('hg identify -i %s' % self.folder)
+            return r.std_out.rstrip('+\n')
+        elif self.vcs_type == 'git':
+            with chdir(self.folder):
+                r = self.run('git rev-parse HEAD')
+            return r.std_out.rstrip()
 
     def __repr__(self):
         values = {'classname': self.__class__.__name__, 'folder':
