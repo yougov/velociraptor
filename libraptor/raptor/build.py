@@ -51,6 +51,18 @@ class BuildPack(repo.Repo):
                                          "buildpack" % (app, self.basename))
         return yaml.safe_load(result.std_out)
 
+    def update(self, rev=None):
+        """
+        Override Repo.update to provide default rev when none is provided.
+        """
+
+        rev = rev or {
+            'git': 'HEAD',
+            'hg': 'tip',
+        }[self.vcs_type]
+
+        return super(BuildPack, self).update(rev)
+
 
 class App(repo.Repo):
     """

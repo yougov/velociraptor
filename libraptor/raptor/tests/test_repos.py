@@ -2,9 +2,10 @@ import os
 import tempfile
 import shutil
 
+import pytest
 import envoy
 
-from raptor import repo
+from raptor import repo, build
 from raptor.util import tmpdir, CommandException
 
 
@@ -47,6 +48,8 @@ def test_basename():
     assert repo.basename(url) == 'heroku-buildpack-python'
 
 
+# TODO: Run local git/hg servers so we don't have to call out over the network
+# during tests.
 def test_hg_clone():
     url = 'https://bitbucket.org/btubbs/vr_python_example'
     with tmpdir():
@@ -87,24 +90,29 @@ def test_git_update():
         assert not os.path.isfile(f)
 
 
-def test_hg_update_norev():
-    newrev = '13b6ce1e234a'
-    oldrev = '496e15fd973f'
+def test_update_norev():
     with tmprepo('hg_python_app.tar.gz', 'hg') as r:
-        r.update(newrev)
-        r.update(oldrev)
-        r.update()
-        assert os.path.isfile('newfile')
+        # repo.update requires passing a revision
+        with pytest.raises(TypeError):
+            r.update()
 
 
-def test_git_update_norev():
-    newrev = '6c79fb7d071a9054542114eea70f69d5361a61ff'
-    oldrev = '16c1dba07ee78d5dbee1f965d91d3d61942ccb67'
-    with tmprepo('git_python_app.tar.gz', 'git') as r:
-        r.update(newrev)
-        r.update(oldrev)
+def test_buildpack_update_norev():
+    with tmprepo('buildpack_hello.tar.gz', 'git', build.BuildPack) as r:
+        rev = 'd0b1df4838d51c694b6bba9b6c3779a5e2a17775'
+        # Unlike the Repo superclass, buildpacks can call .update() without
+        # passing in a revision, since we don't want to make users think about
+        # buildpack versions if they don't have to.
         r.update()
-        assert os.path.isfile('newfile')
+        assert r.version == rev
+
+
+def test_buildpack_update_rev():
+    with tmprepo('buildpack_hello.tar.gz', 'git', build.BuildPack) as r:
+        rev = '410a52780f6fd9d10d09d1da54088c03a0e2933f'
+        # But passing in a rev needs to be supported still
+        r.update(rev)
+        assert r.version == rev
 
 
 def test_hg_get_version():
@@ -122,16 +130,18 @@ def test_git_get_version():
 
 
 class tmprepo(object):
-    """Context manager for creating a tmp dir, unpacking a specified repo
-    tarball inside it, cd-ing in there, letting you run stuff, and then
-    cleaning up and cd-ing back where you were when it's done.
     """
-    def __init__(self, tarball, vcs_type):
+    Context manager for creating a tmp dir, unpacking a specified repo tarball
+    inside it, cd-ing in there, letting you run stuff, and then cleaning up and
+    cd-ing back where you were when it's done.
+    """
+    def __init__(self, tarball, vcs_type, repo_class=None):
         # Repo tarballs must be in the same directory as this file.
         here = os.path.dirname(os.path.abspath(__file__))
         self.tarball = os.path.join(here, tarball)
         self.vcs_type = vcs_type
         self.orig_path = os.getcwd()
+        self.repo_class = repo_class or repo.Repo
 
     def __enter__(self):
         self.temp_path = tempfile.mkdtemp()
@@ -140,7 +150,7 @@ class tmprepo(object):
         result = envoy.run(cmd)
         if result.status_code != 0:
             raise CommandException(result)
-        return repo.Repo('./', vcs_type=self.vcs_type)
+        return self.repo_class('./', vcs_type=self.vcs_type)
 
     def __exit__(self, type, value, traceback):
         os.chdir(self.orig_path)

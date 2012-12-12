@@ -8,6 +8,6 @@ def test_buildpack_detected():
         add_buildpack('https://github.com/heroku/heroku-buildpack-python.git')
         app = App('node_app', 'https://bitbucket.org/btubbs/vr_node_example',
                   vcs_type='hg')
-        app.update()
+        app.update('tip')
 
         assert app.buildpack.basename == 'heroku-buildpack-nodejs'

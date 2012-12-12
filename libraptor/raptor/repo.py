@@ -98,19 +98,12 @@ class Repo(object):
         }[self.vcs_type]
         self.run(cmd)
 
-    def update(self, rev=None):
+    def update(self, rev):
         # If folder doesn't exist, do a clone.  Else pull and update.
         if not os.path.exists(self.folder):
             self.clone()
 
         log.info('Updating %s from %s' % (self.folder, self.url))
-
-        tip = {
-            'git': 'HEAD',
-            'hg': 'tip',
-        }[self.vcs_type]
-
-        rev = rev or tip
 
         with chdir(self.folder):
             if self.vcs_type == 'hg':
