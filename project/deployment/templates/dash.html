@@ -23,45 +23,9 @@
 {% block script %}
 <script src="{% static 'js/vrdash.js' %}"></script>
 
-
-{# Goatee template for task item summary#}
-<script id="event-tmpl" type="text/goatee">
-  <div id="event-<%id%>" class="event-wrapper clickable-text">
-    
-    <span class="event-title <%classtags%>"><i class="event-icon"></i> <%title%></span>
-    <div style="clear: both;"></div>
-</div>
-</script>
-
-
-<script id="event-detail-tmpl" type="text/goatee">
-  <div class="modal event-details-modal">
-      <div class="modal-header">
-          <a class="close" data-dismiss="modal">×</a>
-          <h3 class="event-title <%classtags%>">
-              <i class="event-icon large"></i>
-              <%title%> 
-          </h3>
-          <div class="event-time-short"><%time%></div>
-      </div>
-      <div class="modal-body">
-          <h4>Message</h4>
-          <pre><%message%></pre>
-          Tags: <%tags%><br>
-      </div>
-    </div>
-</script>
-
-
 <script>
-  $(document).ready(function(){
-  VR.Dash.Events.init(
-    VR.Urls.events, 
-    'events-list'
-  );
-  VR.Dash.Apps = new AppList($('#dash-apps'));
-  VR.Dash.getHostList();
-  VR.Dash.init(VR.Urls.host_changes);
+  $(function(){
+  VR.Dash.init($('#dash-apps'), $('#events-list'));
 });
 </script>
 {% endblock script %}

@@ -117,16 +117,11 @@ th.rowlabel {
   clear: both;
 }
 
-.procgrid {
-  /*margin-top: 5px;*/
-  /*clear: both;*/
-}
-
 .procgrid h4 {
   margin-bottom: 5px;
 }
 
-.procwrap {
+.procview {
   float: left;
 }
 
@@ -282,23 +277,19 @@ th.rowlabel {
 }
 
 /* NAV */
-.nav .chzn-container {
-  margin: 9px 0 0 10px;
-  width: auto;
+#swarm-filter {
+  display: block;
+  margin-left: 4px;
+  width: -webkit-calc(100% - 22px);
+  width: -moz-calc(100% - 22px);
+  width: calc(100% - 22px);
 }
 
-.nav .chzn-container-single .chzn-single {
-  -moz-box-shadow: none;
-  -webkit-box-shadow: none;
-  box-shadow: none;
+.dropdown-menu ul {
+  margin: 0;
+  list-style: none;
 }
 
-
-/*
- * TRY to override the GODDAMN chosen styles that don't want to die.
- */
-.nav .chzn-default {
-  background-color: transparent;
-  background-image: none;
-  border: none;
+.dropdown-menu li {
+  margin: 0;
 }

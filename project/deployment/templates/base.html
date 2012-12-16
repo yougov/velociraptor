@@ -8,8 +8,7 @@
   <title>{% block title %}{% if site_title %}{{ site_title }}{% else %}Velociraptor{% endif %}{% endblock title %}</title>
   <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}" type="text/css" media="screen">
   <link rel="stylesheet" href="{% static 'css/font-awesome.css' %}" type="text/css" media="screen">
-  <link rel="stylesheet" href="{% static 'chosen/chosen.css' %}" type="text/css" media="screen">
-  <link rel="stylesheet" href="{% static 'css/velociraptor.css' %}" type="text/css" media="screen">
+  <link rel="stylesheet" href="{% static 'css/vr.css' %}" type="text/css" media="screen">
   <style>
       body {
         padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
@@ -66,14 +65,18 @@
                   </ul>
               </li>
               <li class="dropdown">
-                  <select class="chzn-select nav-select" data-placeholder="Swarms" style="display: none;">
-                       
-                      <option></option>
-                      <option value="/swarm/">New</option>
+                  <a id="swarm-dropdown" class="dropdown-toggle" href="#">
+                   Swarms 
+                      <b class="caret"></b>
+                  </a>
+                  <div class="dropdown-menu">
+                      <input id="swarm-filter" type="text">
+                      <ul id="swarmlist">
                       {% for swarm in swarms %}
-                      <option value="{% url edit_swarm swarm.id %}">{{ swarm.shortname }}</option>
+                      <li rel="{{ swarm.shortname.lower }}"><a href="{% url edit_swarm swarm.id %}">{{ swarm.shortname }}</a></li>
                       {% endfor %}
-                  </select>
+                      <ul>
+                  </div>
               </li>
             </ul>
             <p class="navbar-text pull-right">
@@ -104,8 +107,7 @@
         {% endblock content %}
     </div>
     <script src="{% static 'js/jquery.min.js' %}"></script>
-    <script src="{% static 'chosen/chosen.jquery.min.js' %}"></script>
-    <script src="{% static 'js/django-jquery.js' %}"></script>
+    <script src="{% static 'js/misc.js' %}"></script>
     <script src="{% static 'js/underscore-min.js' %}"></script>
 
     <script src="{% static 'js/backbone-min.js' %}"></script>
@@ -113,82 +115,17 @@
     <script src="{% static 'js/bootstrap.js' %}"></script>
     <script src="{% static 'js/vr.js' %}"></script>
 
-    <script>{# set up the fancy nav dropdowns #}
-    $(document).ready(function() {
-        $(".chzn-select").chosen({ search_contains: true });
-        {# Go to new page when selecting from the nav Chosen dropdowns. #}
-        $('.nav-select').change(function(ev){
-            window.location = $(this).val();
-        });
-      });
-    </script>
-
 {# GOATEE TEMPLATES #}
-
-<script id="app-tmpl" type="text/goatee">
-  <td class="titlecell"><div class="apptitle clickable-text"><%id%></div></td><td class="proccell"></td>
-</script>
-
-<script id="swarm-tmpl" type="text/goatee">
-  <div class="procgrid">
-    <div class="swarmtitle"><%id%></div>
-  </div>
-</script>
-
-<script id="proc-tmpl" type="text/goatee">
-<div class="procbox <%statename%>" id="proc-<%jsname%>"></div>
-</script>
-
-<script id="proc-details-tmpl" type="text/goatee">
-    <div class="modal proc-details-modal" data-host="<%host%>" data-name="<%name%>">
-      <div class="modal-header">
-          <a class="close" data-dismiss="modal">×</a>
-          <h3><%name%> </h3>
-          on <a href="http://<%host%>:<%port%>"><%host%>:<%port%></a>
-      </div>
-      <div class="modal-body procmodal-<%statename%>">
-          <table class="attrs">
-              <tr><th class="rowlabel">Name</th><td><%name%></td></tr>
-              <tr><th class="rowlabel">Description</th><td><%description%></td></tr>
-              <tr><th class="rowlabel">State</th><td>
-                  <div class="procbox <%statename%>"></div>
-                  <%statename%>
-              </td></tr>
-              <tr><th class="rowlabel">App</th><td><%app%></td></tr>
-              <tr><th class="rowlabel">Tag</th><td><%tag%></td></tr>
-              <tr><th class="rowlabel">Config Recipe</th><td><%recipe%></td></tr>
-              <tr><th class="rowlabel">Release Hash</th><td><%hash%></td></tr>
-              <tr><th class="rowlabel">Proc Name</th><td><%proc%></td></tr>
-              <tr><th class="rowlabel">Host</th><td><%host%></td></tr>
-              <tr><th class="rowlabel">Port</th><td><%port%></td></tr>
-              <tr><th class="rowlabel"></th><td>
-                <button class="proc-destroy btn btn-danger">Destroy</button>
-                <button class="proc-stop btn btn-warning ifrunning">Stop</button>
-                <button class="proc-restart btn btn-warning ifrunning">Restart</button>
-                <button class="proc-start btn btn-success ifstopped">Start</button>
-              </td></tr>
-          </table>
-      </div>
-    </div>
-</script>
-{# /GOATEE TEMPLATES #}
-
+{% include "_goatee.html" %}
 
 <script>
 {# build some URLs from Django.  vrdash.js and other scripts rely on these #}
 (function () {
     var root = this;
-    var urls = root.VR.Urls = {};
-    urls.hosts = '{% url api_hosts %}';
-    urls.all_hosts = '{% url api_all_hosts %}';
-    urls.active_hosts = '{% url api_active_hosts %}';
+    var urls = root.VR.Urls;
     urls.events = '{% url api_events %}';
-    urls.host_changes = '{% url api_host_changes %}';
-
-    urls.getProcs = function(hostname) {
-        return urls.hosts + hostname + '/procs/';
-    };
-}).call(this);
+    urls.hostChanges = '{% url api_host_changes %}';
+})(this);
 </script>
 
 {% block script %}{% endblock script %}

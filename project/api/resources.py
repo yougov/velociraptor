@@ -1,5 +1,3 @@
-from django.conf.urls.defaults import url
-
 from tastypie.resources import ModelResource
 from tastypie import fields
 from tastypie import authentication as auth
@@ -9,37 +7,19 @@ from tastypie.api import Api
 from deployment import models
 
 
+# XXX Note that procs don't have a resource in this file.  It turns out that
+# Tastypie is not as good at handling non-ORM resources as I was led to
+# believe.  I made an effort, and ended up getting it mostly working, but it
+# was ugly as hell and using tons of subclasses and overrides.  In the end I
+# decided to just write a Django view and hard-code a route to
+# /api/v1/hosts/<name>/procs/. --Brent
+
 v1 = Api(api_name='v1')
 
 
-class NamedModelResource(ModelResource):
-    """
-    Automatically provides name-based url routes for model-based resources that
-    have a 'name' field with a uniqueness constraint.
-    """
-    def prepend_urls(self):
-        return [url(r"^(?P<resource_name>%s)/(?P<name>[\w\d_.-]+)/$" %
-                         self._meta.resource_name,
-                     self.wrap_view('dispatch_detail'),
-                     name="api_dispatch_detail"), ]
-
-
-class HostResource(NamedModelResource):
-    squad = fields.ToOneField('api.resources.SquadResource', 'squad')
-
-    class Meta:
-        queryset = models.Host.objects.all()
-        resource_name = 'hosts'
-        authentication = auth.MultiAuthentication(
-            auth.BasicAuthentication(),
-            auth.SessionAuthentication(),
-        )
-        authorization = Authorization()
-v1.register(HostResource())
-
-
-class SquadResource(NamedModelResource):
-    hosts = fields.ToManyField('api.resources.HostResource', 'hosts')
+class SquadResource(ModelResource):
+    hosts = fields.ToManyField('api.resources.HostResource', 'hosts',
+                               full=True)
 
     class Meta:
         queryset = models.Squad.objects.all()
@@ -49,6 +29,7 @@ class SquadResource(NamedModelResource):
             auth.SessionAuthentication(),
         )
         authorization = Authorization()
+        detail_uri_name = 'name'
 v1.register(SquadResource())
 
 
@@ -92,6 +73,7 @@ class AppResource(ModelResource):
             auth.SessionAuthentication(),
         )
         authorization = Authorization()
+        detail_uri_name = 'name'
 v1.register(AppResource())
 
 
@@ -124,6 +106,7 @@ class SwarmResource(ModelResource):
     squad = fields.ToOneField('api.resources.SquadResource', 'squad')
     release = fields.ToOneField('api.resources.ReleaseResource', 'release')
 
+    shortname = fields.CharField('shortname')
     class Meta:
         queryset = models.Swarm.objects.all()
         resource_name = 'swarms'
@@ -166,7 +149,8 @@ v1.register(TestResultResource())
 
 
 class TestRunResource(ModelResource):
-    testresults = fields.ToManyField('api.resources.TestResultResource', 'tests')
+    testresults = fields.ToManyField('api.resources.TestResultResource',
+                                     'tests')
 
     class Meta:
 
@@ -178,3 +162,23 @@ class TestRunResource(ModelResource):
         )
         authorization = Authorization()
 v1.register(TestRunResource())
+
+
+class HostResource(ModelResource):
+    squad = fields.ToOneField('api.resources.SquadResource', 'squad')
+
+    class Meta:
+        queryset = models.Host.objects.all()
+        resource_name = 'hosts'
+        authentication = auth.MultiAuthentication(
+            auth.BasicAuthentication(),
+            auth.SessionAuthentication(),
+        )
+        authorization = Authorization()
+        detail_uri_name = 'name'
+
+    def dehydrate(self, bundle):
+        bundle.data['procs_uri'] = bundle.data['resource_uri'] + 'procs/'
+        bundle.data['procs'] = [p.as_dict() for p in bundle.obj.get_procs()]
+        return bundle
+v1.register(HostResource())

@@ -1,0 +1,97 @@
+
+<script id="app-tmpl" type="text/goatee">
+  <td class="titlecell"><div class="apptitle clickable-text"><%id%></div></td><td class="proccell"></td>
+</script>
+
+<script id="swarm-tmpl" type="text/goatee">
+  <div class="procgrid">
+    <div class="swarmtitle"><%id%></div>
+  </div>
+</script>
+
+<script id="proc-tmpl" type="text/goatee">
+<div class="procbox <%statename%>" id="proc-<%jsname%>"></div>
+</script>
+
+<script id="proc-details-tmpl" type="text/goatee">
+    <div class="modal proc-details-modal" data-host="<%host%>" data-name="<%name%>">
+      <div class="modal-header">
+          <a class="close" data-dismiss="modal">×</a>
+          <h3><%name%> </h3>
+          on <a href="http://<%host%>:<%port%>"><%host%>:<%port%></a>
+      </div>
+      <div class="modal-body procmodal-<%statename%>">
+          <table class="attrs">
+              <tr><th class="rowlabel">Name</th><td><%name%></td></tr>
+              <tr><th class="rowlabel">Description</th><td><%description%></td></tr>
+              <tr><th class="rowlabel">State</th><td>
+                  <div class="procbox <%statename%>"></div>
+                  <%statename%>
+              </td></tr>
+              <tr><th class="rowlabel">App</th><td><%app_name%></td></tr>
+              <tr><th class="rowlabel">Version</th><td><%version%></td></tr>
+              <tr><th class="rowlabel">Config Recipe</th><td><%recipe_name%></td></tr>
+              <tr><th class="rowlabel">Release Hash</th><td><%hash%></td></tr>
+              <tr><th class="rowlabel">Proc Name</th><td><%proc_name%></td></tr>
+              <tr><th class="rowlabel">Host</th><td><%host%></td></tr>
+              <tr><th class="rowlabel">Port</th><td><%port%></td></tr>
+              <tr><th class="rowlabel"></th><td>
+                <button class="proc-destroy btn btn-danger">Destroy</button>
+                <button class="proc-stop btn btn-warning ifrunning">Stop</button>
+                <button class="proc-restart btn btn-warning ifrunning">Restart</button>
+                <button class="proc-start btn btn-success ifstopped">Start</button>
+              </td></tr>
+          </table>
+      </div>
+    </div>
+</script>
+
+<script id="host-tmpl" type="text/goatee">
+<div data-hostname="<%name%>">
+  <h4><%name%></h4>
+  {# Note that VR.Views.Host relies on this procgrid div being present #}
+  <div class="procgrid"></div>
+</div>
+</script>
+
+<script id="event-tmpl" type="text/goatee">
+  <div id="event-<%id%>" class="event-wrapper clickable-text">
+    
+    <span class="event-title <%classtags%>"><i class="event-icon"></i> <%title%></span>
+    <div style="clear: both;"></div>
+</div>
+</script>
+
+<script id="event-detail-tmpl" type="text/goatee">
+  <div class="modal event-details-modal">
+      <div class="modal-header">
+          <a class="close" data-dismiss="modal">×</a>
+          <h3 class="event-title <%classtags%>">
+              <i class="event-icon large"></i>
+              <%title%> 
+          </h3>
+          <div class="event-time-short"><%time%></div>
+      </div>
+      <div class="modal-body">
+          <h4>Message</h4>
+          <pre><%message%></pre>
+          Tags: <%tags%><br>
+      </div>
+    </div>
+</script>
+
+<script>
+
+// on DOM READY, make a library of all our templates
+$(function() {
+VR.Templates = {
+  Proc: $('#proc-tmpl'),
+  ProcModal: $('#proc-details-tmpl'),
+  Host: $('#host-tmpl'),
+  Swarm: $('#swarm-tmpl'),
+  App: $('#app-tmpl'),
+  Event: $('#event-tmpl'),
+  EventModal: $('#event-detail-tmpl')
+};
+});
+</script>

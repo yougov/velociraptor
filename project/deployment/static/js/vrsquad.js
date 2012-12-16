@@ -1,25 +1,26 @@
-VR.Squad = {};
+// JS file for the squad detail page.  Requires that vr.js, backbone.js, and
+// goatee.js are already in the page.
 
-VR.Squad.init = function() {
-    $('#btn-add-host').click(function() {
-        $('#add-host-tmpl').goatee().modal();
-    });
+(function() {
 
-    _.each($('.hostgrid .hostblock'), function(block) {
-        var hostname = $(block).data('hostname');
-        // do an ajax request to get the procs 
-        $.getJSON('/api/hosts/' + hostname + '/procs/', function(data, sts, xhr) {
-            VR.Squad.renderProcs(block, data);
-        });
-    });
+var Squad = VR.Squad = {};
+
+Squad.init = function(squadname, container) {
+  // container should be a jQuery-wrapped node.
+  this.container = container;
+
+  this.hosts = new VR.Models.HostList();
+
+  var url = VR.Urls.getTasty('squads', squadname);
+  $.getJSON(url, function(data, sts, xhr) {
+      _.each(data.hosts, function(hostdata, idx, list) {
+          var host = new VR.Models.Host(hostdata);
+          var hostview = new VR.Views.Host(host);
+          Squad.hosts.add(host);
+          Squad.container.append(hostview.el);
+      });
+    }
+  );
 };
 
-VR.Squad.renderProcs = function(hostblock, hostdata) {
-    var grid = $(hostblock).children('.procgrid');
-    grid.html($('#procgrid-tmpl').goatee(hostdata));
-    // bind data to the children
-    _.each(hostdata.procs, function(el) {
-        var procbox = $(hostblock).find('#proc-' + el.jsname);
-        procbox.data(el);
-    });
-};
+})();

@@ -17,7 +17,7 @@ import yaml
 
 from deployment.fields import YAMLDictField
 from deployment import events
-from raptor import repo, build
+from raptor import repo, build, models as raptor_models
 
 
 LOG_ENTRY_TYPES = (
@@ -388,70 +388,46 @@ class Host(models.Model):
     squad = models.ForeignKey('Squad', null=True, blank=True,
                               related_name='hosts')
 
+    def get_procs(self, use_cache=False):
+        if use_cache:
+            procs = self._get_cached_procs()
+            if procs:
+                return procs
+
+        procs = self.raw_host.get_procs()
+        self._set_cached_procs(procs)
+        return procs
+
+    def _set_cached_procs(self, procs):
+        data = {
+            # Supervisor has a 'now' timestamp on each dict of proc data.  Take
+            # that from the first proc and use as timestamp for the whole bundle.
+            'time': procs[0].now.isoformat(),
+            'procs': [p.as_dict() for p in procs],
+            'host': self.name,
+        }
+        self._publish_status(data)
+        cache.set(self.proc_cache_key, data, 30)
+
+    def _get_cached_procs(self):
+        data = cache.get(self.proc_cache_key)
+        if data:
+            return [raptor_models.Proc(self.raw_host, pd) for pd in
+                    data['procs']]
+
+    def _publish_status(self, data):
+        s = events.Sender(
+            settings.EVENTS_PUBSUB_URL,
+            settings.HOST_EVENTS_CHANNEL,
+            buffer_key=settings.HOST_EVENTS_BUFFER,
+        )
+        s.publish(json.dumps(data))
+
     def __unicode__(self):
         return self.name
 
-    @property
-    def rpc(self):
-        url = 'http://%s:%s' % (self.name, settings.SUPERVISOR_PORT)
-        return xmlrpclib.Server(url).supervisor
-
-    def procdata(self, use_cache=False, publish=True):
-        key = self.name + '_procdata'
-        data = None
-        if use_cache:
-            data = cache.get(key)
-            if data:
-                return data
-
-        if data is None:
-            now = timezone.now().isoformat()
-            data = {
-                'time': now,
-                'procs': self.rpc.getAllProcessInfo()
-            }
-            # also set the time in all the procs
-            for p in data['procs']:
-                p['time'] = now
-
-        cache.set(key, data, 30)
-
-        if publish:
-            s = events.Sender(
-                settings.EVENTS_PUBSUB_URL,
-                settings.HOST_EVENTS_CHANNEL,
-                buffer_key=settings.HOST_EVENTS_BUFFER,
-            )
-            s.publish(json.dumps(self.get_apidata(data)))
-        return data
-
-    def get_apidata(self, data=None, use_cache=True):
-        """
-        Return a JSON-friendly dict to use for showing this Host's data
-        (including procs) in API views.
-        """
-        # TODO: use Cache-Control header to determine whether to pass use_cache
-        # into procdata()
-        data = data or self.procdata(use_cache=use_cache)
-
-        # add in the hostname
-        data['host'] = self.name
-
-        # add in things parsed from each procname
-        data['procs'] = [make_proc(p['name'], self, p).as_dict() for p in
-                         data['procs']]
-        return data
-
     def get_used_ports(self):
-        procdata = self.procdata(False)
-        # names will look like 'thumpy-0.0.1-9585c1f8-web-8001'
-        # split off the port at the end.
-        ports = set()
-        for proc in procdata['procs']:
-            parts = proc['name'].split('-')
-            if parts[-1].isdigit():
-                ports.add(int(parts[-1]))
-        return ports
+        return set(p.port for p in self.get_procs())
 
     def get_next_port(self):
 
@@ -468,41 +444,32 @@ class Host(models.Model):
 
         return next(x for x in all_ports if free(x))
 
-    def get_procs(self, use_cache=False):
-        """
-        Return a list of Proc objects, one for each supervisord process that
-        has a parseable name and whose app and recipe can be found in the DB.
-        """
-        procdata = self.procdata(use_cache)
-        procs = [make_proc(p['name'], self, p) for p in procdata['procs']]
-
-        # Filter out any procs for whom we couldn't look up an App or
-        # ConfigRecipe
-        return [p for p in procs if p is not None]
-
     def get_proc(self, name, use_cache=False):
         """
         Given a name of a proc, get its information from supervisord and return
         a Proc instance.
         """
-        # filter down to the proc we care about
-        data = self.procdata(use_cache)
-        proc_dict = next(p for p in data['procs'] if p['name']
-                        == name)
-        return make_proc(name, self, proc_dict)
+        # TODO: honor caching?
+        return self.raw_host.get_proc(name)
 
+    # TODO: move these methods to the proc model
     def start_proc(self, name):
-        self.rpc.startProcess(name)
+        self.raw_host.rpc.startProcess(name)
 
     def stop_proc(self, name):
-        self.rpc.stopProcess(name)
+        self.raw_host.rpc.stopProcess(name)
 
     def restart_proc(self, name):
-        self.rpc.stopProcess(name)
-        self.rpc.startProcess(name)
+        self.raw_host.rpc.stopProcess(name)
+        self.raw_host.rpc.startProcess(name)
 
     class Meta:
         ordering = ('name',)
+
+    def __init__(self, *args, **kwargs):
+        super(Host, self).__init__(*args, **kwargs)
+        self.raw_host = raptor_models.Host(self.name, settings.SUPERVISOR_PORT)
+        self.proc_cache_key = self.name + '_procdata'
 
 
 class Squad(models.Model):
@@ -624,7 +591,7 @@ class Swarm(models.Model):
             'proc': self.proc_name
         }
 
-    def all_procs(self):
+    def get_procs(self):
         """
         Return all running procs on the squad that share this swarm's proc name
         and recipe.
@@ -636,20 +603,33 @@ class Swarm(models.Model):
         for host in self.squad.hosts.all():
             procs += host.get_procs()
 
-        return [p for p in procs if p.recipe == self.recipe and p.proc ==
-                self.proc_name]
+        def is_mine(proc):
+            return p.recipe_name == self.recipe.name and \
+                   p.proc_name == self.proc_name and \
+                   p.app_name == self.recipe.app.name
+
+        return [p for p in procs if is_mine(p)]
 
     def get_prioritized_hosts(self):
         """
         Return list of hosts in the squad sorted first by number of procs from
         this swarm, then by total number of procs.
         """
+        # Make list of all hosts in the squad.  Then we'll sort it.
         squad_hosts = list(self.squad.hosts.all())
-        # cache the proc counts for each host
+
         for h in squad_hosts:
+            # Set a couple temp attributes on each host in the squad, for
+            # sorting by.
             h.all_procs = h.get_procs()
             h.swarm_procs = [p for p in h.all_procs if p.hash ==
-                             self.release.hash and p.proc == self.proc_name]
+                             self.release.hash and p.proc_name == self.proc_name]
+
+            # On each host, set a tuple in form (x, y), where:
+                # x = number of procs running on this host that belong to the
+                # swarm
+                # y = total number of procs running on this host
+
             h.sortkey = (len(h.swarm_procs), len(h.all_procs))
 
         squad_hosts.sort(key=lambda h: h.sortkey)

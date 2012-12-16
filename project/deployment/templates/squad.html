@@ -30,7 +30,7 @@
     </table>
     </form>
     {% if docstring %}<p class="docstring"> {{ docstring }}{% endif %}
-    {# only show add host button if the squad is savede #}
+    {# only show add host button if the squad is saved #}
     {% if squad.id %}
     <div>
       {# TODO: Use a dialog on this page for adding hosts instead of linking to admin #}
@@ -44,8 +44,9 @@
 {% if squad.id %}
 <div class="span8 hostgrid">
     <h2>Hosts</h2>
-    <div class="row-fluid">
+    <div id="squad-container" class="row-fluid">
         {# now a block for each host #}
+        {% comment %}
         {% for host in squad.hosts.all %}
         <div class="hostblock" data-hostname="{{host.name}}">
             <h4>{{ host.name }}</h4>
@@ -54,6 +55,7 @@
             </div>
         </div>
         {% endfor %}
+        {% endcomment %}
     </div>
 </div>
 </div>{# endrow #}
@@ -99,7 +101,8 @@
 <script>
 
 $(function() {
-    VR.Squad.init();
+  var squad = "{{ squad }}";
+  VR.Squad.init(squad, $('#squad-container'));
 });
 </script>
 {% endblock script %}

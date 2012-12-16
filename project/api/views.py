@@ -61,37 +61,13 @@ def host_procs(request, hostname):
     Display status of all supervisord-managed processes on a single host, in
     JSON
     """
-    return utils.json_response(
-        models.Host.objects.get(name=hostname).get_apidata()
-    )
-
-
-@auth_required
-def all_hosts(request):
-    data = {
-        'hosts': [h.get_apidata() for h in models.Host.objects.all()],
-    }
-    return utils.json_response(data)
-
-
-@auth_required
-def active_hosts(request):
-    data = cache.get('active_procdata')
-    if data is None:
-        data = {
-            'hosts': [h.get_apidata(use_cache=False) for h in
-                      models.Host.objects.filter(active=True)],
-        }
-        cache.set('active_procdata', data, 30)
-    return utils.json_response(data)
-
-
-@auth_required
-def host_ports(request, hostname):
     host = models.Host.objects.get(name=hostname)
+    procs = host.get_procs()
+    dicts = [p.as_dict() for p in procs]
+    # TODO: add in host_uri.  Or just call it 'host'
+    # TODO: When log streaming is enabled, add in log_events_uri as well.
     return utils.json_response({
-        'used_ports': list(host.get_used_ports()),
-        'next_port': host.get_unused_port(),
+        'objects': dicts
     })
 
 
@@ -104,32 +80,28 @@ def host_proc(request, hostname, procname):
     host = models.Host.objects.get(name=hostname)
     proc = host.get_proc(procname)
     if request.method == 'DELETE':
-        events.eventify(request.user, 'destroy', proc)
+        events.eventify(request.user, 'destroy', proc.name)
         # check for and remove port lock if present
         try:
             pl = models.PortLock.objects.get(host=host, port=proc.port)
             pl.delete()
         except models.PortLock.DoesNotExist:
             pass
-        # Do proc deletions syncronously instead of with Celery, since they're
-        # fast and we want instant feedback.
-        tasks.delete_proc(hostname, procname)
 
-        # Make the cache forget about this proc
-        host.procdata(use_cache=False)
+        tasks.delete_proc.delay(hostname, procname)
         return utils.json_response({'name': procname, 'deleted': True})
     elif request.method == 'POST':
         action = request.POST.get('action')
         try:
             if action == 'start':
                 host.start_proc(procname)
-                events.eventify(request.user, 'start', proc)
+                events.eventify(request.user, 'start', proc.name)
             elif action == 'stop':
                 host.stop_proc(procname)
-                events.eventify(request.user, 'stop', proc)
+                events.eventify(request.user, 'stop', proc.name)
             elif action == 'restart':
                 host.restart_proc(procname)
-                events.eventify(request.user, 'restart', proc)
+                events.eventify(request.user, 'restart', proc.name)
         except xmlrpclib.Fault as e:
             return utils.json_response({'fault': e.faultString}, 500)
 

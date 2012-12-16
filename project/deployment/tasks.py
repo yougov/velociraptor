@@ -226,50 +226,6 @@ def build_app(build_id, callback=None):
     build_start_waiting_swarms(build.id)
 
 
-#@task
-#@event_on_exception(['build'])
-#def build_hg(build_id, callback=None):
-    ## call the assemble_hg function.
-    #build = Build.objects.get(id=build_id)
-    #send_event(str(build), "Started build %s" % build, tags=['build'])
-    #app = build.app
-    #url = '%s#%s' % (build.app.repo_url, build.tag)
-    #with tmpdir():
-        #build.status = 'started'
-        #build.start_time = timezone.now()
-        #build.save()
-
-        #try:
-            #build_path = paver_build.assemble_hg_raw(url)
-            ## Save the file to Mongo GridFS
-            #localfile = open(build_path, 'r')
-            #name = posixpath.basename(build_path)
-
-            ## the name that comes out will start with whatever the last
-            ## component in the hg repo url is.  We'd rather use the app name.
-            #name = re.sub('^[^-]*', app.name, name)
-            #filepath = 'builds/' + name
-            #default_storage.save(filepath, localfile)
-            #localfile.close()
-            #build.file = filepath
-            #build.end_time = datetime.datetime.now()
-            #build.status = 'success'
-            #send_event(str(build), "Completed build %s" % build, tags=['build',
-                                                                  #'success'])
-        #except:
-            #build.status = 'failed'
-            #raise
-        #finally:
-            #build.save()
-
-    ## start callback if there is one.
-    #if callback is not None:
-        #subtask(callback).delay()
-
-    ## If there were any other swarms waiting on this build, kick them off
-    #build_start_waiting_swarms(build.id)
-
-
 @task
 def update_tags():
     env.linewise = True
@@ -376,7 +332,7 @@ def swarm_release(swarm_id):
 
     # OK we have a release.  Next: see if we need to do a deployment.
     # Query squad for list of procs.
-    all_procs = swarm.all_procs()
+    all_procs = swarm.get_procs()
     current_procs = [p for p in all_procs if p.hash == swarm.release.hash]
 
     procs_needed = swarm.size - len(current_procs)
@@ -481,7 +437,7 @@ def swarm_post_deploy(deploy_results, swarm_id):
 @task
 def swarm_assign_uptests(swarm_id):
     swarm = Swarm.objects.get(id=swarm_id)
-    all_procs = swarm.all_procs()
+    all_procs = swarm.get_procs()
     current_procs = [p for p in all_procs if p.hash == swarm.release.hash]
 
     # Organize procs by host
@@ -517,8 +473,8 @@ def uptest_host(hostname, test_run_id=None):
     """
 
     host = Host.objects.get(name=hostname)
-    procs = host.procdata()['procs']
-    _, results = uptest_host_procs(hostname, [p['name'] for p in procs])
+    procs = host.get_procs()
+    _, results = uptest_host_procs(hostname, [p.name for p in procs])
 
     if test_run_id:
         run = TestRun.objects.get(id=test_run_id)
@@ -640,7 +596,7 @@ def swarm_cleanup(swarm_id):
     Delete any procs in the swarm that aren't from the current release.
     """
     swarm = Swarm.objects.get(id=swarm_id)
-    all_procs = swarm.all_procs()
+    all_procs = swarm.get_procs()
     current_procs = [p for p in all_procs if p.hash == swarm.release.hash]
     stale_procs = [p for p in all_procs if p.hash != swarm.release.hash]
 
@@ -739,8 +695,7 @@ def _update_hosts_cache():
 @task
 def _update_host_cache(hostname):
     host = Host.objects.get(name=hostname)
-    # Just calling host.procdata() will update the host's cached info.
-    host.procdata(use_cache=False)
+    host.get_procs(use_cache=False)
 
 
 @task
