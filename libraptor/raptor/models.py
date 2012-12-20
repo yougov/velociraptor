@@ -58,9 +58,13 @@ class Host(object):
                 data = json.loads(raw)
             else:
                 data = self.supervisor.getProcessInfo(name)
-                self.cache_proc(data)
         else:
             data = self.supervisor.getProcessInfo(name)
+
+        # always set cache values if we have a redis.  use_cache refers only to
+        # gets.
+        if self.redis:
+            self.cache_proc(data)
 
         return Proc(self, data)
 
@@ -68,13 +72,14 @@ class Host(object):
         if use_cache:
             unparsed = self.redis.hgetall(self.cache_key)
             if unparsed and unparsed.pop('__full__', None) == '1':
-
                 all_data = [json.loads(v) for v in unparsed.values()]
             else:
                 all_data = self.supervisor.getAllProcessInfo()
-                self.cache_procs(all_data)
         else:
             all_data = self.supervisor.getAllProcessInfo()
+
+        if self.redis:
+            self.cache_procs(all_data)
 
         return [Proc(self, d) for d in all_data]
 
@@ -159,8 +164,9 @@ class Proc(object):
         for k, v in self._parse_name().items():
             setattr(self, k, v)
 
-        # We also set some convenience attributes for JS/CSS.  Consider pushing
-        # the creation of these out to the JS layer.
+        # We also set some convenience attributes for JS/CSS. It would be nice
+        # to set those in the JS layer, but that takes some hacking on
+        # Backbone.
         self.jsname = self.name.replace('.', 'dot')
         self.id = '%s-%s' % (self.host.name, self.name)
 
