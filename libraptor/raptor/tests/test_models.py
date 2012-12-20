@@ -251,16 +251,17 @@ class RedisCacheTests(unittest.TestCase):
         with pytest.raises(AssertionError):
             self.host.get_procs(use_cache=True)
 
+    def test_absent_proc_decached(self):
+        # Test that if a proc is in the cache but not returned from the host
+        # when get_procs is called, it gets removed from the cache
+        data = dict(self.supervisor.process_info['dummyproc'])
+        data['group'] = data['name'] = 'deadproc'
+        self.redis.hset(self.host.cache_key, 'deadproc', json.dumps(data))
 
+        # Requesting just this proc should return data
+        assert self.host.get_proc('deadproc', use_cache=True).name == 'deadproc'
 
-
-
-
-# Test that things get stored in the cache when a fetch is done with
-# use_cache=True.
-
-# Test that things are fetched from the cache when a fetch is done with
-# use_cache=True.
-
-# Test that if a host is in the cache but not returned from the host, it gets
-# removed from the cache.
+        # But requesting all procs, with deadproc absent from the Supervisor
+        # data, should clear him from cache
+        all_procs = [p.name for p in self.host.get_procs(use_cache=True)]
+        assert 'deadproc' not in all_procs

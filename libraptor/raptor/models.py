@@ -118,8 +118,14 @@ class Host(object):
         data = {d['name']: json.dumps(d) for d in data_list}
         data['__full__'] = '1'
 
-        # Use pipeline to do hash set and expiration in same redis call
+        # Use pipeline to do hash clear, set, and expiration in same redis call
+        existing = self.redis.hkeys(self.cache_key)
         with self.redis.pipeline() as pipe:
+
+            # First clear all existing data in the hash
+            if len(existing):
+                pipe.hdel(self.cache_key, *existing)
+            # Now set all the hash values
             pipe.hmset(self.cache_key, data)
             pipe.expire(self.cache_key, self.cache_lifetime)
             pipe.execute()
