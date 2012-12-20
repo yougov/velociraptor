@@ -49,6 +49,12 @@ class Host(object):
         self.cache_key = redis_cache_prefix + name
         self.cache_lifetime = redis_cache_lifetime
 
+    def _get_and_cache_proc(self, name):
+        data = self.supervisor.getProcessInfo(name)
+        if self.redis:
+            self.cache_proc(data)
+        return data
+
     def get_proc(self, name, use_cache=False):
         if use_cache:
             # Note that if self.redis=None, and use_cache=True, an
@@ -57,16 +63,17 @@ class Host(object):
             if raw:
                 data = json.loads(raw)
             else:
-                data = self.supervisor.getProcessInfo(name)
+                data = self._get_and_cache_proc(name)
         else:
-            data = self.supervisor.getProcessInfo(name)
-
-        # always set cache values if we have a redis.  use_cache refers only to
-        # gets.
-        if self.redis:
-            self.cache_proc(data)
+            data = self._get_and_cache_proc(name)
 
         return Proc(self, data)
+
+    def _get_and_cache_procs(self):
+        all_data = self.supervisor.getAllProcessInfo()
+        if self.redis:
+            self.cache_procs(all_data)
+        return all_data
 
     def get_procs(self, use_cache=False):
         if use_cache:
@@ -74,12 +81,9 @@ class Host(object):
             if unparsed and unparsed.pop('__full__', None) == '1':
                 all_data = [json.loads(v) for v in unparsed.values()]
             else:
-                all_data = self.supervisor.getAllProcessInfo()
+                all_data = self._get_and_cache_procs()
         else:
-            all_data = self.supervisor.getAllProcessInfo()
-
-        if self.redis:
-            self.cache_procs(all_data)
+            all_data = self._get_and_cache_procs()
 
         return [Proc(self, d) for d in all_data]
 
