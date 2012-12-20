@@ -20,7 +20,7 @@ from fabric.api import sudo, get, put, task, env
 from fabric.contrib import files
 from fabric import colors
 
-from raptor.util import chdir
+from raptor.utils import chdir
 
 # TODO: Change these to /apps/ so that we don't have YG-isms in the code and
 # can more safely bind-mount /opt into app environments.  It's tricky, because

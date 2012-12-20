@@ -6,7 +6,7 @@ import logging
 
 import envoy
 
-from raptor.util import CommandException, chdir
+from raptor.utils import CommandException, chdir
 
 
 log = logging.getLogger(__name__)

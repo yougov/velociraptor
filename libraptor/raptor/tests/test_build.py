@@ -1,5 +1,5 @@
 from raptor.build import add_buildpack, App
-from raptor.util import tmpdir
+from raptor.utils import tmpdir
 
 
 def test_buildpack_detected():

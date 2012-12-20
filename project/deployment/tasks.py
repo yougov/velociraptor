@@ -25,7 +25,7 @@ from deployment.models import (Release, Build, Swarm, Host, PortLock, App,
 from deployment import models
 from deployment import balancer, events, utils
 from raptor import repo, remote, build as rbuild
-from raptor.util import tmpdir
+from raptor.utils import tmpdir
 
 
 logger = logging.getLogger('velociraptor')

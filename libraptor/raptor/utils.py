@@ -1,6 +1,7 @@
 import os
 import shutil
 import tempfile
+import urlparse
 
 
 class tmpdir(object):
@@ -49,3 +50,16 @@ class CommandException(Exception):
                        'std_err': result.std_err,
                    }
         super(CommandException, self).__init__(message)
+
+
+def parse_redis_url(url):
+    """
+    Given a url like redis://localhost:6379/0, return a dict with host, port,
+    and db members.
+    """
+    parsed = urlparse.urlsplit(url)
+    return {
+        'host': parsed.hostname,
+        'port': parsed.port,
+        'db': int(parsed.path.replace('/', '')),
+    }

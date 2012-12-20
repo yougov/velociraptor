@@ -6,7 +6,7 @@ import pytest
 import envoy
 
 from raptor import repo, build
-from raptor.util import tmpdir, CommandException
+from raptor.utils import tmpdir, CommandException
 
 
 def test_hg_folder_detection():

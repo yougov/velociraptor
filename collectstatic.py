@@ -17,7 +17,7 @@ import shlex
 from pymongo import Connection
 from gridfs import GridFS, NoFile
 
-from raptor.util import chdir
+from raptor.utils import chdir
 
 MONGO_HOST = 'vdeploydb.paix.yougov.local'
 MONGO_PORT = 27017
