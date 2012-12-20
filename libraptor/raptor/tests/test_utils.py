@@ -12,4 +12,4 @@ def test_parse_redis_url():
                'password': None,
                'port': 6379,
                'socket_timeout': None}
-    assert r.connection_pool.connection_kwargs ==  expected
+    assert r.connection_pool.connection_kwargs == expected

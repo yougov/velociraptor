@@ -5,16 +5,22 @@ your Supervisor configuration:
 
 [eventlistener:proc_publisher]
 command=proc_publisher
-events=PROCESS_STATE,PROCESS_GROUP
+events=PROCESS_STATE,PROCESS_GROUP,TICK_60
 environment=REDIS_URL="redis://localhost:6379/0"
 
 You should *not* configure a stdout_logfile for this program (it messes up the
 communication with Supervisor).
 
-For each message received, the publisher will put a json-encoded dict on the
-Redis pubsub specified in the eventlistener's environment variables.
-Velociraptor web procs will listen on this pubsub for proc state changes and
-update dashboards in realtime.
+For each PROCESS_STATE and PROCESS_GROUP message received, the publisher will
+put a json-encoded dict on the Redis pubsub specified in the eventlistener's
+environment variables.  Velociraptor web procs will listen on this pubsub for
+proc state changes and update dashboards in realtime.
+
+The listener will also maintain a cache of the host's proc data in a Redis
+hash.  This cache will be updated whenever an event is received from
+Supervisor.  By configuring the eventlistener to receive TICK_60 events, the
+cache will be updated once per minute, even if no process state changes have
+occurred.
 """
 
 import os
@@ -28,8 +34,10 @@ import redis
 from supervisor import childutils
 
 from raptor.utils import parse_redis_url
+from raptor.models import Host
 
-def publish_procstatus():
+
+def main():
     if not 'SUPERVISOR_SERVER_URL' in os.environ:
         raise SystemExit('supervisor_events_publisher must be run as a '
                          'supervisor event listener')
@@ -41,39 +49,47 @@ def publish_procstatus():
     cache_lifetime = int(os.getenv('PROC_CACHE_LIFETIME', 600))
 
     # Use Supervisor's own RPC interface to get full proc data on each process
-    # state change, since 
+    # state change, since the emitted events don't have everything we want.
     rpc = childutils.getRPCInterface(os.environ)
 
-    con = redis.StrictRedis(**parse_redis_url(os.environ['REDIS_URL']))
+    rcon = redis.StrictRedis(**parse_redis_url(os.environ['REDIS_URL']))
     events = EventStream([ProcEvent, ProcGroupEvent, Event],
                          ignore_unmatched=True)
+    host = Host(socket.getfqdn(), rpc_or_port=rpc, redis_or_url=rcon,
+                redis_cache_prefix=cache_prefix,
+                redis_cache_lifetime=cache_lifetime)
+    handle_events(events, host, pubsub_channel)
+
+
+def handle_events(events, host, pubsub_channel):
+    # handle_events is split into its own function for easier testability
     for e in events:
-        data = e.emit()
-        # The cache is saved with one hash per host.  The keys in this hash are
-        # proc names, and the values are json-encoded dicts
-        cache_key = cache_prefix + data['host']
-        if e.eventname.startswith('PROCESS_STATE'):
-            proc_data = rpc.supervisor.getProcessInfo(data['process'])
-            proc_data['host'] = data['host']
-            # TODO: Use caching routine from raptor.models.Host
-
-            # Include host with all messages, as well as event type, so
-            # listeners can ignore messages they don't care about.
-            proc_data.update(host=data['host'], event=e.eventname)
-            serialized = json.dumps(proc_data)
-            con.publish(pubsub_channel, serialized)
-            con.hset(cache_key, data['process'], serialized)
-            con.expire(cache_key, cache_lifetime)
-
-        elif e.eventname == 'PROCESS_GROUP_REMOVED':
-            # Supervisor distinguishes between processes and process groups,
-            # but Velociraptor doesn't, so replace 'group' with 'process' so
-            # listeners can be consistent.
-            data['process'] = data.pop('group')
-            con.publish(pubsub_channel, json.dumps(data))
-            con.hdel(cache_key, data['process'])
-
+        handle_event(e, host, pubsub_channel)
         log(e.emit())
+
+
+def handle_event(event, host, pubsub_channel):
+    data = event.emit()
+    if event.eventname.startswith('PROCESS_STATE'):
+        proc_name = data['payload_headers']['processname']
+        proc_data = host.get_proc(proc_name, check_cache=False)._data
+
+        # Include host with all messages, as well as event type, so
+        # listeners can ignore messages they don't care about.
+        proc_data.update(host=data['host'], event=event.eventname)
+        serialized = json.dumps(proc_data)
+        host.redis.publish(pubsub_channel, serialized)
+
+    elif event.eventname == 'PROCESS_GROUP_REMOVED':
+        # Supervisor's events interface likes to call things 'process' or
+        # 'group' or 'processname', but the xmlrpc interface gives
+        # processes a 'name' and 'group'.  Velociraptor likes to use
+        # 'name'.
+        data['name'] = data['payload_headers']['groupname']
+        host.redis.publish(pubsub_channel, json.dumps(data))
+
+    # No matter what kind of event we got, update the host's whole cache.
+    host.get_procs(check_cache=False)
 
 
 class Event(object):

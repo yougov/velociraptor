@@ -17,7 +17,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'proc_publisher = raptor.publisher:publish_procstatus',
+            'proc_publisher = raptor.publisher:main',
         ]
     },
     description=('Libraries and command line tools for deploying with '

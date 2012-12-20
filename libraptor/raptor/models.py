@@ -21,13 +21,13 @@ class Host(object):
     cached in Redis.
 
     Call host.get_procs() to get a list of Proc objects for all
-    Supervisor-managed processes on the host.  Call it with use_cache=True to
+    Supervisor-managed processes on the host.  Call it with check_cache=True to
     allow fetching proc info from the Redis cache.
 
     Call host.get_proc('name') to get a Proc object for the process named
-    'name'.  Call it with use_cache=True to allow fetching proc info from the
-    Redis cache.
-
+    'name'.  Call it with check_cache=True to allow fetching proc info from the
+    Redis cache.  If the host has no proc with that name, ProcError will be
+    raised.
     """
     def __init__(self, name, rpc_or_port=9001, redis_or_url=None,
                  redis_cache_prefix='host_procs_', redis_cache_lifetime=600):
@@ -50,14 +50,21 @@ class Host(object):
         self.cache_lifetime = redis_cache_lifetime
 
     def _get_and_cache_proc(self, name):
-        data = self.supervisor.getProcessInfo(name)
+        try:
+            data = self.supervisor.getProcessInfo(name)
+        except xmlrpclib.Fault as e:
+            if e.faultCode == 10: # BAD_NAME
+                # xmlrpclib exceptions are ugly and uninformative.  We can do
+                # better.
+                raise ProcError('host %s has no proc named %s' % (self.name, name))
+            raise
         if self.redis:
             self.cache_proc(data)
         return data
 
-    def get_proc(self, name, use_cache=False):
-        if use_cache:
-            # Note that if self.redis=None, and use_cache=True, an
+    def get_proc(self, name, check_cache=False):
+        if check_cache:
+            # Note that if self.redis=None, and check_cache=True, an
             # AttributeError will be raised.
             raw = self.redis.hget(self.cache_key, name)
             if raw:
@@ -75,8 +82,8 @@ class Host(object):
             self.cache_procs(all_data)
         return all_data
 
-    def get_procs(self, use_cache=False):
-        if use_cache:
+    def get_procs(self, check_cache=False):
+        if check_cache:
             unparsed = self.redis.hgetall(self.cache_key)
             if unparsed and unparsed.pop('__full__', None) == '1':
                 all_data = [json.loads(v) for v in unparsed.values()]
@@ -225,3 +232,9 @@ class Proc(object):
                 data[k] = v
         data['host'] = self.host.name
         return data
+
+class ProcError(Exception):
+    """
+    Raised when you request a proc that doesn't exist.
+    """
+    pass
