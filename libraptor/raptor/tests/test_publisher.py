@@ -94,8 +94,6 @@ def test_procstate_events_published():
     assert expected_data == json.loads(args[1])
 
 
-# process_group_removed events publish just the removal
-
 def test_removal_events_published():
     server = FakeRPC()
     host = Host('somewhere', server)

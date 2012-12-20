@@ -53,17 +53,11 @@ def main():
     rpc = childutils.getRPCInterface(os.environ)
 
     rcon = redis.StrictRedis(**parse_redis_url(os.environ['REDIS_URL']))
-    events = EventStream([ProcEvent, ProcGroupEvent, Event],
-                         ignore_unmatched=True)
     host = Host(socket.getfqdn(), rpc_or_port=rpc, redis_or_url=rcon,
                 redis_cache_prefix=cache_prefix,
                 redis_cache_lifetime=cache_lifetime)
-    handle_events(events, host, pubsub_channel)
 
-
-def handle_events(events, host, pubsub_channel):
-    # handle_events is split into its own function for easier testability
-    for e in events:
+    for e in EventStream():
         handle_event(e, host, pubsub_channel)
         log(e.emit())
 
@@ -108,97 +102,36 @@ class Event(object):
         self.eventname = headers['eventname']
         self.payload_headers, self.payload_data = childutils.eventdata(payload
                                                                        + '\n')
-    def get_data(self):
-        """
-        Subclasses should override this method to put custom data in the
-        payload.  They should not add 'event', 'host', or 'time' fields, as these
-        will be added automatically by the emit() function that calls get_data.
-        """
-        return {
+
+    def emit(self):
+        data = {
+            'event': self.eventname,
+            'host': self.host,
             'payload_headers': self.payload_headers,
             'payload_data': self.payload_data,
         }
-
-    def emit(self):
-        data = self.get_data()
-        data.update(
-            event=self.eventname,
-            host=self.host,
-        )
         if 'when' in self.payload_headers:
             utime = float(self.payload_headers['when'])
             dt = datetime.datetime.utcfromtimestamp(utime)
             data.update(time=dt.isoformat())
         else:
             data.update(time=datetime.datetime.utcnow().isoformat())
-
         return data
 
     def __repr__(self):
         return '<Event %s>' % self.eventname
 
 
-class ProcEvent(Event):
-    pattern = re.compile('^PROCESS_STATE*')
-
-    def __init__(self, *args, **kwargs):
-        super(ProcEvent, self).__init__(*args, **kwargs)
-
-        # eventname will be something like PROCESS_STATE_RUNNING.  Split off
-        # just the running.
-        self.state = self.eventname.rpartition('_')[-1]
-        self.previous = self.payload_headers['from_state']
-        self.pid = int(self.payload_headers.get('pid', 0))
-
-    def get_data(self):
-        data = dict(self.payload_headers)
-        data.update(event=self.eventname, host=self.host)
-        return {
-            'process': self.payload_headers['processname'],
-            'state': self.state,
-            'previous': self.previous,
-            'pid': self.pid,
-        }
-
-    def __repr__(self):
-        return '<Event %s %s>' % (self.process, self.state)
-
-
-class ProcGroupEvent(Event):
-    pattern = re.compile('^PROCESS_GROUP*')
-
-    def __init__(self, *args, **kwargs):
-        super(ProcGroupEvent, self).__init__(*args, **kwargs)
-
-        self.group = self.payload_headers['groupname']
-
-    def __repr__(self):
-        return '<Event %s %s>' % (self.eventname, self.groupname)
-
-    def get_data(self):
-        return {
-            'group': self.group,
-        }
-
-
 class EventStream(object):
     """
-    Iterator over Supervisor-emitted events.  Should be initted with a list of
-    Event classes and/or subclasses that should be matched to data coming out
-    of the stream and then yielded from the iterator.
+    Iterator over Supervisor-emitted events.
 
-        es = EventStream(event_classes=(ProcEvent, ProcGroupEvent, Event))
-
-    If the EventStream gets an event on stdin that does not match any of the
-    event_classes, it will raise a NoMatch exception.  You can override this
-    behavior (and silently ignore unmatched messages) by setting
-    ignore_unmatched=True on init.
+        es = EventStream()
+        for e in es:
+            do_something(e)
     """
 
-    def __init__(self, event_classes, ignore_unmatched=False):
-        self.event_classes = event_classes
-        self.ignore_unmatched = ignore_unmatched
-
+    def __init__(self):
         # Makes testing easier
         self.stdin = sys.stdin
         self.stdout = sys.stdout
@@ -216,29 +149,9 @@ class EventStream(object):
         if self._needs_ok:
             childutils.listener.ok(self.stdout)
 
-        # If ignore_unmatched == True, we'll sit in this loop until getting a
-        # message we recognize.
-        while 1:
-            headers, payload = childutils.listener.wait(self.stdin, self.stdout)
-
-            # Find, instantiate, and return the first of our event classes that
-            # matches this eventname
-            for cls in self.event_classes:
-                if re.match(cls.pattern, headers['eventname']):
-                    self._needs_ok = True
-                    return cls(headers, payload)
-            else:
-                # We checked all our event classes and none matched this
-                # message.
-                if self.ignore_unmatched:
-                    childutils.listener.ok(self.stdout)
-                    continue
-                else:
-                    raise NoMatch('No event class matches %s' % headers['eventname'])
-
-
-class NoMatch(Exception):
-    pass
+        headers, payload = childutils.listener.wait(self.stdin, self.stdout)
+        self._needs_ok = True
+        return Event(headers, payload)
 
 
 def log(*args):
