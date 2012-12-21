@@ -7,7 +7,7 @@ VR.Dash.Options = {
     refreshInterval: 60000
 };
 
-VR.Dash.init = function(appsContainer, eventsContainer, hostChangeUrl, eventsUrl) {
+VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl) {
 
   // Create a new applist, bound to our container
   VR.Dash.Apps = new VR.Models.AppList();
@@ -21,10 +21,19 @@ VR.Dash.init = function(appsContainer, eventsContainer, hostChangeUrl, eventsUrl
   );
 
   // bind host change event stream to handler
-  var stream = new EventSource(hostChangeUrl || VR.Urls.hostChanges);
-  stream.onmessage = $.proxy(VR.Dash.onHostChange, this);
+  var procEvents = new EventSource(procEventsUrl || VR.Urls.procEvents);
+  procEvents.onmessage = $.proxy(function(e) {
+      var parsed = JSON.parse(e.data);
+      if (parsed.event == 'PROCESS_GROUP_REMOVED') {
+         VR.Messages.trigger('remove:'+parsed.id);
+         VR.Dash.removeProc(parsed.id);
+      } else {
+        VR.Dash.updateProcData(parsed);
+      }
+      }, this
+  );
 
-  // 
+  // bind proc change event stream to handler 
 };
 
 VR.Dash.onHostChange = function(e) {

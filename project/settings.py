@@ -109,6 +109,7 @@ EVENTS_PUBSUB_URL = 'redis://localhost:6379/0'
 EVENTS_PUBSUB_CHANNEL = 'vr_events'
 EVENTS_BUFFER_KEY = 'vr_events_buffer'
 EVENTS_BUFFER_LENGTH = 100
+PROC_EVENTS_CHANNEL = 'proc_events'
 
 HOST_EVENTS_CHANNEL = 'vr_host_events'
 HOST_EVENTS_BUFFER = 'vr_host_events_buffer'

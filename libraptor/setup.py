@@ -14,6 +14,7 @@ setup(
         'suds==0.4',
         'supervisor>=3.0b1',
         'redis>=2.6.2',
+        'isodate>=0.4.4',
     ],
     entry_points={
         'console_scripts': [

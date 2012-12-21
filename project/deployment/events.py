@@ -27,6 +27,7 @@ import uuid
 import logging
 
 import redis
+import sseclient
 from django.conf import settings
 
 from deployment import utils
@@ -90,6 +91,37 @@ class EventSender(Sender):
 
     def close(self):
         self.rcon.connection_pool.disconnect()
+
+
+class ProcListener(object):
+    def __init__(self, rcon_or_url, channel):
+        if isinstance(rcon_or_url, redis.StrictRedis):
+            self.rcon = rcon_or_url
+        elif isinstance(rcon_or_url, basestring):
+            self.rcon = redis.StrictRedis(**utils.parse_redis_url(rcon_or_url))
+        self.channel = channel
+        self.pubsub = self.rcon.pubsub()
+        self.pubsub.subscribe([channel])
+
+        self.rcon.publish(channel, 'flush')
+
+    def __iter__(self):
+        while 1:
+            yield self.next()
+
+    def next(self):
+        while 1:
+            msg = next(self.pubsub.listen())
+            if msg['type'] == 'message':
+                if msg['data'] == 'flush':
+                    return ':\n'
+                else:
+                    ev = sseclient.Event(data=msg['data'], retry=1000)
+                    return ev.dump()
+
+    def close(self):
+        self.rcon.connection_pool.disconnect()
+
 
 
 class Listener(object):
@@ -181,6 +213,9 @@ class Listener(object):
             out += '\n'.join('data: %s' % l for l in data) + '\n'
         out += '\n'
         return out
+
+    def close(self):
+        self.rcon.connection_pool.disconnect()
 
 
 class EventListener(Listener):

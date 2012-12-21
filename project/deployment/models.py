@@ -444,24 +444,12 @@ class Host(models.Model):
 
         return next(x for x in all_ports if free(x))
 
-    def get_proc(self, name, use_cache=False):
+    def get_proc(self, name, check_cache=False):
         """
         Given a name of a proc, get its information from supervisord and return
         a Proc instance.
         """
-        # TODO: honor caching?
-        return self.raw_host.get_proc(name)
-
-    # TODO: move these methods to the proc model
-    def start_proc(self, name):
-        self.raw_host.rpc.startProcess(name)
-
-    def stop_proc(self, name):
-        self.raw_host.rpc.stopProcess(name)
-
-    def restart_proc(self, name):
-        self.raw_host.rpc.stopProcess(name)
-        self.raw_host.rpc.startProcess(name)
+        return self.raw_host.get_proc(name, check_cache)
 
     class Meta:
         ordering = ('name',)

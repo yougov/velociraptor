@@ -34,7 +34,7 @@ import redis
 from supervisor import childutils
 
 from raptor.utils import parse_redis_url
-from raptor.models import Host
+from raptor.models import Host, Proc
 
 
 def main():
@@ -66,13 +66,12 @@ def handle_event(event, host, pubsub_channel):
     data = event.emit()
     if event.eventname.startswith('PROCESS_STATE'):
         proc_name = data['payload_headers']['processname']
-        proc_data = host.get_proc(proc_name, check_cache=False)._data
+        proc_data = host.get_proc(proc_name, check_cache=False).as_dict()
 
-        # Include host with all messages, as well as event type, so
-        # listeners can ignore messages they don't care about.
-        proc_data.update(host=data['host'], event=event.eventname)
-        serialized = json.dumps(proc_data)
-        host.redis.publish(pubsub_channel, serialized)
+        # Include event type with all messages so listeners can ignore messages
+        # they don't care about.
+        proc_data.update(event=event.eventname)
+        host.redis.publish(pubsub_channel, json.dumps(proc_data))
 
     elif event.eventname == 'PROCESS_GROUP_REMOVED':
         # Supervisor's events interface likes to call things 'process' or
@@ -80,6 +79,11 @@ def handle_event(event, host, pubsub_channel):
         # processes a 'name' and 'group'.  Velociraptor likes to use
         # 'name'.
         data['name'] = data['payload_headers']['groupname']
+        # Parse out the bits of the name
+        data.update(Proc.parse_name(data['name']))
+        # also add in the 'id' field that procs have, since the dashboard will
+        # rely on that to pluck out the JS proc model
+        data['id'] = '%s-%s' % (host.name, data['name'])
         host.redis.publish(pubsub_channel, json.dumps(data))
 
     # No matter what kind of event we got, update the host's whole cache.

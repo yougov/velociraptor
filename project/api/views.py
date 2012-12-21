@@ -71,7 +71,7 @@ def host_procs(request, hostname):
     })
 
 
-@auth_required
+#@auth_required
 def host_proc(request, hostname, procname):
     """
     Display status of a single supervisord-managed process on a host, in
@@ -94,13 +94,13 @@ def host_proc(request, hostname, procname):
         action = request.POST.get('action')
         try:
             if action == 'start':
-                host.start_proc(procname)
+                proc.start()
                 events.eventify(request.user, 'start', proc.name)
             elif action == 'stop':
-                host.stop_proc(procname)
+                proc.stop()
                 events.eventify(request.user, 'stop', proc.name)
             elif action == 'restart':
-                host.restart_proc(procname)
+                proc.restart()
                 events.eventify(request.user, 'restart', proc.name)
         except xmlrpclib.Fault as e:
             return utils.json_response({'fault': e.faultString}, 500)
@@ -137,6 +137,14 @@ def event_stream(request):
         channels=[settings.EVENTS_PUBSUB_CHANNEL],
         buffer_key=settings.EVENTS_BUFFER_KEY,
         last_event_id=request.META.get('HTTP_LAST_EVENT_ID')
+    ), mimetype='text/event-stream')
+
+
+@auth_required
+def proc_event_stream(request):
+    return http.HttpResponse(events.ProcListener(
+        settings.EVENTS_PUBSUB_URL,
+        channel=settings.PROC_EVENTS_CHANNEL,
     ), mimetype='text/event-stream')
 
 

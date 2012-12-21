@@ -47,10 +47,10 @@ class FakeProcCase(unittest.TestCase):
         assert self.dummyproc.name == 'dummyproc'
 
     def test_start(self):
-        assert self.dummyproc.start == datetime.datetime(2012, 12, 18, 22, 19, 46)
+        assert self.dummyproc.start_time == datetime.datetime(2012, 12, 18, 22, 19, 46)
 
     def test_stop(self):
-        assert self.dummyproc.stop == datetime.datetime(2012, 12, 18, 22, 19, 46)
+        assert self.dummyproc.stop_time == datetime.datetime(2012, 12, 18, 22, 19, 46)
 
     def test_now(self):
         assert self.dummyproc.now == datetime.datetime(2012, 12, 18, 22, 19, 46)
@@ -97,12 +97,12 @@ class FakeProcCase(unittest.TestCase):
              'proc_name': 'dummyproc',
              'recipe_name': 'UNKNOWN',
              'spawnerr': '',
-             'start': '2012-12-18T22:19:46',
+             'start_time': '2012-12-18T22:19:46',
              'state': 20,
              'statename': 'RUNNING',
              'stderr_logfile': '/tmp/pub.log',
              'stdout_logfile': '/var/log/supervisor/dummyproc-stdout---supervisor-cYv5Q2.log',
-             'stop': '2012-12-18T22:19:46',
+             'stop_time': '2012-12-18T22:19:46',
              'version': 'UNKNOWN'}
 
     def test_app_name(self):

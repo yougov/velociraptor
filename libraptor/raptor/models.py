@@ -168,17 +168,17 @@ class Proc(object):
         self.now = datetime.fromtimestamp(data['now']) if data['now'] else None
         self.pid = data['pid']
         self.spawnerr = data['spawnerr']
-        self.start = datetime.fromtimestamp(data['start']) if data['start'] else None
+        self.start_time = datetime.fromtimestamp(data['start']) if data['start'] else None
         self.state = data['state']
         self.statename = data['statename']
         self.stderr_logfile = data['stderr_logfile']
         self.stdout_logfile = data['stdout_logfile']
-        self.stop = datetime.fromtimestamp(data['stop']) if data['stop'] else None
+        self.stop_time = datetime.fromtimestamp(data['stop']) if data['stop'] else None
 
         # The names returned from Supervisor have a bunch of metadata encoded
         # in them (at least until we can get a Supervisor RPC plugin to return
         # it).  Parse that out and set attributes.
-        for k, v in self._parse_name().items():
+        for k, v in self.parse_name(self.name).items():
             setattr(self, k, v)
 
         # We also set some convenience attributes for JS/CSS. It would be nice
@@ -187,9 +187,10 @@ class Proc(object):
         self.jsname = self.name.replace('.', 'dot')
         self.id = '%s-%s' % (self.host.name, self.name)
 
-    def _parse_name(self):
+    @staticmethod
+    def parse_name(name):
         try:
-            app_name, version, recipe_name, rel_hash, proc_name, port = self.name.split('-')
+            app_name, version, recipe_name, rel_hash, proc_name, port = name.split('-')
 
             return {
                 'app_name': app_name,
@@ -205,7 +206,7 @@ class Proc(object):
                 'version': 'UNKNOWN',
                 'recipe_name': 'UNKNOWN',
                 'hash': 'UNKNOWN',
-                'proc_name': self.name,
+                'proc_name': name,
                 'port': 0
             }
 
@@ -232,6 +233,18 @@ class Proc(object):
                 data[k] = v
         data['host'] = self.host.name
         return data
+
+    def start(self):
+        print "proc start", self.host.name, self.name
+        self.host.supervisor.startProcess(self.name)
+
+    def stop(self):
+        self.host.supervisor.stopProcess(self.name)
+
+    def restart(self):
+        self.host.supervisor.stopProcess(self.name)
+        self.host.supervisor.startProcess(self.name)
+
 
 class ProcError(Exception):
     """
