@@ -452,60 +452,6 @@ class Squad(models.Model):
         ordering = ('name',)
 
 
-#class Proc(object):
-    #def __init__(self, name, app, tag, recipe, hash, proc, host, port, data):
-        #self.name = name
-        #self.app = app
-        #self.tag = tag
-        #self.recipe = recipe
-        #self.hash = hash
-        #self.proc = proc
-        #self.host = host
-        #self.port = port
-        #self.data = data  # raw dict returned from supervisord
-        #self.time = data['time']
-
-        #rs = Release.objects.filter(hash=self.hash, recipe=self.recipe)
-        #if rs:
-            #self.build = rs[0].build
-        #else:
-            #self.build = None
-
-    #def as_dict(self):
-        #data = copy(self.data)
-        #if self.host.squad:
-            #squadname = self.host.squad.name
-        #else:
-            #squadname = None
-        #data.update(
-            #id=self.host.name + '-' + self.name,
-            #name=self.name,
-            #tag=self.tag,
-            #hash=self.hash,
-            #proc=self.proc,
-            #host=self.host.name,
-            #app=self.app.name if self.app else None,
-            #recipe=self.recipe.name if self.recipe else None,
-            #port=self.port,
-            ## Add a name that's safe for jquery selectors
-            #jsname=self.name.replace('.', 'dot'),
-            #squad=squadname,
-        #)
-        #return data
-
-    #def as_node(self):
-        #"""
-        #Return host:port, as needed by the balancer interface.
-        #"""
-        #return '%s:%s' % (self.host.name, self.port)
-
-    #def __unicode__(self):
-        #return self.name
-
-    #def __str__(self):
-        #return self.__unicode__().encode('utf-8')
-
-
 class Swarm(models.Model):
     """
     This is the payoff.  Save a swarm record and then you can tell Velociraptor
