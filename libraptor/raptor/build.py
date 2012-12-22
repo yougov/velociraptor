@@ -41,6 +41,10 @@ class BuildPack(repo.Repo):
         # use ordinary subprocess here instead of envoy because we want stdout
         # to be printed to the terminal.
         log.info(' '.join([script, app.folder, cache_folder]))
+        # XXX letting this output get printed to stdout is nice for logs, but
+        # means that we can't very well capture failures and send them up to
+        # the web UI.  TODO: patch envoy to allow printing stdout, so we can
+        # have our cake and eat it too.
         retcode = subprocess.call([script, app.folder, cache_folder])
         assert retcode == 0, ("Failed compiling %s with %s buildpack" % (app,
                                                                          self.basename))
