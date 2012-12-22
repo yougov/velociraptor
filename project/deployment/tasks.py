@@ -127,7 +127,6 @@ def deploy(release_id, recipe_name, hostname, proc, port, contain=False):
                                                  False),
                               contain=contain)
 
-    _update_host_cache(hostname)
 
 
 class CmdError(Exception):
@@ -252,8 +251,6 @@ def delete_proc(host, proc, callback=None):
 
     if callback:
         subtask(callback).delay()
-
-    _update_host_cache(host)
 
 
 def swarm_wait_for_build(swarm, build):
@@ -677,25 +674,6 @@ def scooper():
                tags=['scheduled'])
     for host in Host.objects.filter(active=True):
         _clean_host_releases.apply_async((host.name,), expires=120)
-
-
-@task
-def _update_hosts_cache():
-    """
-    Call out to each host, get the status of its procs, and put it in our
-    cache.  By keeping this data warm, we can have cheap refreshes on the
-    client side without doing a million duplicative calls.
-    """
-    for host in Host.objects.filter(active=True):
-        # Expire the task if it hasn't completed in 3 seconds, to prevent huge
-        # backlogs.
-        _update_host_cache.apply_async((host.name,), expires=3)
-
-
-@task
-def _update_host_cache(hostname):
-    host = Host.objects.get(name=hostname)
-    host.get_procs(use_cache=False)
 
 
 @task

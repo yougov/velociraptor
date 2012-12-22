@@ -179,6 +179,7 @@ class HostResource(ModelResource):
 
     def dehydrate(self, bundle):
         bundle.data['procs_uri'] = bundle.data['resource_uri'] + 'procs/'
-        bundle.data['procs'] = [p.as_dict() for p in bundle.obj.get_procs()]
+        bundle.data['procs'] = [p.as_dict() for p in
+                                bundle.obj.get_procs(check_cache=True)]
         return bundle
 v1.register(HostResource())

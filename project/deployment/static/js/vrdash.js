@@ -25,8 +25,7 @@ VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl
   procEvents.onmessage = $.proxy(function(e) {
       var parsed = JSON.parse(e.data);
       if (parsed.event == 'PROCESS_GROUP_REMOVED') {
-         VR.Messages.trigger('remove:'+parsed.id);
-         VR.Dash.removeProc(parsed.id);
+        VR.Dash.removeProc(parsed);
       } else {
         VR.Dash.updateProcData(parsed);
       }
@@ -35,6 +34,33 @@ VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl
 
   // bind proc change event stream to handler 
 };
+
+VR.Dash.removeProc = function(procdata) {
+  // called when a removal event comes in on the pubsub.  Drill down into the
+  // App>Swarm>Proc structure to find the proc and remove it.  On the way out,
+  // remove any empty swarms or apps.
+  var swarmName = procdata.recipe_name+'-'+procdata.proc_name;
+  VR.Dash.Apps.each(function(app, idx, list) {
+      if (app.id === procdata.app_name) {
+        app.swarms.each(function(swarm, idx, list) {
+            if (swarm.id === swarmName) {
+              // we've found the right swarm.  now remove the right proc.
+              swarm.procs.each(function(proc, idx, list) {
+                if (proc.id === procdata.id) {
+                  swarm.procs.remove(proc);
+                }
+              });
+              if (swarm.procs.length === 0) {
+                app.swarms.remove(swarm);
+              }
+            };
+        });
+        if (app.swarms.length === 0) {
+          VR.Dash.Apps.remove(app);
+        }
+      }
+  });
+}
 
 VR.Dash.onHostChange = function(e) {
   // when we get a host change event from the SSE stream, parse its JSON and

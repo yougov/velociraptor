@@ -1,3 +1,4 @@
+import sys
 import xmlrpclib
 import hashlib
 import json
@@ -12,13 +13,21 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.storage import default_storage
 from django.utils import timezone
-
 import yaml
+import redis
 
 from deployment.fields import YAMLDictField
 from deployment import events
 from raptor import repo, build, models as raptor_models
+from raptor.utils import parse_redis_url
 
+
+# If we're actually running (not just collecting static files), and there's not
+# already an 'events_redis' in this module, then make a such a connection and
+# save it here.  redis-py implements an internal connection pool, so this
+# should be thread safe and gevent safe.
+if 'collectstatic' not in sys.argv and 'events_redis' not in globals():
+    events_redis = redis.StrictRedis(**parse_redis_url(settings.EVENTS_PUBSUB_URL))
 
 LOG_ENTRY_TYPES = (
     ('build', 'Build'),
@@ -388,41 +397,6 @@ class Host(models.Model):
     squad = models.ForeignKey('Squad', null=True, blank=True,
                               related_name='hosts')
 
-    def get_procs(self, use_cache=False):
-        if use_cache:
-            procs = self._get_cached_procs()
-            if procs:
-                return procs
-
-        procs = self.raw_host.get_procs()
-        self._set_cached_procs(procs)
-        return procs
-
-    def _set_cached_procs(self, procs):
-        data = {
-            # Supervisor has a 'now' timestamp on each dict of proc data.  Take
-            # that from the first proc and use as timestamp for the whole bundle.
-            'time': procs[0].now.isoformat(),
-            'procs': [p.as_dict() for p in procs],
-            'host': self.name,
-        }
-        self._publish_status(data)
-        cache.set(self.proc_cache_key, data, 30)
-
-    def _get_cached_procs(self):
-        data = cache.get(self.proc_cache_key)
-        if data:
-            return [raptor_models.Proc(self.raw_host, pd) for pd in
-                    data['procs']]
-
-    def _publish_status(self, data):
-        s = events.Sender(
-            settings.EVENTS_PUBSUB_URL,
-            settings.HOST_EVENTS_CHANNEL,
-            buffer_key=settings.HOST_EVENTS_BUFFER,
-        )
-        s.publish(json.dumps(data))
-
     def __unicode__(self):
         return self.name
 
@@ -451,13 +425,16 @@ class Host(models.Model):
         """
         return self.raw_host.get_proc(name, check_cache)
 
+    def get_procs(self, check_cache=False):
+        return self.raw_host.get_procs(check_cache)
+
     class Meta:
         ordering = ('name',)
 
     def __init__(self, *args, **kwargs):
         super(Host, self).__init__(*args, **kwargs)
-        self.raw_host = raptor_models.Host(self.name, settings.SUPERVISOR_PORT)
-        self.proc_cache_key = self.name + '_procdata'
+        self.raw_host = raptor_models.Host(self.name, settings.SUPERVISOR_PORT,
+                                          redis_or_url=events_redis)
 
 
 class Squad(models.Model):
@@ -475,58 +452,58 @@ class Squad(models.Model):
         ordering = ('name',)
 
 
-class Proc(object):
-    def __init__(self, name, app, tag, recipe, hash, proc, host, port, data):
-        self.name = name
-        self.app = app
-        self.tag = tag
-        self.recipe = recipe
-        self.hash = hash
-        self.proc = proc
-        self.host = host
-        self.port = port
-        self.data = data  # raw dict returned from supervisord
-        self.time = data['time']
+#class Proc(object):
+    #def __init__(self, name, app, tag, recipe, hash, proc, host, port, data):
+        #self.name = name
+        #self.app = app
+        #self.tag = tag
+        #self.recipe = recipe
+        #self.hash = hash
+        #self.proc = proc
+        #self.host = host
+        #self.port = port
+        #self.data = data  # raw dict returned from supervisord
+        #self.time = data['time']
 
-        rs = Release.objects.filter(hash=self.hash, recipe=self.recipe)
-        if rs:
-            self.build = rs[0].build
-        else:
-            self.build = None
+        #rs = Release.objects.filter(hash=self.hash, recipe=self.recipe)
+        #if rs:
+            #self.build = rs[0].build
+        #else:
+            #self.build = None
 
-    def as_dict(self):
-        data = copy(self.data)
-        if self.host.squad:
-            squadname = self.host.squad.name
-        else:
-            squadname = None
-        data.update(
-            id=self.host.name + '-' + self.name,
-            name=self.name,
-            tag=self.tag,
-            hash=self.hash,
-            proc=self.proc,
-            host=self.host.name,
-            app=self.app.name if self.app else None,
-            recipe=self.recipe.name if self.recipe else None,
-            port=self.port,
-            # Add a name that's safe for jquery selectors
-            jsname=self.name.replace('.', 'dot'),
-            squad=squadname,
-        )
-        return data
+    #def as_dict(self):
+        #data = copy(self.data)
+        #if self.host.squad:
+            #squadname = self.host.squad.name
+        #else:
+            #squadname = None
+        #data.update(
+            #id=self.host.name + '-' + self.name,
+            #name=self.name,
+            #tag=self.tag,
+            #hash=self.hash,
+            #proc=self.proc,
+            #host=self.host.name,
+            #app=self.app.name if self.app else None,
+            #recipe=self.recipe.name if self.recipe else None,
+            #port=self.port,
+            ## Add a name that's safe for jquery selectors
+            #jsname=self.name.replace('.', 'dot'),
+            #squad=squadname,
+        #)
+        #return data
 
-    def as_node(self):
-        """
-        Return host:port, as needed by the balancer interface.
-        """
-        return '%s:%s' % (self.host.name, self.port)
+    #def as_node(self):
+        #"""
+        #Return host:port, as needed by the balancer interface.
+        #"""
+        #return '%s:%s' % (self.host.name, self.port)
 
-    def __unicode__(self):
-        return self.name
+    #def __unicode__(self):
+        #return self.name
 
-    def __str__(self):
-        return self.__unicode__().encode('utf-8')
+    #def __str__(self):
+        #return self.__unicode__().encode('utf-8')
 
 
 class Swarm(models.Model):

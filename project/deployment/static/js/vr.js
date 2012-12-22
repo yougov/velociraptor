@@ -83,17 +83,12 @@ VR.Models.Proc = Backbone.Model.extend({
     initialize: function() {
       this.on('change', this.updateUrl);
       VR.Messages.on('change:' + this.id, this.set, this);
-      VR.Messages.on('remove:' + this.id, this.onRemoveMsg, this);
     },
     url: function() {
       return VR.Urls.getProc(this.get('host'), this.get('name'));
-    },
-    onRemoveMsg: function(a, b, c) {
-      console.log('onRemoveMsg', a, b, c);
     }
 });
 
-// TODO: Make ProcList subscribe to removal events somehow.
 VR.Models.ProcList = Backbone.Collection.extend({
     model: VR.Models.Proc,
 

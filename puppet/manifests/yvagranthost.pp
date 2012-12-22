@@ -78,7 +78,9 @@ class pipdeps {
 #      "pitti/postgresql":;
 #    }
 package {
-    python-software-properties: ensure => present;
+    python-software-properties: 
+        ensure => present, 
+        require => Exec [firstupdate];
 }
 define ppa($ppa = "$title", $ensure = present) {
 

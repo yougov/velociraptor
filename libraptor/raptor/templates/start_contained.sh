@@ -15,4 +15,4 @@ export HOME=/tmp
 CMD="%(cmd)s"
 PROCNAME=%(proc_name)s
 PROCS_ROOT=%(procs_root)s
-exec lxc-start --name $PROCNAME -f $PROCS_ROOT/$PROCNAME/proc.lxc -- su --preserve-environment -c "cd /app;source %(envsh_path)s; exec $CMD" %(user)s
+exec lxc-start --name $PROCNAME -f $PROCS_ROOT/$PROCNAME/proc.lxc -- su --preserve-environment --shell /bin/bash -c "cd /app;source %(envsh_path)s; exec $CMD" %(user)s
