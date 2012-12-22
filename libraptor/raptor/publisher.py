@@ -53,7 +53,8 @@ def main():
     rpc = childutils.getRPCInterface(os.environ)
 
     rcon = redis.StrictRedis(**parse_redis_url(os.environ['REDIS_URL']))
-    host = Host(socket.getfqdn(), rpc_or_port=rpc, redis_or_url=rcon,
+    hostname = os.getenv('HOSTNAME', socket.getfqdn())
+    host = Host(hostname, rpc_or_port=rpc, redis_or_url=rcon,
                 redis_cache_prefix=cache_prefix,
                 redis_cache_lifetime=cache_lifetime)
 

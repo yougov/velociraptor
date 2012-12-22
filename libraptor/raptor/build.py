@@ -40,6 +40,7 @@ class BuildPack(repo.Repo):
 
         # use ordinary subprocess here instead of envoy because we want stdout
         # to be printed to the terminal.
+        log.info(' '.join([script, app.folder, cache_folder]))
         retcode = subprocess.call([script, app.folder, cache_folder])
         assert retcode == 0, ("Failed compiling %s with %s buildpack" % (app,
                                                                          self.basename))

@@ -16,14 +16,14 @@ class yhost {
         command => "apt-get update",
         timeout => "300";
       supervisor_reload:
-        command => "supervisorctl reload",
+        command => "/usr/local/bin/supervisorctl reload",
         require => File ['supervisord.conf'];
     }
     
     Package {ensure => present, require => Exec [firstupdate]}
 
     package {
-        supervisor:; 
+        #supervisor:;  # Need custom version
         ruby:;
         libevent-dev:;
         vim:;
@@ -37,11 +37,11 @@ class yhost {
     }
 
     # ensure that supervisord's config has the line to include
-    # /opt/yg/procs/*/proc.conf
+    # /apps/procs/*/proc.conf
     file { 'supervisord.conf':
-      path    => '/etc/supervisor/supervisord.conf',
+      path    => '/etc/supervisord.conf',
       ensure  => file,
-      require => Package['supervisor'],
+      require => Package['/vagrant/velociraptor/libraptor'],
       source  => 'puppet:///modules/supervisor/supervisord.conf';
     }
 }
@@ -56,6 +56,7 @@ class pipdeps {
       mercurial:;
       virtualenv:;
       virtualenvwrapper:;
+      '/vagrant/velociraptor/libraptor':;
     }
 
     file { '.bashrc':
@@ -218,7 +219,8 @@ class lxc {
       require => File['install_lxc.sh'];
     mount_cgroup:
       command => "mkdir -p /cgroup; mount none -t cgroup /cgroup",
-      require => Exec['build_lxc'];
+      require => Exec['build_lxc'],
+      unless => 'mount | grep "/cgroup type cgroup"';
   }
 }
 
