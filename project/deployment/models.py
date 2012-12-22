@@ -405,8 +405,12 @@ class Host(models.Model):
 
     def __init__(self, *args, **kwargs):
         super(Host, self).__init__(*args, **kwargs)
+        user = getattr(settings, 'SUPERVISOR_USERNAME', None)
+        pwd = getattr(settings, 'SUPERVISOR_PASSWORD', None)
         self.raw_host = raptor_models.Host(self.name, settings.SUPERVISOR_PORT,
-                                          redis_or_url=events_redis)
+                                          redis_or_url=events_redis,
+                                           supervisor_username=user,
+                                           supervisor_password=pwd)
 
 
 class Squad(models.Model):

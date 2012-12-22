@@ -121,11 +121,8 @@
 <script>
 {# build some URLs from Django.  vrdash.js and other scripts rely on these #}
 (function () {
-    var root = this;
-    var urls = root.VR.Urls;
-    urls.events = '{% url api_events %}';
-    urls.hostChanges = '{% url api_host_changes %}';
-    urls.procEvents = '{% url api_proc_events %}';
+    VR.Urls.events = '{% url api_events %}';
+    VR.Urls.procEvents = '{% url api_proc_events %}';
 })(this);
 </script>
 

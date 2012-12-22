@@ -146,16 +146,3 @@ def proc_event_stream(request):
         settings.EVENTS_PUBSUB_URL,
         channel=settings.PROC_EVENTS_CHANNEL,
     ), mimetype='text/event-stream')
-
-
-@auth_required
-def host_change_stream(request):
-    """
-    Stream host status changes out to browser.
-    """
-    return http.HttpResponse(events.Listener(
-        settings.EVENTS_PUBSUB_URL,
-        channels=[settings.HOST_EVENTS_CHANNEL],
-        buffer_key=settings.HOST_EVENTS_BUFFER,
-        last_event_id=request.META.get('HTTP_LAST_EVENT_ID')
-    ), mimetype='text/event-stream')

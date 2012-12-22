@@ -6,7 +6,6 @@ urlpatterns = patterns('api.views',
 
     # SSE streams
     url(r'^streams/events/', 'event_stream', name='api_events'),
-    url(r'^streams/host_changes/$', 'host_change_stream', name='api_host_changes'),
     url(r'^streams/proc_changes/$', 'proc_event_stream', name='api_proc_events'),
 
     # API over Supervisor RPC info

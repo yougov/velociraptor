@@ -103,16 +103,21 @@ CELERYBEAT_SCHEDULE_FILENAME = 'redis://localhost:6379/0'
 BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 
-# A redis pubsub where worker procs can push events, and our fancy schmancy SSE
-# streaming event views can push them out to browsers.
+# URL for the redis instance where all pubsub notices will be pushed.
 EVENTS_PUBSUB_URL = 'redis://localhost:6379/0'
+
+# Deployment event messages are put on this channel by the worker procs
 EVENTS_PUBSUB_CHANNEL = 'vr_events'
+
+# The most recent deployment events are cached so the dashboard can show what
+# has happened lately.
 EVENTS_BUFFER_KEY = 'vr_events_buffer'
 EVENTS_BUFFER_LENGTH = 100
-PROC_EVENTS_CHANNEL = 'proc_events'
 
-HOST_EVENTS_CHANNEL = 'vr_host_events'
-HOST_EVENTS_BUFFER = 'vr_host_events_buffer'
+# Event listener plugins on the application-running hosts should be configured
+# to send proc status messages to this channel on the redis at
+# EVENTS_PUBSUB_URL.
+PROC_EVENTS_CHANNEL = 'proc_events'
 
 CELERYBEAT_SCHEDULE = {
     'scooper': {
@@ -139,6 +144,8 @@ CELERYBEAT_SCHEDULE = {
 }
 
 SUPERVISOR_PORT = 9001
+SUPERVISOR_USERNAME = 'vagrant'
+SUPERVISOR_PASSWORD = 'vagrant'
 PORT_RANGE_START = 5000
 PORT_RANGE_END = 6000
 

@@ -29,13 +29,21 @@ class Host(object):
     Redis cache.  If the host has no proc with that name, ProcError will be
     raised.
     """
-    def __init__(self, name, rpc_or_port=9001, redis_or_url=None,
+    def __init__(self, name, rpc_or_port=9001, supervisor_username=None,
+                 supervisor_password=None, redis_or_url=None,
                  redis_cache_prefix='host_procs_', redis_cache_lifetime=600):
         self.name = name
+        self.username = supervisor_username
+        self.password = supervisor_password
 
         # Allow passing in an RPC connection, or a port number for making one
         if isinstance(rpc_or_port, int):
-            self.rpc = xmlrpclib.Server('http://%s:%s' % (name, rpc_or_port))
+            if self.username:
+                self.rpc = xmlrpclib.Server('http://%s:%s@%s:%s' %
+                                            (self.username,self.password, name,
+                                             rpc_or_port))
+            else:
+                self.rpc = xmlrpclib.Server('http://%s:%s' % (name, rpc_or_port))
         else:
             self.rpc = rpc_or_port
         self.supervisor = self.rpc.supervisor
