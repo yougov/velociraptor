@@ -361,34 +361,6 @@ class Release(models.Model):
         ordering = ['-id']
 
 
-def make_proc(name, host, data):
-    # Given the name of a proc like
-    # 'khartoum-0.0.7-yfiles-1427a4e2-web-8060', parse out the bits and
-    # return a Proc object.
-
-    # XXX This function will throw DoesNotExist if either the app or
-    # recipe can't be looked up.  So careful with what you rename.
-    parts = name.split('-')
-    try:
-        app = App.objects.get(name=parts[0])
-        recipe = ConfigRecipe.objects.get(app=app, name=parts[2])
-    except ObjectDoesNotExist:
-        app = None
-        recipe = None
-
-    return Proc(
-        name=name,
-        app=app,
-        tag=parts[1],
-        recipe=recipe,
-        hash=parts[3],
-        proc=parts[4],
-        port=int(parts[5]),
-        host=host,
-        data=data,
-    )
-
-
 class Host(models.Model):
     name = models.CharField(max_length=200, unique=True)
 
