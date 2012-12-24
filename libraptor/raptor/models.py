@@ -145,6 +145,9 @@ class Host(object):
             pipe.expire(self.cache_key, self.cache_lifetime)
             pipe.execute()
 
+    def shortname(self):
+        return self.name.split(".")[0]
+
     def __repr__(self):
         info = {
             'cls': self.__class__.__name__,
@@ -222,7 +225,8 @@ class Proc(object):
         return "<Proc %s>" % self.name
 
     def shortname(self):
-        return '%s-%s' % (self.app_name, self.proc_name)
+        return '%s-%s@%s:%s' % (self.app_name, self.proc_name,
+                                self.host.shortname(), self.port)
 
     def as_node(self):
         """
@@ -241,6 +245,9 @@ class Proc(object):
                 data[k] = v
         data['host'] = self.host.name
         return data
+
+    def as_json(self):
+        return json.dumps(self.as_dict())
 
     def start(self):
         print "proc start", self.host.name, self.name

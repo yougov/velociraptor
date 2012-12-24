@@ -20,7 +20,7 @@ from fabric.api import sudo, get, put, task, env
 from fabric.contrib import files
 from fabric import colors
 
-from raptor.utils import chdir
+from raptor.models import Proc
 
 # TODO: Change these to /apps/ so that we don't have YG-isms in the code and
 # can more safely bind-mount /opt into app environments.  It's tricky, because
@@ -260,11 +260,6 @@ def deploy_parcel(build_path, config_path, envsh_path, recipe, proc, port,
                    contain=contain)
 
 
-def parse_procname(proc):
-    app, version, profile, release_hash, procname, port = proc.split('-')
-    return vars()
-
-
 def build_contained_uptests_command(proc_path, proc, host, port, user):
     """
     Build the command string for uptesting the given proc inside its lxc
@@ -353,9 +348,9 @@ def ensure_uptester(proc_path):
 
 @task
 def run_uptests(proc, user='nobody'):
-    procdata = parse_procname(proc)
-    procname = procdata['procname']
-    release_name = ('%(app)s-%(version)s-%(profile)s-%(release_hash)s' %
+    procdata = Proc.parse_name(proc)
+    procname = procdata['proc_name']
+    release_name = ('%(app_name)s-%(version)s-%(recipe_name)s-%(hash)s' %
                     procdata)
     release_path = posixpath.join(RELEASES_ROOT,
                                   release_name)
@@ -460,12 +455,8 @@ def delete_proc(proc):
 def delete_release(releases_root, procs_root, release, cascade=False):
     procs = sudo('ls -1 %s' % procs_root).split()
 
-    # this folder name parsing depends on procs being named like
-    # dm2-0.0.4-2e257bb8-web-9009, and releases being named like
-    # dm2-0.0.4-2e257bb8
-
-    releases_in_use = set(['%(app)s-%(version)s-%(profile)s-%(release_hash)s' %
-                           parse_procname(p) for p in procs])
+    releases_in_use = set(['%(app_name)s-%(version)s-%(recipe_name)s-%(hash)s' %
+                           Proc.parse_name(p) for p in procs])
 
     # see if there are procs pointing to this release
     # if so, and cascade==True, then delete procs pointing to this release.
@@ -496,8 +487,8 @@ def clean_releases_folders(releases_root, procs_root, execute=True):
         procs = sudo('ls -1 %s' % procs_root).split()
         releases = sudo('ls -1 %s' % releases_root).split()
         releases_in_use = set([
-            '%(app)s-%(version)s-%(profile)s-%(release_hash)s' %
-            parse_procname(p) for p in procs])
+            '%(app_name)s-%(version)s-%(recipe_name)s-%(hash)s' %
+            Proc.parse_name(p) for p in procs])
         deleted = []
         for release in releases:
             if release not in releases_in_use:

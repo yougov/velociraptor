@@ -20,7 +20,7 @@ def get_tick():
         'eventname': 'TICK_60',
         'len': str(len(epayload)),
     }
-    return publisher.Event(eheaders, epayload)
+    return publisher.Event(eheaders, epayload, 'somewhere')
 
 # tick events just update cache
 def test_ticks_get_fresh_data():
@@ -84,7 +84,7 @@ def test_procstate_events_published():
         'eventname': 'PROCESS_STATE_RUNNING',
         'len': str(len(epayload)),
     }
-    ev = publisher.Event(eheaders, epayload)
+    ev = publisher.Event(eheaders, epayload, host.name)
     publisher.handle_event(ev, host, 'fake_channel')
 
     _, args, kwargs = host.redis.publish.mock_calls[0]
@@ -113,7 +113,7 @@ def test_removal_events_published():
         'eventname': 'PROCESS_GROUP_REMOVED',
         'len': str(len(epayload)),
     }
-    ev = publisher.Event(eheaders, epayload)
+    ev = publisher.Event(eheaders, epayload, host.name)
     publisher.handle_event(ev, host, 'fake_channel')
 
     _, args, kwargs = host.redis.publish.mock_calls[0]
@@ -141,7 +141,7 @@ def test_removals_include_id():
         'eventname': 'PROCESS_GROUP_REMOVED',
         'len': str(len(epayload)),
     }
-    ev = publisher.Event(eheaders, epayload)
+    ev = publisher.Event(eheaders, epayload, host.name)
     publisher.handle_event(ev, host, 'fake_channel')
 
     _, args, kwargs = host.redis.publish.mock_calls[0]
@@ -165,7 +165,7 @@ def test_removals_include_parsed_procname():
         'eventname': 'PROCESS_GROUP_REMOVED',
         'len': str(len(epayload)),
     }
-    ev = publisher.Event(eheaders, epayload)
+    ev = publisher.Event(eheaders, epayload, host.name)
     publisher.handle_event(ev, host, 'fake_channel')
 
     _, args, kwargs = host.redis.publish.mock_calls[0]

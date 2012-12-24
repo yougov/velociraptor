@@ -71,6 +71,7 @@ _.extend(VR.Messages, Backbone.Events);
 // All Backbone models should be stored on VR.Models.
 VR.Models = {};
 
+
 // Base model for all models that talk to the Tastypie API. This includes
 // hosts, squads, swarms, etc. (but not procs and events)
 VR.Models.Tasty = Backbone.Model.extend({
@@ -78,6 +79,7 @@ VR.Models.Tasty = Backbone.Model.extend({
       return this.attributes.resource_uri;
     }
 });
+
 
 VR.Models.Proc = Backbone.Model.extend({
     initialize: function() {
@@ -89,13 +91,14 @@ VR.Models.Proc = Backbone.Model.extend({
     }
 });
 
+
 VR.Models.ProcList = Backbone.Collection.extend({
     model: VR.Models.Proc,
 
     getOrCreate: function(data) {
-      // if proc with id is in collection, return it.
+      // if proc with id is in collection, update and return it.
       var proc = _.find(this.models, function(proc) {
-          return proc.id == data.id;
+          return proc.id === data.id;
         });
       if (proc) {
         proc.set(data);
@@ -118,8 +121,21 @@ VR.Models.ProcList = Backbone.Collection.extend({
           return proc.get('host') === host && proc.get('now') < cutoff;
       });
       _.each(stale, function(proc) {this.remove(proc);}, this);
+    },
+
+    removeByData: function(data) {
+      // Given an object like we'd get from the API or on an event stream, see if
+      // there's a proc in the collection that matches it, and remove it if so.
+
+      var proc = _.find(this.models, function(proc) {
+          return proc.id === data.id;
+        });
+      if (proc) {
+        this.remove(proc);
+      }
     }
 });
+
 
 VR.Models.Host = VR.Models.Tasty.extend({
   initialize: function(data) {
@@ -133,6 +149,7 @@ VR.Models.Host = VR.Models.Tasty.extend({
   }
 });
 
+
 VR.Models.HostList = Backbone.Collection.extend({
   model: VR.Models.Host
 });
@@ -141,8 +158,19 @@ VR.Models.HostList = Backbone.Collection.extend({
 VR.Models.Swarm = VR.Models.Tasty.extend({
     initialize: function() {
       this.procs = new VR.Models.ProcList();
+    },
+
+    procIsMine: function(fullProcName) {
+      // Given a full proc name like
+      // Velociraptor-1.2.3-local-a4dfd8fa-web-5001, return True if its app,
+      // recipe, and proc name (e.g. 'web') match this swarm.
+      var split = fullProcName.split('-');
+      return split[0] === this.get('app_name') &&
+             split[2] === this.get('recipe_name') &&
+             split[4] === this.get('proc_name');
     }
 });
+
 
 VR.Models.SwarmList = Backbone.Collection.extend({
     model: VR.Models.Swarm,
@@ -176,11 +204,13 @@ VR.Models.SwarmList = Backbone.Collection.extend({
     }
 });
 
+
 VR.Models.App = VR.Models.Tasty.extend({
     initialize: function() {
       this.swarms = new VR.Models.SwarmList();
     }
 });
+
 
 VR.Models.AppList = Backbone.Collection.extend({
     model: VR.Models.App,
@@ -214,6 +244,7 @@ VR.Models.AppList = Backbone.Collection.extend({
       _.each(empty_apps, function(app) {this.remove(app);}, this);
     }
 });
+
 
 VR.Views.Apps = Backbone.View.extend({
   initialize: function(appList, container) {
@@ -359,6 +390,7 @@ VR.Views.Host = Backbone.View.extend({
     }
 });
 
+
 VR.Views.Swarm = Backbone.View.extend({
     el: '<div class="swarmbox"></div>',
     initialize: function(swarm, template) {
@@ -424,6 +456,7 @@ VR.Views.App = Backbone.View.extend({
 // behavior.
 VR.Models.Event = Backbone.Model.extend({});
 
+
 VR.Models.Events = Backbone.Collection.extend({
     model: VR.Models.Event,
 
@@ -478,6 +511,7 @@ VR.Views.Event = Backbone.View.extend({
     }
 });
 
+
 // The modal that provides additional details about the event.
 VR.Views.EventDetail = Backbone.View.extend({
     initialize: function(model, template) {
@@ -497,6 +531,7 @@ VR.Views.EventDetail = Backbone.View.extend({
       this.$el.remove();
     }
 });
+
 
 // The view for the pane that shows individual events inside.
 VR.Views.Events = Backbone.View.extend({
@@ -522,6 +557,7 @@ VR.Views.Events = Backbone.View.extend({
         model.trigger('destroy');
     }
 });
+
 
 // Initialization of the Events system happens by calling VR.Events.init
 VR.Events = {

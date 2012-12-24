@@ -7,14 +7,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>{% block title %}{% if site_title %}{{ site_title }}{% else %}Velociraptor{% endif %}{% endblock title %}</title>
   <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}" type="text/css" media="screen">
+  <link rel="stylesheet" href="{% static 'css/bootstrap-responsive.css' %}" type="text/css" media="screen">
   <link rel="stylesheet" href="{% static 'css/font-awesome.css' %}" type="text/css" media="screen">
+  <link rel="stylesheet" href="{% static 'font/roboto/stylesheet.css' %}" type="text/css" media="screen">
   <link rel="stylesheet" href="{% static 'css/vr.css' %}" type="text/css" media="screen">
   <style>
       body {
         padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
       }
   </style>
-  <link rel="stylesheet" href="{% static 'css/bootstrap-responsive.css' %}" type="text/css" media="screen">
   {% block style %}{% endblock style %}
   {% if custom_css %}
     <link rel="stylesheet" href="{{ custom_css }}" type="text/css" media="screen">
@@ -53,6 +54,7 @@
                       <li class="{% current_nav deploy_url %}"><a href="{{ deploy_url }}">Deploy</a></li>
                   </ul>
               </li>
+
               <li class="dropdown">
                   <a class="dropdown-toggle" data-toggle="dropdown" href="#">
                     Squads
@@ -64,6 +66,7 @@
                       {% endfor %}
                   </ul>
               </li>
+
               <li class="dropdown">
                   <a id="swarm-dropdown" class="dropdown-toggle" href="#">
                    Swarms 
@@ -72,12 +75,14 @@
                   <div class="dropdown-menu">
                       <input id="swarm-filter" type="text">
                       <ul id="swarmlist">
-                      {% for swarm in swarms %}
-                      <li rel="{{ swarm.shortname.lower }}"><a href="{% url edit_swarm swarm.id %}">{{ swarm.shortname }}</a></li>
-                      {% endfor %}
+                          <li rel="new_swarm"><a href="{% url new_swarm %}">New</a></li>
+                          {% for swarm in swarms %}
+                          <li rel="{{ swarm.shortname.lower }}"><a href="{% url edit_swarm swarm.id %}">{{ swarm.shortname }}</a></li>
+                          {% endfor %}
                       <ul>
                   </div>
               </li>
+
             </ul>
             <p class="navbar-text pull-right">
             {% if request.user.is_authenticated %}
@@ -109,7 +114,6 @@
     <script src="{% static 'js/jquery.min.js' %}"></script>
     <script src="{% static 'js/misc.js' %}"></script>
     <script src="{% static 'js/underscore-min.js' %}"></script>
-
     <script src="{% static 'js/backbone-min.js' %}"></script>
     <script src="{% static 'js/goatee.js' %}"></script>
     <script src="{% static 'js/bootstrap.js' %}"></script>

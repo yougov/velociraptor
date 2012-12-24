@@ -132,7 +132,8 @@ def edit_swarm(request, swarm_id=None):
         events.eventify(request.user, 'swarm', swarm)
         return redirect('dash')
 
-    return render(request, 'basic_form.html', {
+    return render(request, 'swarm.html', {
+        'swarm': swarm,
         'form': form,
         'btn_text': 'Swarm',
     })

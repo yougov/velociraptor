@@ -127,7 +127,7 @@ class FakeProcCase(unittest.TestCase):
         assert self.nodeproc.as_node() == 'somewhere:5003'
 
     def test_shortname(self):
-        assert self.nodeproc.shortname() == 'node_example-web'
+        assert self.nodeproc.shortname() == 'node_example-web@somewhere:5003'
 
 
 def test_datetime_none():

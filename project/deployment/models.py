@@ -400,6 +400,9 @@ class Host(models.Model):
     def get_procs(self, check_cache=False):
         return self.raw_host.get_procs(check_cache)
 
+    def shortname(self):
+        return self.raw_host.shortname()
+
     class Meta:
         ordering = ('name',)
 
@@ -478,7 +481,7 @@ class Swarm(models.Model):
             'proc': self.proc_name
         }
 
-    def get_procs(self):
+    def get_procs(self, check_cache=False):
         """
         Return all running procs on the squad that share this swarm's proc name
         and recipe.
@@ -488,7 +491,7 @@ class Swarm(models.Model):
 
         procs = []
         for host in self.squad.hosts.all():
-            procs += host.get_procs()
+            procs += host.get_procs(check_cache=check_cache)
 
         def is_mine(proc):
             return p.recipe_name == self.recipe.name and \

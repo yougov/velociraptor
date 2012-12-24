@@ -13,6 +13,8 @@ urlpatterns = patterns('api.views',
         name='api_host_procs'),
     url(r'^v1/hosts/(?P<hostname>[a-zA-Z0-9_.-]+)/procs/(?P<procname>[a-zA-Z0-9_.-]+)/$',
         'host_proc', name='api_host_proc'),
+    url(r'^v1/swarms/(?P<swarm_id>[a-zA-Z0-9_.-]+)/procs/$', 'swarm_procs',
+        name='api_swarm_procs'),
 
     # TASTYPIE DRIVEN API
     (r'^', include(v1.urls)),

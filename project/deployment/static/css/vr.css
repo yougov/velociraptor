@@ -1,5 +1,93 @@
 /* Some headers want to float left so we can stick some other UI on the
  * same line to the right */
+
+/* Use Roboto font */
+body {
+  font-family: "RobotoRegular", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "RobotoThin", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+th {
+  font-family: "RobotoMedium", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: normal;
+}
+
+
+/* CUSTOMIZE BOOTSTRAP */
+/* customize bootstrap buttons */
+/* courtesy of http://charliepark.org/bootstrap_buttons/ */
+
+.btn {
+  border-radius: 2px;
+  color: #fff !important;
+  -webkit-font-smoothing: antialiased;
+  font-family: "RobotoMedium", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background-repeat: repeat-x;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.06);
+  font-size: 15px;
+}
+
+.btn-primary {
+  background-color: hsl(201, 100%, 47%) !important;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#05a7ff", endColorstr="#009bef");
+  background-image: -khtml-gradient(linear, left top, left bottom, from(#05a7ff), to(#009bef));
+  background-image: -moz-linear-gradient(top, #05a7ff, #009bef);
+  background-image: -ms-linear-gradient(top, #05a7ff, #009bef);
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #05a7ff), color-stop(100%, #009bef));
+  background-image: -webkit-linear-gradient(top, #05a7ff, #009bef);
+  background-image: -o-linear-gradient(top, #05a7ff, #009bef);
+  background-image: linear-gradient(#05a7ff, #009bef);
+  border-color: #009bef #009bef hsl(201, 100%, 46%);
+}
+
+.btn-success {
+  background-color: hsl(120, 58%, 47%) !important;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#39ca39", endColorstr="#32bd32");
+  background-image: -khtml-gradient(linear, left top, left bottom, from(#39ca39), to(#32bd32));
+  background-image: -moz-linear-gradient(top, #39ca39, #32bd32);
+  background-image: -ms-linear-gradient(top, #39ca39, #32bd32);
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #39ca39), color-stop(100%, #32bd32));
+  background-image: -webkit-linear-gradient(top, #39ca39, #32bd32);
+  background-image: -o-linear-gradient(top, #39ca39, #32bd32);
+  background-image: linear-gradient(#39ca39, #32bd32);
+  border-color: #32bd32 #32bd32 hsl(120, 58%, 46%);
+}
+
+.btn-danger {
+  background-color: hsl(2, 80%, 54%) !important;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#e9433e", endColorstr="#e7322b");
+  background-image: -khtml-gradient(linear, left top, left bottom, from(#e9433e), to(#e7322b));
+  background-image: -moz-linear-gradient(top, #e9433e, #e7322b);
+  background-image: -ms-linear-gradient(top, #e9433e, #e7322b);
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #e9433e), color-stop(100%, #e7322b));
+  background-image: -webkit-linear-gradient(top, #e9433e, #e7322b);
+  background-image: -o-linear-gradient(top, #e9433e, #e7322b);
+  background-image: linear-gradient(#e9433e, #e7322b);
+  border-color: #e7322b #e7322b hsl(2, 80%, 53%);
+}
+
+.btn-warning {
+  background-color: hsl(35, 96%, 57%) !important;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#fbab3c", endColorstr="#faa228");
+  background-image: -khtml-gradient(linear, left top, left bottom, from(#fbab3c), to(#faa228));
+  background-image: -moz-linear-gradient(top, #fbab3c, #faa228);
+  background-image: -ms-linear-gradient(top, #fbab3c, #faa228);
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #fbab3c), color-stop(100%, #faa228));
+  background-image: -webkit-linear-gradient(top, #fbab3c, #faa228);
+  background-image: -o-linear-gradient(top, #fbab3c, #faa228);
+  background-image: linear-gradient(#fbab3c, #faa228);
+  border-color: #faa228 #faa228 hsl(35, 96%, 56%);
+}
+
+.modal, .well {
+  border-radius: 0px;
+}
+
+/* END CUSTOMIZE BOOTSTRAP */
+
 .float {
   float: left;
 }
@@ -59,7 +147,6 @@ th.rowlabel {
 }
 
 .apptitle {
-  font-weight: bold;
   font-size: 17px;
   line-height: 32px;
   text-align: right;
@@ -153,12 +240,20 @@ th.rowlabel {
 
 
 /* Only show 'Stop' button if running, and vice versa */
-.procmodal-STOPPED .ifrunning {
+.ifrunning {
   display: none;
 }
 
-.procmodal-RUNNING .ifstopped {
+.procmodal-RUNNING .ifrunning {
+  display: inline-block;
+}
+
+.ifstopped {
   display: none;
+}
+
+.procmodal-STOPPED .ifstopped {
+  display: inline-block;
 }
 
 /* EVENTS */

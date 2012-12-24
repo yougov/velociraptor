@@ -1,6 +1,6 @@
 
 <script id="app-tmpl" type="text/goatee">
-  <td class="titlecell"><div class="apptitle clickable-text"><%id%></div></td><td class="proccell"></td>
+  <th class="titlecell"><div class="apptitle clickable-text"><%id%></div></th><td class="proccell"></td>
 </script>
 
 <script id="swarm-tmpl" type="text/goatee">
@@ -17,8 +17,7 @@
     <div class="modal proc-details-modal" data-host="<%host%>" data-name="<%name%>">
       <div class="modal-header">
           <a class="close" data-dismiss="modal">×</a>
-          <h3><%name%> </h3>
-          on <a href="http://<%host%>:<%port%>"><%host%>:<%port%></a>
+          <h3><a href="http://<%host%>:<%port%>"><%app_name%>-<%proc_name%>@<%host%>:<%port%></a></h3>
       </div>
       <div class="modal-body procmodal-<%statename%>">
           <table class="attrs">

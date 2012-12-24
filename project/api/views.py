@@ -62,14 +62,22 @@ def host_procs(request, hostname):
     JSON
     """
     host = models.Host.objects.get(name=hostname)
-    procs = host.get_procs()
+    procs = host.get_procs(check_cache=True)
     dicts = [p.as_dict() for p in procs]
-    # TODO: add in host_uri.  Or just call it 'host'
-    # TODO: When log streaming is enabled, add in log_events_uri as well.
     return utils.json_response({
         'objects': dicts
     })
 
+
+@auth_required
+def swarm_procs(request, swarm_id):
+    """
+    Display status of all processes for a given swarm
+    """
+    swarm = models.Swarm.objects.get(id=swarm_id)
+    return utils.json_response({
+        'objects': [p.as_dict() for p in swarm.get_procs(check_cache=True)]
+    })
 
 #@auth_required
 def host_proc(request, hostname, procname):
@@ -88,20 +96,23 @@ def host_proc(request, hostname, procname):
         except models.PortLock.DoesNotExist:
             pass
 
-        tasks.delete_proc.delay(hostname, procname)
+        # The web proc will perform deletions itself instead of sending them to
+        # a worker, because otherwise we could be asking a worker to delete
+        # itself.
+        tasks.delete_proc(hostname, procname)
         return utils.json_response({'name': procname, 'deleted': True})
     elif request.method == 'POST':
         action = request.POST.get('action')
         try:
             if action == 'start':
+                events.eventify(request.user, 'start', proc.shortname())
                 proc.start()
-                events.eventify(request.user, 'start', proc.name)
             elif action == 'stop':
+                events.eventify(request.user, 'stop', proc.shortname())
                 proc.stop()
-                events.eventify(request.user, 'stop', proc.name)
             elif action == 'restart':
+                events.eventify(request.user, 'restart', proc.shortname())
                 proc.restart()
-                events.eventify(request.user, 'restart', proc.name)
         except xmlrpclib.Fault as e:
             return utils.json_response({'fault': e.faultString}, 500)
 

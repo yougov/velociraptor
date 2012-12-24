@@ -54,11 +54,12 @@ def main():
 
     rcon = redis.StrictRedis(**parse_redis_url(os.environ['REDIS_URL']))
     hostname = os.getenv('HOSTNAME', socket.getfqdn())
+    log('proc_publisher starting with hostname %s' % hostname)
     host = Host(hostname, rpc_or_port=rpc, redis_or_url=rcon,
                 redis_cache_prefix=cache_prefix,
                 redis_cache_lifetime=cache_lifetime)
 
-    for e in EventStream():
+    for e in EventStream(hostname):
         handle_event(e, host, pubsub_channel)
         log(e.emit())
 
@@ -96,17 +97,22 @@ class Event(object):
     # Subclasses should define their own more-specific event name patterns.
     pattern = re.compile('.*')
 
-    def __init__(self, headers, payload, time=None):
+    def __init__(self, headers, payload, hostname):
         # Save the raw data
         self.headers = headers
         self.payload = payload
 
-        self.host = socket.getfqdn()
+        self.host = hostname
 
         # Parse out some useful bits
         self.eventname = headers['eventname']
         self.payload_headers, self.payload_data = childutils.eventdata(payload
                                                                        + '\n')
+        if 'when' in self.payload_headers:
+            utime = float(self.payload_headers['when'])
+            self.time = datetime.datetime.utcfromtimestamp(utime)
+        else:
+            self.time = datetime.datetime.utcnow()
 
     def emit(self):
         data = {
@@ -114,13 +120,8 @@ class Event(object):
             'host': self.host,
             'payload_headers': self.payload_headers,
             'payload_data': self.payload_data,
+            'time': self.time.isoformat(),
         }
-        if 'when' in self.payload_headers:
-            utime = float(self.payload_headers['when'])
-            dt = datetime.datetime.utcfromtimestamp(utime)
-            data.update(time=dt.isoformat())
-        else:
-            data.update(time=datetime.datetime.utcnow().isoformat())
         return data
 
     def __repr__(self):
@@ -136,7 +137,8 @@ class EventStream(object):
             do_something(e)
     """
 
-    def __init__(self):
+    def __init__(self, hostname):
+        self.hostname = hostname
         # Makes testing easier
         self.stdin = sys.stdin
         self.stdout = sys.stdout
@@ -145,6 +147,7 @@ class EventStream(object):
         # Flag for whether an 'ok' is needed at the beginning of the next
         # self.next() call.
         self._needs_ok = False
+
 
     def __iter__(self):
         while 1:
@@ -156,7 +159,7 @@ class EventStream(object):
 
         headers, payload = childutils.listener.wait(self.stdin, self.stdout)
         self._needs_ok = True
-        return Event(headers, payload)
+        return Event(headers, payload, self.hostname)
 
 
 def log(*args):

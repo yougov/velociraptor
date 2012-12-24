@@ -7,16 +7,22 @@
 
 {% block content %}
 <div class="row-fluid">
-<form method='post' class='well'{% if enctype %}enctype="{{ enctype }}"{% endif %}>{% csrf_token %}
+  <div class="span3">
+<form method='post' class='well raptorform'{% if enctype %}enctype="{{ enctype }}"{% endif %}>{% csrf_token %}
     {% if instructions %}
       {# No, we dont' have to close that <p> tag.  This is HTML5 baby! #}
       <p>{{ instructions }}
     {% endif %}
 <table class="formrows">
   {{ form.as_table }}
-</table>
+  <tr>
+    <td class="buttoncell" colspan="2">
 <button type="submit" class="btn btn-primary">{% if btn_text %}
     {{ btn_text }}{% else %}Submit{% endif %}</button>
+    </td>
+  </tr>
 </form>
+</table>
+  </div>
 </div>
 {% endblock content %}

@@ -20,7 +20,7 @@ VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl
     eventsUrl || VR.Urls.events
   );
 
-  // bind host change event stream to handler
+  // bind proc event stream to handler
   var procEvents = new EventSource(procEventsUrl || VR.Urls.procEvents);
   procEvents.onmessage = $.proxy(function(e) {
       var parsed = JSON.parse(e.data);

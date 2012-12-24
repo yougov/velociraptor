@@ -107,6 +107,7 @@ class SwarmResource(ModelResource):
     release = fields.ToOneField('api.resources.ReleaseResource', 'release')
 
     shortname = fields.CharField('shortname')
+
     class Meta:
         queryset = models.Swarm.objects.all()
         resource_name = 'swarms'
@@ -115,6 +116,17 @@ class SwarmResource(ModelResource):
             auth.SessionAuthentication(),
         )
         authorization = Authorization()
+
+    def dehydrate(self, bundle):
+        # add in proc data
+        bundle.data['procs_uri'] = bundle.data['resource_uri'] + 'procs/'
+        bundle.data['procs'] = [p.as_dict() for p in
+                                bundle.obj.get_procs(check_cache=True)]
+
+        # Also add in convenience data
+        bundle.data.update(app_name=bundle.obj.recipe.app.name,
+                           recipe_name=bundle.obj.recipe.name)
+        return bundle
 v1.register(SwarmResource())
 
 

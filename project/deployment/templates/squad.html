@@ -13,7 +13,7 @@
 </div>
 
 <div class="row-fluid">
-<div class="span4">
+<div class="span3">
 
     <form method='post' class='well raptorform'{% if enctype %} enctype="{{ enctype }}"{% endif %}>{% csrf_token %}
         {{ form.non_field_errors }}
@@ -42,24 +42,13 @@
 
 {# Only show host list if it's not a new squad #}
 {% if squad.id %}
-<div class="span8 hostgrid">
+<div class="span9 hostgrid">
     <h2>Hosts</h2>
     <div id="squad-container" class="row-fluid">
-        {# now a block for each host #}
-        {% comment %}
-        {% for host in squad.hosts.all %}
-        <div class="hostblock" data-hostname="{{host.name}}">
-            <h4>{{ host.name }}</h4>
-            <div class="procgrid">
-                <img src="{% static 'img/waiting.gif' %}">
-            </div>
-        </div>
-        {% endfor %}
-        {% endcomment %}
     </div>
 </div>
-</div>{# endrow #}
 {% endif %}
+</div>{# endrow #}
 {% endblock content %}
 
 {% block script %}
