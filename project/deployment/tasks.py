@@ -647,7 +647,14 @@ def post_uptest_all_procs(results, test_run_id):
     run.save()
 
     if run.has_failures():
-        send_event('scheduled uptest failures', 'Ran uptests on all procs',
+        # Get just the failed TestResult objects.
+        fail_results = run.tests.filter(passed=False)
+
+        # Show output for each failed test in each failed result
+        msg = '\n\n'.join(f.get_formatted_fails() for f in fail_results)
+
+
+        send_event('scheduled uptest failures', msg,
                    tags=['scheduled', 'failed'])
     else:
         send_event('scheduled uptests pass', 'Ran uptests on all procs',

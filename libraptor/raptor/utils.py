@@ -2,6 +2,8 @@ import os
 import shutil
 import tempfile
 import urlparse
+import isodate
+from datetime import datetime
 
 
 class tmpdir(object):
@@ -63,3 +65,15 @@ def parse_redis_url(url):
         'port': parsed.port,
         'db': int(parsed.path.replace('/', '')),
     }
+
+
+utc = isodate.FixedOffset(0, 0, 'UTC')
+
+def utcfromtimestamp(ts):
+    """
+    Given a UNIX timestamp, return a Python datetime with the tzinfo explicitly
+    set to UTC (as opposed to datetime.utcfromtimestamp, which returns a naive
+    datetime with UTC values).
+    """
+    dt = datetime.utcfromtimestamp(ts)
+    return dt.replace(tzinfo=utc)

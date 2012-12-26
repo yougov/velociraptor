@@ -557,6 +557,7 @@ class TestRun(models.Model):
     def __unicode__(self):
         return self.start.isoformat()
 
+    # TODO: convert this to a normal method (after first finding all callers)
     @property
     def results(self):
         """
@@ -571,8 +572,25 @@ class TestRun(models.Model):
             'pass_count': self.tests.filter(passed=True).count(),
             'fail_count': self.tests.filter(passed=False).count(),
             'notests_count': self.tests.filter(testcount=0).count(),
-            'results': {'%s-%s' % (t.hostname, t.procname): yaml.safe_load(t.results) for t in
+            'results': {'%s-%s' % (t.hostname, t.procname): t.as_dict() for t in
                         self.tests.all()}
+        }
+
+    def get_failures(self):
+        """
+        Return a serializable compilation/summary of the test run failures.
+        """
+        end = self.end.isoformat() if self.end else None
+        seconds = (self.end - self.start).total_seconds() if end else None
+        return {
+            'start': self.start.isoformat(),
+            'end': end,
+            'seconds': seconds,
+            'pass_count': self.tests.filter(passed=True).count(),
+            'fail_count': self.tests.filter(passed=False).count(),
+            'notests_count': self.tests.filter(testcount=0).count(),
+            'results': {'%s-%s' % (t.hostname, t.procname): t.as_dict() for t in
+                        self.tests.filter(passed=False)}
         }
 
     def has_failures(self):
@@ -601,3 +619,26 @@ class TestResult(models.Model):
         else:
             desc = 'no tests'
         return '%s: %s' % (self.procname, desc)
+
+    def as_dict(self):
+        return yaml.safe_load(self.results)
+
+    def get_fails(self):
+        """
+        Return a list of dictionaries like the one returned from as_dict, but
+        containing just the failed tests.
+        """
+        parsed = yaml.safe_load(self.results)
+        return [t for t in parsed if t['Passed'] == False]
+
+    def format_fail(self, result):
+        """
+        Given a result dict like that emitted from the uptester, return a
+        human-friendly string showing the failure.
+        """
+        name = self.procname + '@' + self.hostname
+        return (name + ": {Name} failed with output "
+                "'{Output}'".format(**result))
+
+    def get_formatted_fails(self):
+        return '\n'.join(self.format_fail(f) for f in self.get_fails())

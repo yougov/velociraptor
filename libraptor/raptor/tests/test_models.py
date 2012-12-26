@@ -6,7 +6,7 @@ import redis
 import pytest
 
 from raptor.models import Host, Proc, ProcError
-from raptor.utils import parse_redis_url
+from raptor.utils import parse_redis_url, utc
 from raptor.tests import FakeRPC
 
 
@@ -27,7 +27,7 @@ def test_host_init_redis_url():
     assert isinstance(host.redis, redis.StrictRedis)
 
 
-def test_get_procs():
+def test_get_procs_len():
     server = FakeRPC()
     host = Host('somewhere', server)
     procs = host.get_procs()
@@ -47,13 +47,16 @@ class FakeProcCase(unittest.TestCase):
         assert self.dummyproc.name == 'dummyproc'
 
     def test_start(self):
-        assert self.dummyproc.start_time == datetime.datetime(2012, 12, 18, 22, 19, 46)
+        ts = datetime.datetime(2012, 12, 19, 6, 19, 46, tzinfo=utc)
+        assert self.dummyproc.start_time == ts
 
     def test_stop(self):
-        assert self.dummyproc.stop_time == datetime.datetime(2012, 12, 18, 22, 19, 46)
+        ts = datetime.datetime(2012, 12, 19, 6, 19, 46, tzinfo=utc)
+        assert self.dummyproc.stop_time == ts
 
     def test_now(self):
-        assert self.dummyproc.now == datetime.datetime(2012, 12, 18, 22, 19, 46)
+        ts = datetime.datetime(2012, 12, 19, 6, 19, 46, tzinfo=utc)
+        assert self.dummyproc.now == ts
 
     def test_description(self):
         assert self.dummyproc.description == 'pid 5556, uptime 16:05:53'
@@ -91,18 +94,18 @@ class FakeProcCase(unittest.TestCase):
              'jsname': 'dummyproc',
              'logfile': '/var/log/supervisor/dummyproc-stdout---supervisor-cYv5Q2.log',
              'name': 'dummyproc',
-             'now': '2012-12-18T22:19:46',
+             'now': '2012-12-19T06:19:46+00:00',
              'pid': 5556,
              'port': 0,
              'proc_name': 'dummyproc',
              'recipe_name': 'UNKNOWN',
              'spawnerr': '',
-             'start_time': '2012-12-18T22:19:46',
+             'start_time': '2012-12-19T06:19:46+00:00',
              'state': 20,
              'statename': 'RUNNING',
              'stderr_logfile': '/tmp/pub.log',
              'stdout_logfile': '/var/log/supervisor/dummyproc-stdout---supervisor-cYv5Q2.log',
-             'stop_time': '2012-12-18T22:19:46',
+             'stop_time': '2012-12-19T06:19:46+00:00',
              'version': 'UNKNOWN'}
 
     def test_app_name(self):

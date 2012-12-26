@@ -5,7 +5,7 @@ from datetime import datetime
 import isodate
 import redis
 
-from raptor.utils import parse_redis_url
+from raptor.utils import utcfromtimestamp, parse_redis_url
 
 
 class Host(object):
@@ -176,15 +176,15 @@ class Proc(object):
         self.name = data['name']
         # When a timestamp field is inapplicable, Supevisor will put a 0 there
         # instead of a real unix timestamp.
-        self.now = datetime.fromtimestamp(data['now']) if data['now'] else None
+        self.now = utcfromtimestamp(data['now']) if data['now'] else None
         self.pid = data['pid']
         self.spawnerr = data['spawnerr']
-        self.start_time = datetime.fromtimestamp(data['start']) if data['start'] else None
+        self.start_time = utcfromtimestamp(data['start']) if data['start'] else None
         self.state = data['state']
         self.statename = data['statename']
         self.stderr_logfile = data['stderr_logfile']
         self.stdout_logfile = data['stdout_logfile']
-        self.stop_time = datetime.fromtimestamp(data['stop']) if data['stop'] else None
+        self.stop_time = utcfromtimestamp(data['stop']) if data['stop'] else None
 
         # The names returned from Supervisor have a bunch of metadata encoded
         # in them (at least until we can get a Supervisor RPC plugin to return
