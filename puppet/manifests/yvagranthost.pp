@@ -11,14 +11,6 @@ Exec { path => '/usr/bin:/bin:/usr/sbin:/sbin' }
 # python-software-properties package that will then let us add PPAs
 
 class yhost {
-    exec {
-      firstupdate:
-        command => "apt-get update",
-        timeout => "300";
-      supervisor_reload:
-        command => "/usr/local/bin/supervisorctl reload",
-        require => File ['supervisord.conf'];
-    }
     
     Package {ensure => present, require => Exec [firstupdate]}
 
@@ -36,13 +28,40 @@ class yhost {
         git-core:;
     }
 
+    exec {
+      firstupdate:
+        command => "apt-get update",
+        timeout => "300";
+      #supervisor_reload:
+        #command => "/usr/local/bin/supervisorctl reload",
+        #require => File ['supervisord.conf'];
+        #
+      supervisor_logdir:
+        command => "mkdir -p /var/log/supervisor";
+
+      custom_supervisor:
+        command => "/usr/local/bin/pip-2.7 install -i http://cheese.yougov.net supervisor==3.0b3events",
+        require => Exec[pip27];
+
+      start_supervisor:
+        command => "start supervisor",
+        require => [File["supervisord.conf"], File["supervisord.init"], Exec[supervisor_logdir]];
+    }
+
     # ensure that supervisord's config has the line to include
     # /apps/procs/*/proc.conf
     file { 'supervisord.conf':
       path    => '/etc/supervisord.conf',
       ensure  => file,
-      require => Package['/vagrant/velociraptor/libraptor'],
+      require => Exec[custom_supervisor],
       source  => 'puppet:///modules/supervisor/supervisord.conf';
+    }
+
+    file { 'supervisord.init':
+      path    => '/etc/init/supervisor.conf',
+      ensure  => file,
+      require => Exec[custom_supervisor],
+      source  => 'puppet:///modules/supervisor/supervisord.init';
     }
 }
 
@@ -56,7 +75,8 @@ class pipdeps {
       mercurial:;
       virtualenv:;
       virtualenvwrapper:;
-      '/vagrant/velociraptor/libraptor':;
+      '/vagrant/velociraptor/libraptor':
+        require => Exec[custom_supervisor];
     }
 
     file { '.bashrc':
@@ -228,7 +248,7 @@ package {
   foreman:
     ensure => present,
     provider => gem,
-    require => Class [yhost];
+    require => Package [ruby];
 }
 
 # Include the self-signed SSL cert that yg.ldap needs to make secure
