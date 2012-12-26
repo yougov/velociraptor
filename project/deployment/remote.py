@@ -239,8 +239,19 @@ def deploy_parcel(build_path, config_path, profile, proc, port, user='nobody',
 
 
 def parse_procname(proc):
-    app, version, profile, release_hash, procname, port = proc.split('-')
-    return vars()
+    try:
+        app, version, profile, release_hash, procname, port = proc.split('-')
+        return vars()
+    except ValueError:
+        return {
+            'app': '~Unknown',
+            'version': '~Unknown',
+            'profile': '~Unknown',
+            'release_hash': '~Unknown',
+            'procname': '~Unknown',
+            'port': 0,
+            'proc': proc,
+        }
 
 
 @task
