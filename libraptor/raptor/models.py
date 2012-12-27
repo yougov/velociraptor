@@ -257,7 +257,13 @@ class Proc(object):
         self.host.supervisor.stopProcess(self.name)
 
     def restart(self):
-        self.host.supervisor.stopProcess(self.name)
+        try:
+            self.host.supervisor.stopProcess(self.name)
+        except xmlrpclib.Fault as f:
+            if f.faultString == 'NOT_RUNNING':
+                pass
+            else:
+                raise
         self.host.supervisor.startProcess(self.name)
 
 
