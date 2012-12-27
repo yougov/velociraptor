@@ -1,6 +1,6 @@
 
 <script id="app-tmpl" type="text/goatee">
-  <th class="titlecell"><div class="apptitle clickable-text"><%id%></div></th><td class="proccell"></td>
+  <th class="titlecell"><div class="apptitle clickable-text"><%name%></div><div class="expandtree clickable-text"><i class="icon-caret icon-caret-right"></span></div></th><td class="proccell"></td>
 </script>
 
 <script id="swarm-tmpl" type="text/goatee">
@@ -14,12 +14,12 @@
 </script>
 
 <script id="proc-details-tmpl" type="text/goatee">
-    <div class="modal proc-details-modal" data-host="<%host%>" data-name="<%name%>">
+    <div class="modal proc-details-modal procmodal-<%statename%>" data-host="<%host%>" data-name="<%name%>">
       <div class="modal-header">
           <a class="close" data-dismiss="modal">×</a>
           <h3><a href="http://<%host%>:<%port%>"><%app_name%>-<%proc_name%>@<%host%>:<%port%></a></h3>
       </div>
-      <div class="modal-body procmodal-<%statename%>">
+      <div class="modal-body">
           <table class="attrs">
               <tr><th class="rowlabel">Name</th><td><%name%></td></tr>
               <tr><th class="rowlabel">Description</th><td><%description%></td></tr>
@@ -34,15 +34,37 @@
               <tr><th class="rowlabel">Proc Name</th><td><%proc_name%></td></tr>
               <tr><th class="rowlabel">Host</th><td><%host%></td></tr>
               <tr><th class="rowlabel">Port</th><td><%port%></td></tr>
-              <tr><th class="rowlabel"></th><td>
-                <button class="proc-destroy btn btn-danger">Destroy</button>
-                <button class="proc-stop btn btn-warning ifrunning">Stop</button>
-                <button class="proc-restart btn btn-warning ifrunning">Restart</button>
-                <button class="proc-start btn btn-success ifstopped">Start</button>
-              </td></tr>
           </table>
       </div>
+      <div class="modal-footer">
+          <button class="proc-destroy btn btn-danger">Destroy</button>
+          <button class="proc-stop btn btn-warning ifrunning">Stop</button>
+          <button class="proc-restart btn btn-warning ifrunning">Restart</button>
+          <button class="proc-start btn btn-success ifstopped">Start</button>
+      </div>
     </div>
+</script>
+
+<script id="app-details-tmpl" type="text/goatee">
+  <div class="modal app-details-modal">
+        <div class="modal-header">
+            <a class="close" data-dismiss="modal">×</a>
+            <h3><%name%></h3>
+        </div>
+        <div class="modal-body">
+            <table class="attrs">
+              <tr>            
+                <th class="rowlabel">Repo Type:</th>
+                <td><%repo_type%></td>
+              </tr>
+              <tr>
+                <th class="rowlabel">Repo Url:</th>
+                <td><a href="<%repo_url%>"><%repo_url%></a></td>
+              </tr>
+            </table>
+        </div>
+
+  </div>
 </script>
 
 <script id="host-tmpl" type="text/goatee">
@@ -89,6 +111,7 @@ VR.Templates = {
   Host: $('#host-tmpl'),
   Swarm: $('#swarm-tmpl'),
   App: $('#app-tmpl'),
+  AppModal: $('#app-details-tmpl'),
   Event: $('#event-tmpl'),
   EventModal: $('#event-detail-tmpl')
 };

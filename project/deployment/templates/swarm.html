@@ -2,7 +2,7 @@
 {% load static from staticfiles %}
 
 {% block content %}
-<div class="row-fluid">
+<div class="row">
 <div class="span12">
     {% if swarm %}
     <h1>Swarm: {{ swarm.shortname }}</h1>
@@ -12,8 +12,8 @@
 </div>
 </div>
 
-<div class="row-fluid">
-  <div class="span3">
+<div class="row">
+  <div class="span4">
 
   <form method='post' class='well raptorform'{% if enctype %}enctype="{{ enctype }}"{% endif %}>{% csrf_token %}
      
@@ -21,17 +21,23 @@
         {# No, we dont' have to close that <p> tag.  This is HTML5 baby! #}
         <p>{{ instructions }}
       {% endif %}
-  <table class="formrows">
-    {{ form.as_table }}
-    <tr><td colspan="2" class="buttoncell">
+  <div class="formrows">
+    {% for field in form %}
+      <div class="controls-row">
+          {{field.label_tag}}
+          {{field}}
+          <small>{{ field.help_text }}</small>
+      </div>
+    {% endfor %}
+    <div class="control-row">
       <button type="submit" class="btn btn-primary">Swarm</button>
-    </td></tr>
-  </table>
+    </div>
+  </div>
   </form>
   </div>
 
   {% if swarm.id %}
-  <div class="span9">
+  <div class="span8">
       <h2>Procs</h2>
       <div id="swarm-container" class="row-fluid">
       </div>

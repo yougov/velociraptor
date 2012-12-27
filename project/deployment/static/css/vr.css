@@ -10,6 +10,11 @@ h1, h2, h3, h4, h5, h6 {
   font-family: "RobotoThin", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
+h1 {
+  font-size: 26px;
+  line-height: 30px;
+}
+
 th {
   font-family: "RobotoMedium", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-weight: normal;
@@ -106,7 +111,6 @@ ul.deployment-log {
 
 .deployment-log li {
   margin: 7px 0;
-
 }
 
 div.label {
@@ -147,10 +151,28 @@ th.rowlabel {
 }
 
 .apptitle {
+  display: inline-block;
   font-size: 17px;
   line-height: 32px;
   text-align: right;
-  margin-right: 18px;
+}
+
+.expandtree {
+  top: 7px;
+  position: relative;
+  left: 8px;
+  float: right;
+  text-align: center;
+  width: 15px;
+  height: 15px;
+  overflow: hidden;
+  padding: 0 1px 2px;
+  margin-right: 17px;
+}
+
+.expandtree .icon-caret {
+  color: #d0d0d0;
+  font-size: 17px;
 }
 
 .approw:first .apptitle {
@@ -160,10 +182,6 @@ th.rowlabel {
 .clickable-text:hover {
   color: #08C;
   cursor: pointer;
-}
-
-.biggened .apptitle {
-  color: #08C;
 }
 
 .titlecell {
@@ -254,6 +272,10 @@ th.rowlabel {
 
 .procmodal-STOPPED .ifstopped {
   display: inline-block;
+}
+
+.proc-destroy {
+  float: left;
 }
 
 /* EVENTS */
