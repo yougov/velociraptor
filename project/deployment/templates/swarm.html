@@ -21,12 +21,14 @@
         {# No, we dont' have to close that <p> tag.  This is HTML5 baby! #}
         <p>{{ instructions }}
       {% endif %}
-  <div class="formrows">
+  <div class="form-horizontal">
     {% for field in form %}
-      <div class="controls-row">
-          {{field.label_tag}}
-          {{field}}
-          <small>{{ field.help_text }}</small>
+      <div class="control-group">
+          <label class="control-label" for="{{field.name}}">{{field.label}}</label>
+          <div class="controls">
+            {{field}}
+            <small class="helptext">{{ field.help_text }}</small>
+          </div>
       </div>
     {% endfor %}
     <div class="control-row">

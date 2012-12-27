@@ -11,11 +11,6 @@
   <link rel="stylesheet" href="{% static 'css/font-awesome.css' %}" type="text/css" media="screen">
   <link rel="stylesheet" href="{% static 'font/roboto/stylesheet.css' %}" type="text/css" media="screen">
   <link rel="stylesheet" href="{% static 'css/vr.css' %}" type="text/css" media="screen">
-  <style>
-      body {
-        padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
-      }
-  </style>
   {% block style %}{% endblock style %}
   {% if custom_css %}
     <link rel="stylesheet" href="{{ custom_css }}" type="text/css" media="screen">
