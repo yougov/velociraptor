@@ -1,6 +1,3 @@
-# TODO: Use includes for all the stuff that's common between this and the
-# ydevhost manifest, instead of repeating here.
-
 group { "puppet": 
     ensure => "present", 
 }
@@ -15,7 +12,6 @@ class yhost {
     Package {ensure => present, require => Exec [firstupdate]}
 
     package {
-        #supervisor:;  # Need custom version
         ruby:;
         libevent-dev:;
         vim:;
@@ -32,10 +28,6 @@ class yhost {
       firstupdate:
         command => "apt-get update",
         timeout => "300";
-      #supervisor_reload:
-        #command => "/usr/local/bin/supervisorctl reload",
-        #require => File ['supervisord.conf'];
-        #
       supervisor_logdir:
         command => "mkdir -p /var/log/supervisor";
 
@@ -75,7 +67,7 @@ class pipdeps {
       mercurial:;
       virtualenv:;
       virtualenvwrapper:;
-      '/vagrant/velociraptor/libraptor':
+      '/vagrant/libraptor':
         require => Exec[custom_supervisor];
     }
 

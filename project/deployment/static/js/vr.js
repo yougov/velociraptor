@@ -88,6 +88,24 @@ VR.Models.Proc = Backbone.Model.extend({
     },
     url: function() {
       return VR.Urls.getProc(this.get('host'), this.get('name'));
+    },
+    stop: function() {
+      var proc = this;
+      $.post(proc.url(), {'action': 'stop'}, function(data, sts, xhr) {
+        proc.set(data);
+      });
+    },
+    start: function() {
+      var proc = this;
+      $.post(proc.url(), {'action': 'start'}, function(data, sts, xhr) {
+        proc.set(data);
+      });
+    },
+    restart: function() {
+      var proc = this;
+      $.post(proc.url(), {'action': 'restart'}, function(data, sts, xhr) {
+        proc.set(data);
+      });
     }
 });
 
@@ -133,6 +151,24 @@ VR.Models.ProcList = Backbone.Collection.extend({
       if (proc) {
         this.remove(proc);
       }
+    },
+
+    stopAll: function() {
+      this.each(function(proc) {
+        proc.stop();
+      });
+    },
+
+    startAll: function() {
+      this.each(function(proc) {
+        proc.start();
+      });
+    },
+
+    restartAll: function() {
+      this.each(function(proc) {
+        proc.restart();
+      });
     }
 });
 
@@ -338,19 +374,13 @@ VR.Views.ProcModal = Backbone.View.extend({
       this.$el.modal('show');
     },
     onStartBtn: function(ev) {
-      this.doAction('start');
+      this.proc.start();
     },
     onStopBtn: function(ev) {
-      this.doAction('stop');
+      this.proc.stop();
     },
     onRestartBtn: function(ev) {
-      this.doAction('restart');
-    },
-    doAction: function(action) {
-      var proc = this.proc;
-      $.post(proc.url(), {'action': action}, function(data, stat, xhr) {
-          proc.set(data);
-        });
+      this.proc.restart();
     },
     onDestroyBtn: function(ev) {
       this.proc.destroy();
