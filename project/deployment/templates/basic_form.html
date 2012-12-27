@@ -6,7 +6,7 @@
 {% endblock script %}
 
 {% block content %}
-<div class="row-fluid">
+<div class="row">
   <div class="span3">
 <form method='post' class='well raptorform'{% if enctype %}enctype="{{ enctype }}"{% endif %}>{% csrf_token %}
     {% if instructions %}
@@ -14,7 +14,7 @@
       <p>{{ instructions }}
     {% endif %}
 <table class="formrows">
-  {{ form.as_table }}
+  {{ form }}
   <tr>
     <td class="buttoncell" colspan="2">
 <button type="submit" class="btn btn-primary">{% if btn_text %}

@@ -255,19 +255,26 @@ VR.Models.AppList = Backbone.Collection.extend({
       return app.id;
     },
 
-    getOrCreate: function(id) {
+    getOrCreate: function(name) {
       // if app with id is in collection, return it.
       var app = _.find(this.models, function(app) {
-          return app.id == id;
+          return app.get('name') === name;
         });
       if (app) {
         return app;
       }
       // else create, add, and return.
-      app = new VR.Models.App({id: id, "class": "appbox"});
+      app = new VR.Models.App({
+        name: name, 
+        "class": "appbox",
+        resource_uri: VR.Urls.getTasty('apps', name)
+      });
+      app.fetch();
       this.add(app);
+
       return app;
     },
+
     cull: function(host, cutoff) {
       // call cull on each swarmlist on each swarm in the collection.
       _.each(this.models, function(app) {
@@ -463,11 +470,21 @@ VR.Views.App = Backbone.View.extend({
     },
 
     events: {
-      'click .apptitle': 'toggleBigness'
+      'click .expandtree': 'toggleBigness',
+      'click .apptitle': 'appModal'
     },
 
     toggleBigness: function() {
-        this.$el.toggleClass('biggened');
+      this.$el.toggleClass('biggened');
+      this.$el.find('i').toggleClass('icon-caret-right').toggleClass('icon-caret-down');
+    },
+
+    appModal: function() {
+      if (!this.modal) {
+        this.modal = new VR.Views.AppModal(this.app);   
+      }
+
+      this.modal.show();
     },
 
     render: function() {
@@ -476,6 +493,22 @@ VR.Views.App = Backbone.View.extend({
 
     onRemove: function() {
       this.$el.remove();
+    }
+});
+
+VR.Views.AppModal = Backbone.View.extend({
+    initialize: function(app, template) {
+      this.app = app;
+      this.template = template || VR.Templates.AppModal;
+    },
+
+    render: function() {
+      this.$el.html(this.template.goatee(this.app.toJSON()));
+    },
+
+    show: function() {
+      this.render();
+      this.$el.modal('show');
     }
 });
 
