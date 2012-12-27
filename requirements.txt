@@ -1,5 +1,6 @@
 baton==0.1.5
 celery-schedulers==0.0.2
+celery==3.0.4
 Django==1.4
 django-celery==3.0.4
 django-extensions==0.7.1
