@@ -1,8 +1,11 @@
-group { "puppet": 
+group { "puppet":
     ensure => "present", 
 }
 
 Exec { path => '/usr/bin:/bin:/usr/sbin:/sbin' }
+
+# TODO: re-organize these classes around the roles of different hosts in a
+# Velociraptor setup: generic, build host, DB/Redis host.
 
 # We have to update first to ensure that apt can find the
 # python-software-properties package that will then let us add PPAs
@@ -18,10 +21,14 @@ class yhost {
         curl:;
         libcurl4-gnutls-dev:;
         libldap2-dev:;
+        'libssl0.9.8':; # npm needs these
         libsasl2-dev:;
         libpcre3-dev:;
         libjpeg62-dev:;
         git-core:;
+        redis-server:;
+        python-setuptools:;
+        python-dev:;
     }
 
     exec {
@@ -37,7 +44,10 @@ class yhost {
 
       start_supervisor:
         command => "start supervisor",
-        require => [File["supervisord.conf"], File["supervisord.init"], Exec[supervisor_logdir]];
+        require => [File["supervisord.conf"], File["supervisord.init"],
+                                              Exec[supervisor_logdir]],
+        # Don't try starting if we're already started.
+        unless => 'ps aux | grep supervisor | grep -v "grep"' ;
     }
 
     # ensure that supervisord's config has the line to include
@@ -57,12 +67,11 @@ class yhost {
     }
 }
 
-# As of http://projects.puppetlabs.com/issues/6527, Puppet contains native
-# support for using pip as a package provider.  We can use that to provide
-# newer versions of Python packages than Ubuntu provides.  
-
+# Use pip to install newer versions of some packages than you can get from apt.
 class pipdeps {
-    Package {provider => pip, ensure => present, require => Class [py27]}
+    Package {provider => pip, ensure => present,
+      require => [Package['python-dev'], Exec [pip27]]}
+
     package { 
       mercurial:;
       virtualenv:;
@@ -76,80 +85,23 @@ class pipdeps {
         ensure => file,
         source => 'puppet:///modules/home/bashrc';
     }
-}
 
-# TODO: Make a ygpip provider that pulls from our cheeseshop.  Modify this:
-# https://github.com/rcrowley/puppet-pip/blob/master/lib/puppet/provider/package/pip.rb
-
-# TODO: Once we have a ygpip provider, switch to the
-# pip-installed version instead of the apt-installed one.
-
-
-# Define a 'ppa' resource type.  With this, your classes can declare the need
-# for ppa repositories to be installed, like this:
-#    ppa {
-#      "pitti/postgresql":;
-#    }
-package {
-    python-software-properties: 
-        ensure => present, 
-        require => Exec [firstupdate];
-}
-define ppa($ppa = "$title", $ensure = present) {
-
-  case $ensure {
-    present: {
-
-        exec { $ppa:
-            command => "add-apt-repository ppa:$ppa;apt-get update",
-            require => Package["python-software-properties"];
-        }
-
-        # TODO: add ability to check if PPA is installed before running the
-        # above.  Might require writing some Ruby to look at files in
-        # /etc/apt/sources.list.d/
+    exec {
+      pip27:
+        command => "easy_install-2.7 pip",
+        require => Package['python-setuptools'];
     }
 
-    absent:  {
-        package {
-            ppa-purge: ensure => present;
-        }
-
-        exec { $ppa:
-            command => "ppa-purge ppa:$ppa;apt-get update",
-            require => Package[ppa-purge];
-        }
-    }
-
-    default: {
-      fail "Invalid 'ensure' value '$ensure' for ppa"
-    }
-  }
-}
-
-class newredis {
-    ppa {
-        "rwky/redis":;
-    }
-
-    package { 'redis-server':
-        ensure => present,
-        require => Ppa["rwky/redis"];
-    }
 }
 
 class pg91 {
-    ppa {
-        "pitti/postgresql":;
-    }
-
     package {
       "postgresql-9.1":
         ensure => present,
-        require => Ppa["pitti/postgresql"];
+        ;
       "postgresql-server-dev-9.1":
         ensure => present,
-        require => Ppa["pitti/postgresql"];
+        ;
     }
 
     file { 'pg_hba.conf':
@@ -163,26 +115,6 @@ class pg91 {
       pgrestart:
         command => "/etc/init.d/postgresql restart",
         require => File['pg_hba.conf'];
-    }
-}
-
-class py27 {
-    ppa {
-        "fkrull/deadsnakes":;
-    }
-
-    Package {ensure => present, require => Ppa["fkrull/deadsnakes"]}
-
-    package {
-      "python2.7":;
-      "python2.7-dev":;
-      "python-distribute-deadsnakes":;
-    }
-
-    exec {
-      pip27:
-        command => "easy_install-2.7 pip",
-        require => Package ["python-distribute-deadsnakes"];
     }
 }
 
@@ -208,7 +140,7 @@ class currentmongo {
 
 # 
 class lxc {
-  Package {ensure => present}
+  Package {ensure => present, require => Exec [firstupdate]}
   package {
     automake:;
     libcap-dev:;
@@ -253,8 +185,6 @@ file { 'ldap_cert':
 
 class {'yhost': }
 class {'pipdeps': }
-class {'py27': }
 class {'pg91': }
 class {'currentmongo': }
-class {'newredis': }
 class {'lxc': }

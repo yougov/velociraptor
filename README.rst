@@ -26,7 +26,7 @@ Now enter the velociraptor tree and launch vagrant::
     cd velociraptor
     vagrant up
 
-Now go make a sandwich while you wait for the lucid64 VM image to download
+Now go make a sandwich while you wait for the precise64 VM image to download
 (it's about 250MB).
 
 Installation of system-level dependencies inside the VM is done automatically

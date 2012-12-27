@@ -30,7 +30,7 @@ supervisord.conf snippet::
     [eventlistener:proc_publisher]
     command=proc_publisher
     events=PROCESS_STATE,PROCESS_GROUP,TICK_60
-    environment=REDIS_URL="redis://localhost:6379/0",HOSTNAME=lucid64
+    environment=REDIS_URL="redis://localhost:6379/0",HOSTNAME=precise64
 
 *command*
 
