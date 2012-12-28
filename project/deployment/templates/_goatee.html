@@ -5,7 +5,7 @@
 
 <script id="swarm-tmpl" type="text/goatee">
   <div class="procgrid">
-    <div class="swarmtitle"><%id%></div>
+    <div class="swarmtitle clickable-text"><%id%></div>
   </div>
 </script>
 
@@ -63,7 +63,32 @@
               </tr>
             </table>
         </div>
+  </div>
+</script>
 
+<script id="swarm-details-tmpl" type="text/goatee">
+  <div class="modal swarm-details-modal">
+        <div class="modal-header">
+            <a class="close" data-dismiss="modal">×</a>
+            <h3><%id%></h3>
+        </div>
+        <div class="modal-body">
+            <table class="attrs">
+              <tr>            
+                <th class="rowlabel">Size:</th>
+                <td><%proc_length%></td>
+              </tr>
+              <tr>
+                <th class="rowlabel">Procs:</th>
+                <td class="procboxes"></td>
+              </tr>
+            </table>
+        </div>
+      <div class="modal-footer">
+          <button class="swarm-stop btn btn-warning ifrunning">Stop Swarm</button>
+          <button class="swarm-restart btn btn-warning ifrunning">Restart Swarm</button>
+          <button class="swarm-start btn btn-success ifstopped">Start Swarm</button>
+      </div>
   </div>
 </script>
 
@@ -110,6 +135,7 @@ VR.Templates = {
   ProcModal: $('#proc-details-tmpl'),
   Host: $('#host-tmpl'),
   Swarm: $('#swarm-tmpl'),
+  SwarmModal: $('#swarm-details-tmpl'),
   App: $('#app-tmpl'),
   AppModal: $('#app-details-tmpl'),
   Event: $('#event-tmpl'),

@@ -10,10 +10,6 @@ h1, h2, h3, h4, h5, h6 {
   font-family: "RobotoThin", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
-h1 {
-  font-size: 26px;
-  line-height: 30px;
-}
 
 th {
   font-family: "RobotoMedium", "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -270,7 +266,7 @@ th.rowlabel {
   display: none;
 }
 
-.procmodal-RUNNING .ifrunning {
+[class*="-RUNNING"] .ifrunning, .allrunning .ifrunning, .somestopped .ifrunning {
   display: inline-block;
 }
 
@@ -278,7 +274,7 @@ th.rowlabel {
   display: none;
 }
 
-.procmodal-STOPPED .ifstopped {
+[class*="-STOPPED"] .ifstopped, .somestopped .ifstopped {
   display: inline-block;
 }
 

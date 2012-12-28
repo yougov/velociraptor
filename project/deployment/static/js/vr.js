@@ -376,6 +376,8 @@ VR.Views.ProcModal = Backbone.View.extend({
     show: function() {
       this.render();
       this.$el.modal('show');
+
+      console.log(this.proc);
     },
     onStartBtn: function(ev) {
       this.proc.start();
@@ -407,18 +409,15 @@ VR.Views.Host = Backbone.View.extend({
 
       this.render();
     },
-
     renderProc: function(proc) {
       var pv = new VR.Views.Proc(proc, VR.Templates.Proc);
       this.grid.append(pv.el);
     },
-
     render: function() {
       this.$el.html(this.template.goatee(this.host.attributes));
       this.grid = this.$el.find('.procgrid');
       this.host.procs.each(this.renderProc, this);
     },
-
     onRemove: function() {
       this.$el.remove();
     }
@@ -434,20 +433,101 @@ VR.Views.Swarm = Backbone.View.extend({
       this.swarm.procs.on('add', this.procAdded, this);
       this.swarm.on('remove', this.onRemove, this);
     },
+    events: {
+      'click .swarmtitle': 'onClick'
+    },
+    onClick: function(ev) {
+      if (!this.modal) {
+        this.modal = new VR.Views.SwarmModal(this.swarm);   
+      }
 
+      this.modal.show();
+    },
     procAdded: function(proc) {
       var pv = new VR.Views.Proc(proc);
       pv.render();
       this.$el.find('.procgrid').append(pv.el);
     },
-
     render: function() {
       this.$el.html(this.template.goatee(this.swarm.toJSON()));
     },
-
     onRemove: function() {
       this.$el.remove();
     }
+});
+
+VR.Views.SwarmModal = Backbone.View.extend({
+    initialize: function(swarm, template) {
+      this.swarm = swarm;
+      this.attributes.proc_length = this.swarm.procs.length;
+      this.current_state = '';
+      this.template = template || VR.Templates.SwarmModal;
+
+      // we subscribe to the proc's activity here too to update the list.
+      this.swarm.procs.on('add', this.procAdded, this);
+      this.swarm.procs.on('change', this.updateState, this);
+      this.swarm.on('remove', this.onRemove, this);
+    },
+    events: {
+      'click .swarm-start': 'onStartBtn',
+      'click .swarm-stop': 'onStopBtn',
+      'click .swarm-restart': 'onRestartBtn'
+    },
+    render: function() {
+      this.$el.html(this.template.goatee(this.swarm.toJSON()));
+
+      // We trigger the procModel on render to build the current procboxes at start.
+      // using for-loop here instead of _.each for scope.
+      for (var i = 0; i < this.swarm.procs.length; i++) {
+          var procModel = this.swarm.procs.models[i];
+          this.procAdded(procModel);
+      }
+      
+    },
+    show: function() {
+      this.render();
+      this.$el.modal('show');
+
+      this.updateState();
+    },
+    procAdded: function(proc) {
+      var pv = new VR.Views.Proc(proc);
+      // unbind the model click events inside the swarm modal.
+      pv.undelegateEvents();
+
+      pv.render();
+      this.$el.find('.procboxes').append(pv.el);
+
+      this.updateState();
+    },
+
+    updateState: function() {
+      // TODO: If any of the procs are stopped, show the swarm-start button,
+      //       If all procs are started, hide the swarm-start button.
+      //       If all procs are stopped, hide the swarm-stop button.
+      var procState = this.swarm.procs.every(function(proc) {
+        return proc.get('statename') == 'RUNNING';
+      });
+
+      if (procState === true) {
+        this.$el.find('.modal').addClass('allrunning');
+      } else {
+        this.$el.find('.modal').removeClass('allrunning').addClass('somestopped');
+      }
+    },
+    onRemove: function() {
+      this.$el.remove();
+    },
+    onStartBtn: function(ev) {
+      this.swarm.procs.startAll();
+    },
+    onStopBtn: function(ev) {
+      this.swarm.procs.stopAll();
+    },
+    onRestartBtn: function(ev) {
+      this.swarm.procs.restartAll();
+    }
+
 });
 
 
