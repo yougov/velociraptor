@@ -89,24 +89,21 @@ VR.Models.Proc = Backbone.Model.extend({
     url: function() {
       return VR.Urls.getProc(this.get('host'), this.get('name'));
     },
-    stop: function() {
+    doAction: function(action) {
       var proc = this;
-      $.post(proc.url(), {'action': 'stop'}, function(data, sts, xhr) {
-        proc.set(data);
-      });
+      $.ajax({
+        type: 'POST',
+        url: proc.url(),
+        data: JSON.stringify({'action': action}),
+        success: function(data, sts, xhr) {
+                  proc.set(data);
+                },
+        dataType: 'json'
+      });    
     },
-    start: function() {
-      var proc = this;
-      $.post(proc.url(), {'action': 'start'}, function(data, sts, xhr) {
-        proc.set(data);
-      });
-    },
-    restart: function() {
-      var proc = this;
-      $.post(proc.url(), {'action': 'restart'}, function(data, sts, xhr) {
-        proc.set(data);
-      });
-    }
+    stop: function() { this.doAction('stop'); },
+    start: function() { this.doAction('start'); },
+    restart: function() { this.doAction('restart'); }
 });
 
 

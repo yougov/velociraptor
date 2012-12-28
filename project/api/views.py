@@ -1,12 +1,13 @@
 import xmlrpclib
 import base64
 from functools import wraps
+import json
 
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
-from django.core.cache import cache
 from django import http
 from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
 
 from deployment import utils
 from deployment import models
@@ -79,7 +80,8 @@ def swarm_procs(request, swarm_id):
         'objects': [p.as_dict() for p in swarm.get_procs(check_cache=True)]
     })
 
-#@auth_required
+@auth_required
+@csrf_exempt
 def host_proc(request, hostname, procname):
     """
     Display status of a single supervisord-managed process on a host, in
@@ -102,15 +104,15 @@ def host_proc(request, hostname, procname):
         tasks.delete_proc(hostname, procname)
         return utils.json_response({'name': procname, 'deleted': True})
     elif request.method == 'POST':
-        action = request.POST.get('action')
+        parsed = json.loads(request.body)
         try:
-            if action == 'start':
+            if parsed['action'] == 'start':
                 events.eventify(request.user, 'start', proc.shortname())
                 proc.start()
-            elif action == 'stop':
+            elif parsed['action'] == 'stop':
                 events.eventify(request.user, 'stop', proc.shortname())
                 proc.stop()
-            elif action == 'restart':
+            elif parsed['action'] == 'restart':
                 events.eventify(request.user, 'restart', proc.shortname())
                 proc.restart()
         except xmlrpclib.Fault as e:
