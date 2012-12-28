@@ -219,12 +219,21 @@ class Proc(object):
                 'port': 0
             }
 
+    @classmethod
+    def name_to_shortname(cls, name):
+        """
+        In Celery tasks you often have a proc name, and want to send events
+        including the proc's shortname, but you don't want to do a XML RPC call
+        to get a full dict of data just for that.
+        """
+        return '%(app_name)s-%(version)s-%(proc_name)s' % Proc.parse_name(name)
+
+
     def __repr__(self):
         return "<Proc %s>" % self.name
 
     def shortname(self):
-        return '%s-%s@%s:%s' % (self.app_name, self.proc_name,
-                                self.host.shortname(), self.port)
+        return '%s-%s-%s' % (self.app_name, self.version, self.proc_name)
 
     def as_node(self):
         """

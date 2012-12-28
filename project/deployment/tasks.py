@@ -25,6 +25,7 @@ from deployment.models import (Release, Build, Swarm, Host, PortLock, App,
 from deployment import models
 from deployment import balancer, events, utils
 from raptor import repo, remote, build as rbuild
+from raptor.models import Proc
 from raptor.utils import tmpdir
 
 
@@ -72,7 +73,7 @@ class event_on_exception(object):
 def deploy(release_id, recipe_name, hostname, proc, port, contain=False):
     with remove_port_lock(hostname, port):
         release = Release.objects.get(id=release_id)
-        msg_title = '%s-%s-%s -> %s' % (release, proc, port, hostname)
+        msg_title = '%s-%s-%s' % (release.build.app.name, release.build.tag, proc)
         logging.info('beginning deploy of %s-%s-%s to %s' % (release, proc,
                                                              port,
                                                              hostname))
@@ -247,7 +248,7 @@ def delete_proc(host, proc, callback=None):
     env.linewise = True
     with always_disconnect():
         remote.delete_proc(proc)
-    send_event(proc, 'deleted %s on %s' % (proc, host), tags=['proc', 'deleted'])
+    send_event(Proc.name_to_shortname(proc), 'deleted %s on %s' % (proc, host), tags=['proc', 'deleted'])
 
     if callback:
         subtask(callback).delay()
@@ -530,10 +531,10 @@ def swarm_post_uptest(uptest_results, swarm_id):
 
     # Don't congratulate swarms that don't actually have any uptests.
     if test_counter > 0:
-        send_event(str(swarm), 'Uptests passed for swarm %s' % swarm,
+        send_event("Uptests passed", 'Uptests passed for swarm %s' % swarm,
                    tags=['success', 'uptest'])
     else:
-        send_event(str(swarm), 'No uptests for swarm %s' % swarm,
+        send_event("No uptests!", 'No uptests for swarm %s' % swarm,
                    tags=['warning', 'uptest'])
 
     # Also check for captured failures in the results
@@ -617,10 +618,6 @@ def swarm_delete_proc(swarm_id, hostname, procname, port):
         node = '%s:%s' % (hostname, port)
         if node in balancer.get_nodes(swarm.balancer, swarm.pool):
             balancer.delete_nodes(swarm.balancer, swarm.pool, [node])
-            send_event('unroute ' + node,
-                       '%s (%s) removed from pool %s on balancer %s' %
-                       (procname, node, swarm.pool,
-                       swarm.balancer), tags=['route'])
 
     delete_proc(hostname, procname)
 

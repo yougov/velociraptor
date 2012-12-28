@@ -129,7 +129,7 @@ def edit_swarm(request, swarm_id=None):
         swarm.save()
         tasks.swarm_start.delay(swarm.id)
 
-        events.eventify(request.user, 'swarm', swarm)
+        events.eventify(request.user, 'swarm', swarm.shortname())
         return redirect('dash')
 
     return render(request, 'swarm.html', {

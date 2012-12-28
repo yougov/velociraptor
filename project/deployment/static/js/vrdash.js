@@ -41,7 +41,7 @@ VR.Dash.removeProc = function(procdata) {
   // remove any empty swarms or apps.
   var swarmName = procdata.recipe_name+'-'+procdata.proc_name;
   VR.Dash.Apps.each(function(app, idx, list) {
-      if (app.id === procdata.app_name) {
+      if (app.get('name') === procdata.app_name) {
         app.swarms.each(function(swarm, idx, list) {
             if (swarm.id === swarmName) {
               // we've found the right swarm.  now remove the right proc.

@@ -305,7 +305,7 @@ VR.Views.Apps = Backbone.View.extend({
     // there.
     _.each(this.container.find('.approw'), function(row) {
         var title = $(row).find('.apptitle').text();
-        if (!inserted && title > app.id) {
+        if (!inserted && title > app.get('name')) {
             $(row).before(v.el);
             inserted = true;
         } 

@@ -105,6 +105,7 @@ def host_proc(request, hostname, procname):
         return utils.json_response({'name': procname, 'deleted': True})
     elif request.method == 'POST':
         parsed = json.loads(request.body)
+        # TODO: allow separate title/details from event.eventify
         try:
             if parsed['action'] == 'start':
                 events.eventify(request.user, 'start', proc.shortname())
