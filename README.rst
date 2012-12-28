@@ -98,6 +98,37 @@ VM.  If you need these ports back for other development, you can stop your
 Vagrant VM with a `vagrant halt`, run from the same location where you ran
 `vagrant up`.)
 
+Add Metadata
+~~~~~~~~~~~~
+
+Buildpacks
+----------
+
+In order to build and deploy your apps, Velociraptor needs to be told where
+they are and how to build them.  The 'how to build them' part is done with
+Heroku buildpacks.  Go to http://localhost:8000/admin/deployment/buildpack/add/
+in your browser in order to add a buildpack.  You will need to enter the git
+(or mercurial) repository URL, as well as an integer for the 'order'.  See the
+`Heroku buildpack documentation`_ to understand more about how buildpacks work
+and why order matters.  For now, just add a single buildpack, and set its order
+to '0'.  The NodeJS buildpack at
+https://github.com/heroku/heroku-buildpack-nodejs.git is a good one to start
+with.
+
+Squads and Hosts
+----------------
+In order to know where to deploy your application, you'll need to give
+Velociraptor some hostnames.  Velociraptor does load balanced deployments
+across a group of hosts, which it calls a "Squad".  Go to
+http://localhost:8000/admin/deployment/squad/add/ to create a new squad.  Call
+it whatever you like (I call my development squad 'local'.  Squad names must be
+unique.  Give the squad a single host named 'precise64', which is the hostname
+of the Vagrant VM itself.
+
+Apps and Recipes
+----------------
+
+
 Tests
 ~~~~~
 
