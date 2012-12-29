@@ -128,8 +128,25 @@ def edit_swarm(request, swarm_id=None):
         swarm.release = swarm.recipe.get_current_release(data['tag'])
         swarm.save()
         tasks.swarm_start.delay(swarm.id)
+        import textwrap
+        ev_data = dict(data)
+        ev_data.update(user=request.user.username, app=swarm.recipe.app.name,
+                       recipe=swarm.recipe, shortname=swarm.shortname(),
+                       squad=swarm.squad.name)
+        ev_detail = textwrap.dedent(
+            """%(user)s swarmed %(shortname)s
 
-        events.eventify(request.user, 'swarm', swarm.shortname())
+            App: %(app)s
+            Version: %(tag)s
+            Recipe: %(recipe)s
+            Proc Name: %(proc_name)s
+            Squad: %(squad)s
+            Size: %(size)s
+            Balancer: %(balancer)s
+            Pool: %(pool)s
+            """) % ev_data
+        events.eventify(request.user, 'swarm', swarm.shortname(),
+                        detail=ev_detail)
         return redirect('dash')
 
     return render(request, 'swarm.html', {

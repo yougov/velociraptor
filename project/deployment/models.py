@@ -637,8 +637,7 @@ class TestResult(models.Model):
         human-friendly string showing the failure.
         """
         name = self.procname + '@' + self.hostname
-        return (name + ": {Name} failed with output "
-                "'{Output}'".format(**result))
+        return (name + ": {Name} failed:\n{Output}".format(**result))
 
     def get_formatted_fails(self):
         return '\n'.join(self.format_fail(f) for f in self.get_fails())

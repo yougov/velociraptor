@@ -103,7 +103,13 @@ VR.Models.Proc = Backbone.Model.extend({
     },
     stop: function() { this.doAction('stop'); },
     start: function() { this.doAction('start'); },
-    restart: function() { this.doAction('restart'); }
+    restart: function() { this.doAction('restart'); },
+
+    isRunning: function() {return this.get('statename') == 'RUNNING'},
+    isStopped: function() {
+      var state = this.get('statename');
+      return state === 'STOPPED' || state === 'FATAL';
+    }
 });
 
 
@@ -497,24 +503,31 @@ VR.Views.SwarmModal = Backbone.View.extend({
 
       pv.render();
       this.$el.find('.procboxes').append(pv.el);
-
       this.updateState();
     },
 
     updateState: function() {
-      // TODO: If any of the procs are stopped, show the swarm-start button,
-      //       If all procs are started, hide the swarm-start button.
-      //       If all procs are stopped, hide the swarm-stop button.
-      var procState = this.swarm.procs.every(function(proc) {
-        return proc.get('statename') == 'RUNNING';
-      });
 
-      if (procState === true) {
-        this.$el.find('.modal').addClass('allrunning');
+      // if there are any stopped/fatal procs, add the class to show the start
+      // button.
+      if (this.swarm.procs.some(function(proc) {return proc.isStopped();})) {
+        this.$el.find('.modal').addClass('somestopped');
+        console.log('some stopped!');
       } else {
-        this.$el.find('.modal').removeClass('allrunning').addClass('somestopped');
+        this.$el.find('.modal').removeClass('somestopped');
+        console.log('none stopped!');
+      }
+
+      // if there are any running procs, add the class to show the stop button
+      if (this.swarm.procs.some(function(proc) {return proc.isRunning();})) {
+        this.$el.find('.modal').addClass('somerunning');
+        console.log('some running!');
+      } else {
+        this.$el.find('.modal').removeClass('somerunning');
+        console.log('none running!');
       }
     },
+
     onRemove: function() {
       this.$el.remove();
     },

@@ -266,7 +266,7 @@ th.rowlabel {
   display: none;
 }
 
-[class*="-RUNNING"] .ifrunning, .allrunning .ifrunning, .somestopped .ifrunning {
+[class*="-RUNNING"] .ifrunning, .somerunning .ifrunning {
   display: inline-block;
 }
 
@@ -280,6 +280,10 @@ th.rowlabel {
 
 .proc-destroy {
   float: left;
+}
+
+.swarm-details-modal .modal-footer {
+  min-height: 30px;
 }
 
 /* EVENTS */

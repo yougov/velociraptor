@@ -246,8 +246,7 @@ class EventListener(Listener):
         return reversed(list(buffered_events))
 
 
-# Not a view!
-def eventify(user, action, obj):
+def eventify(user, action, obj, detail=None):
     """
     Save a message to the user action log, application log, and events pubsub
     all at once.
@@ -265,12 +264,10 @@ def eventify(user, action, obj):
     message = '%s: %s' % (user.username, fragment)
     logging.info(message)
 
-    # put a message on the pubsub.  Just make a new redis connection when you
-    # need to do this.  This is a lot lower traffic than doing a connection per
-    # request.
+    # put a message on the pubsub
     sender = EventSender(
         settings.EVENTS_PUBSUB_URL,
         settings.EVENTS_PUBSUB_CHANNEL,
         settings.EVENTS_BUFFER_KEY)
-    sender.publish(message, tags=['user', action], title=message)
+    sender.publish(detail or message, tags=['user', action], title=message)
     sender.close()

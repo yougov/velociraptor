@@ -524,8 +524,8 @@ def swarm_post_uptest(uptest_results, swarm_id):
                 # This checking/formatting relies on each uptest result being a
                 # dict with 'Passed', 'Name', and 'Output' keys.
                 if result['Passed'] != True:
-                    msg = (proc + ": {Name} failed with output "
-                           "'{Output}'".format(**result))
+                    msg = (proc + ": {Name} failed:"
+                           "{Output}".format(**result))
                     send_event(str(swarm), msg, tags=['failed', 'uptest'])
                     raise FailedUptest(msg)
 
@@ -653,10 +653,6 @@ def post_uptest_all_procs(results, test_run_id):
 
         send_event('scheduled uptest failures', msg,
                    tags=['scheduled', 'failed'])
-    else:
-        send_event('scheduled uptests pass', 'Ran uptests on all procs',
-                   tags=['scheduled', 'success'])
-
 
 
 @task
@@ -674,8 +670,6 @@ def _clean_host_releases(hostname):
 @task
 def scooper():
     # Clean up all active hosts
-    send_event('scooper', 'Cleaning unused releases from all hosts',
-               tags=['scheduled'])
     for host in Host.objects.filter(active=True):
         _clean_host_releases.apply_async((host.name,), expires=120)
 
