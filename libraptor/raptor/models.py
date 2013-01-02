@@ -257,13 +257,15 @@ class Proc(object):
         return json.dumps(self.as_dict())
 
     def start(self):
-        print "proc start", self.host.name, self.name
-        self.host.supervisor.startProcess(self.name)
+        try:
+            self.host.supervisor.startProcess(self.name)
+        except xmlrpclib.Fault as f:
+            if f.faultString == 'ALREADY_STARTED':
+                pass
+            else:
+                raise
 
     def stop(self):
-        self.host.supervisor.stopProcess(self.name)
-
-    def restart(self):
         try:
             self.host.supervisor.stopProcess(self.name)
         except xmlrpclib.Fault as f:
@@ -271,7 +273,10 @@ class Proc(object):
                 pass
             else:
                 raise
-        self.host.supervisor.startProcess(self.name)
+
+    def restart(self):
+        self.stop()
+        self.start()
 
 
 class ProcError(Exception):
