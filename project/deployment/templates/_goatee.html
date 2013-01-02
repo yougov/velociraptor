@@ -5,7 +5,7 @@
 
 <script id="swarm-tmpl" type="text/goatee">
   <div class="procgrid">
-    <div class="swarmtitle clickable-text"><%id%></div>
+    <div class="swarmtitle clickable-text"><%name%></div>
   </div>
 </script>
 
@@ -70,17 +70,45 @@
   <div class="modal swarm-details-modal">
         <div class="modal-header">
             <a class="close" data-dismiss="modal">×</a>
-            <h3><%id%></h3>
+            <h3>Swarm: <%shortname%></h3>
         </div>
         <div class="modal-body">
             <table class="attrs">
               <tr>            
+                <th class="rowlabel">App:</th>
+                <td><%app_name%></td>
+              </tr>
+              <tr>            
+                <th class="rowlabel">Recipe:</th>
+                <td><%recipe_name%></td>
+              </tr>
+              <tr>            
+                <th class="rowlabel">Proc:</th>
+                <td><%proc_name%></td>
+              </tr>
+              <tr>            
+                <th class="rowlabel">Version:</th>
+                <td><%version%></td>
+              </tr>
+              <tr>            
+                <th class="rowlabel">Squad:</th>
+                <td><%squad_name%></td>
+              </tr>
+              <tr>            
                 <th class="rowlabel">Size:</th>
-                <td><%proc_length%></td>
+                <td><%size%></td>
               </tr>
               <tr>
                 <th class="rowlabel">Procs:</th>
                 <td class="procboxes"></td>
+              </tr>
+              <tr>            
+                <th class="rowlabel">Pool:</th>
+                <td><%pool%></td>
+              </tr>
+              <tr>            
+                <th class="rowlabel">Balancer:</th>
+                <td><%balancer%></td>
               </tr>
             </table>
         </div>

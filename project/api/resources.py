@@ -3,6 +3,7 @@ from tastypie import fields
 from tastypie import authentication as auth
 from tastypie.authorization import Authorization
 from tastypie.api import Api
+from tastypie.constants import ALL_WITH_RELATIONS, ALL
 
 from deployment import models
 
@@ -24,6 +25,9 @@ class SquadResource(ModelResource):
     class Meta:
         queryset = models.Squad.objects.all()
         resource_name = 'squads'
+        filtering = {
+            'hosts': ALL_WITH_RELATIONS,
+        }
         authentication = auth.MultiAuthentication(
             auth.BasicAuthentication(),
             auth.SessionAuthentication(),
@@ -41,6 +45,10 @@ class RecipeResource(ModelResource):
     class Meta:
         queryset = models.ConfigRecipe.objects.all()
         resource_name = 'recipes'
+        filtering = {
+            'app': ALL_WITH_RELATIONS,
+            'name': ALL,
+        }
         authentication = auth.MultiAuthentication(
             auth.BasicAuthentication(),
             auth.SessionAuthentication(),
@@ -68,6 +76,9 @@ class AppResource(ModelResource):
     class Meta:
         queryset = models.App.objects.all()
         resource_name = 'apps'
+        filtering = {
+            'name': ALL,
+        }
         authentication = auth.MultiAuthentication(
             auth.BasicAuthentication(),
             auth.SessionAuthentication(),
@@ -111,6 +122,12 @@ class SwarmResource(ModelResource):
     class Meta:
         queryset = models.Swarm.objects.all()
         resource_name = 'swarms'
+        filtering = {
+            'recipe': ALL_WITH_RELATIONS,
+            'squad': ALL_WITH_RELATIONS,
+            'proc_name': ALL,
+
+        }
         authentication = auth.MultiAuthentication(
             auth.BasicAuthentication(),
             auth.SessionAuthentication(),
@@ -119,14 +136,22 @@ class SwarmResource(ModelResource):
 
     def dehydrate(self, bundle):
         # add in proc data
+        # TODO: Make these proper attributes so they can be saved by a PUT/POST
+        # to the swarm resource.
         bundle.data['procs_uri'] = bundle.data['resource_uri'] + 'procs/'
         bundle.data['procs'] = [p.as_dict() for p in
                                 bundle.obj.get_procs(check_cache=True)]
+        bundle.data['squad_name'] = bundle.obj.squad.name
+        bundle.data['version'] = bundle.obj.release.build.tag
 
         # Also add in convenience data
         bundle.data.update(app_name=bundle.obj.recipe.app.name,
                            recipe_name=bundle.obj.recipe.name)
         return bundle
+
+    # TODO: prepend a by_params url that takes app name, recipe name, hostname,
+    # and proc name, and then does a 
+    # Swarm.objects.get(recipe__app__name='vr_node_example', recipe__name='local', squad__hosts__name='precise64', proc_name='web')
 v1.register(SwarmResource())
 
 
@@ -182,6 +207,9 @@ class HostResource(ModelResource):
     class Meta:
         queryset = models.Host.objects.all()
         resource_name = 'hosts'
+        filtering = {
+            'name': ALL,
+        }
         authentication = auth.MultiAuthentication(
             auth.BasicAuthentication(),
             auth.SessionAuthentication(),

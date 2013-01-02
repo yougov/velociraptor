@@ -51,6 +51,7 @@ VR.Urls = {
           return this.root + resource + '/';
       }
   },
+
   getProc: function (hostname, procname) {
       // unlike the tastypie resources, the procs API is normal Django views
       // nested inside the Tastypie API, so they have a different url
@@ -207,7 +208,29 @@ VR.Models.Swarm = VR.Models.Tasty.extend({
       return split[0] === this.get('app_name') &&
              split[2] === this.get('recipe_name') &&
              split[4] === this.get('proc_name');
+    },
+
+    fetchByProcData: function(procData) {
+      // since swarms are instantiated as a side effect of getting proc data,
+      // we need to take that proc data and build up a Tastypie query to fetch
+      // full swarm data from the API.
+
+      var url = VR.Urls.root 
+          +'swarms/?'
+          +'recipe__app__name='+procData.app_name
+          +'&recipe__name='+procData.recipe_name
+          +'&proc_name='+procData.proc_name
+          +'&squad__hosts__name='+procData.host;
+      // query the URL, and update swarm's attributes from data in first (and
+      // only) result.
+      var swarm = this;
+      $.getJSON(url, function(data, sts, xhr) {
+          if (data.objects && data.objects.length) {
+            swarm.set(data.objects[0]);
+          };
+      });
     }
+
 });
 
 
@@ -215,21 +238,28 @@ VR.Models.SwarmList = Backbone.Collection.extend({
     model: VR.Models.Swarm,
 
     comparator: function(swarm) {
-      return swarm.id;
+      return swarm.get('name');
     },
-    getOrCreate: function(id) {
+
+    getByProcData: function(procData) {
+      var swarmname = [procData.recipe_name, procData.proc_name].join('-');
       // if swarm with id is in collection, return it.
-      var swarm = _.find(this.models, function(swarm) {
-          return swarm.id == id;
+      var swarm = this.find(function(swarm) {
+          return swarm.get('name') === swarmname;
         });
       if (swarm) {
         return swarm;
       }
       // else create, add, and return.
-      swarm = new VR.Models.Swarm({id: id});
+      swarm = new VR.Models.Swarm({
+          name: swarmname,
+        });
+
+      swarm.fetchByProcData(procData);
       this.add(swarm);
       return swarm;
     },
+
     cull: function(host, cutoff) {
       // call cull on each proclist on each swarm in the collection.
       _.each(this.models, function(swarm) {
@@ -382,8 +412,6 @@ VR.Views.ProcModal = Backbone.View.extend({
     show: function() {
       this.render();
       this.$el.modal('show');
-
-      console.log(this.proc);
     },
     onStartBtn: function(ev) {
       this.proc.start();
@@ -512,19 +540,15 @@ VR.Views.SwarmModal = Backbone.View.extend({
       // button.
       if (this.swarm.procs.some(function(proc) {return proc.isStopped();})) {
         this.$el.find('.modal').addClass('somestopped');
-        console.log('some stopped!');
       } else {
         this.$el.find('.modal').removeClass('somestopped');
-        console.log('none stopped!');
       }
 
       // if there are any running procs, add the class to show the stop button
       if (this.swarm.procs.some(function(proc) {return proc.isRunning();})) {
         this.$el.find('.modal').addClass('somerunning');
-        console.log('some running!');
       } else {
         this.$el.find('.modal').removeClass('somerunning');
-        console.log('none running!');
       }
     },
 
@@ -560,11 +584,11 @@ VR.Views.App = Backbone.View.extend({
     },
 
     events: {
-      'click .expandtree': 'toggleBigness',
+      'click .expandtree': 'toggleExpanded',
       'click .apptitle': 'appModal'
     },
 
-    toggleBigness: function() {
+    toggleExpanded: function() {
       this.$el.toggleClass('biggened');
       this.$el.find('i').toggleClass('icon-caret-right').toggleClass('icon-caret-down');
     },

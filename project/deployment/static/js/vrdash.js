@@ -104,9 +104,7 @@ VR.Dash.onActiveHostData = function(data, stat, xhr) {
 VR.Dash.updateProcData = function(data) {
     app = VR.Dash.Apps.getOrCreate(data.app_name);
     VR.Dash.Apps.add(app);
-
-    var swarmname = [data.recipe_name, data.proc_name].join('-');
-    var s = app.swarms.getOrCreate(swarmname);
+    var s = app.swarms.getByProcData(data);
     var p = s.procs.getOrCreate(data);
 };
 
