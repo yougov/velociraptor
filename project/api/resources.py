@@ -148,10 +148,6 @@ class SwarmResource(ModelResource):
         bundle.data.update(app_name=bundle.obj.recipe.app.name,
                            recipe_name=bundle.obj.recipe.name)
         return bundle
-
-    # TODO: prepend a by_params url that takes app name, recipe name, hostname,
-    # and proc name, and then does a 
-    # Swarm.objects.get(recipe__app__name='vr_node_example', recipe__name='local', squad__hosts__name='precise64', proc_name='web')
 v1.register(SwarmResource())
 
 
