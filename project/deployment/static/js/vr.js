@@ -225,9 +225,9 @@ VR.Models.Swarm = VR.Models.Tasty.extend({
       // only) result.
       var swarm = this;
       $.getJSON(url, function(data, sts, xhr) {
-          if (data.objects && data.objects.length) {
-            swarm.set(data.objects[0]);
-          };
+        if (data.objects && data.objects.length) {
+          swarm.set(data.objects[0]);
+        };
       });
     }
 

@@ -40,26 +40,23 @@ VR.Dash.removeProc = function(procdata) {
   // App>Swarm>Proc structure to find the proc and remove it.  On the way out,
   // remove any empty swarms or apps.
   var swarmName = procdata.recipe_name+'-'+procdata.proc_name;
-  VR.Dash.Apps.each(function(app, idx, list) {
-      if (app.get('name') === procdata.app_name) {
-        app.swarms.each(function(swarm, idx, list) {
-            if (swarm.id === swarmName) {
-              // we've found the right swarm.  now remove the right proc.
-              swarm.procs.each(function(proc, idx, list) {
-                if (proc.id === procdata.id) {
-                  swarm.procs.remove(proc);
-                }
-              });
-              if (swarm.procs.length === 0) {
-                app.swarms.remove(swarm);
-              }
-            };
-        });
-        if (app.swarms.length === 0) {
-          VR.Dash.Apps.remove(app);
-        }
-      }
-  });
+
+  var app = VR.Dash.Apps.find(function(a, idx, list) {return a.get('name') === procdata.app_name; });
+  if (!app) { return };
+
+  var swarm = app.swarms.find(function(s, idx, list) {return s.get('name') === swarmName});
+  if (!swarm) { return };
+  swarm.procs.removeByData(procdata);
+
+  // If the swarm now has no procs, remove from dashboard
+  if (swarm.procs.length === 0) {
+    app.swarms.remove(swarm);
+  }
+
+  // if the app now has no swarms, remove from dashboard
+  if (app.swarms.length === 0) {
+    VR.Dash.Apps.remove(app);
+  }
 }
 
 VR.Dash.onHostChange = function(e) {
