@@ -130,7 +130,7 @@ class FakeProcCase(unittest.TestCase):
         assert self.nodeproc.as_node() == 'somewhere:5003'
 
     def test_shortname(self):
-        assert self.nodeproc.shortname() == 'node_example-web@somewhere:5003'
+        assert self.nodeproc.shortname() == 'node_example-v2-web'
 
 
 def test_datetime_none():
@@ -150,9 +150,7 @@ class RedisCacheTests(unittest.TestCase):
                          redis_or_url=self.redis)
 
     def tearDown(self):
-        keys = self.redis.hkeys(self.host.cache_key)
-        if len(keys):
-            self.redis.hdel(self.host.cache_key, *keys)
+        self.redis.delete(self.host.cache_key)
 
     def test_proc_get_cache_set(self):
         # Ensure that single-proc data fetched from host is saved to cache
@@ -208,7 +206,7 @@ class RedisCacheTests(unittest.TestCase):
 
         # But requesting all procs, with deadproc absent from the Supervisor
         # data, should clear him from cache
-        all_procs = [p.name for p in self.host.get_procs(check_cache=True)]
+        all_procs = [p.name for p in self.host.get_procs(check_cache=False)]
         assert 'deadproc' not in all_procs
 
     def test_nonexistent_proc_raises_proc_error(self):

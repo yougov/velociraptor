@@ -47,6 +47,11 @@ def test_basename():
     url = 'https://github.com/heroku/heroku-buildpack-python.git'
     assert repo.basename(url) == 'heroku-buildpack-python'
 
+def test_basename_fragment():
+    url = 'https://github.com/heroku/heroku-buildpack-python.git#123456'
+    assert repo.basename(url) == 'heroku-buildpack-python'
+
+
 
 # TODO: Run local git/hg servers so we don't have to call out over the network
 # during tests.
@@ -64,6 +69,16 @@ def test_git_clone():
         gitrepo = repo.Repo('gitrepo', url, 'git')
         gitrepo.clone()
         assert gitrepo.get_url() == url
+
+
+def test_version_in_fragment():
+    rev = '16c1dba07ee78d5dbee1f965d91d3d61942ccb67'
+    url = 'https://github.com/btubbs/vr_python_example.git#' + rev
+    with tmpdir():
+        bp = build.BuildPack('bp', url, 'git')
+        bp.clone()
+        bp.update()
+        assert bp.version == rev
 
 
 def test_hg_update():

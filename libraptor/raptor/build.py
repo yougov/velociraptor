@@ -61,7 +61,7 @@ class BuildPack(repo.Repo):
         Override Repo.update to provide default rev when none is provided.
         """
 
-        rev = rev or {
+        rev = rev or self.fragment or {
             'git': 'HEAD',
             'hg': 'tip',
         }[self.vcs_type]

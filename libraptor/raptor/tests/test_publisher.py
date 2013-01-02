@@ -55,8 +55,8 @@ def test_events_cache_all_procs():
     tick = get_tick()
     publisher.handle_event(tick, host, 'fake_channel')
     calls = pipe.mock.mock_calls
-    assert calls[0][0] == 'hmset'
-    cache_key, hashdict = calls[0][1]
+    assert calls[0][0] == 'delete'
+    cache_key, hashdict = calls[1][1]
     assert cache_key == 'host_procs_somewhere'
     assert hashdict.pop('__full__', None) == '1'
     for k in hashdict:
@@ -64,8 +64,8 @@ def test_events_cache_all_procs():
         # Make sure the saved values are json dicts
         procdata = json.loads(hashdict[k])
         assert isinstance(procdata, dict)
-    assert calls[1] == call.expire('host_procs_somewhere', 600)
-    assert calls[2] == call.execute()
+    assert calls[2] == call.expire('host_procs_somewhere', 600)
+    assert calls[3] == call.execute()
 
 
 def test_procstate_events_published():

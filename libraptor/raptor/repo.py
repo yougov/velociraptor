@@ -67,6 +67,10 @@ class Repo(object):
         if url is None and not os.path.isdir(folder):
             raise ValueError('Must provide repo url if folder does not exist')
         url = url or self.get_url()
+        # Strip off fragment
+        url, _, self.fragment = url.partition('#')
+
+        # Strip off trailing slash
         if url.endswith('/'):
             url = url[:-1]
         self.url = url
@@ -138,6 +142,7 @@ def basename(url):
     Return the name of the folder that you'd get if you cloned 'url' into the
     current working directory.
     """
+    url, sep, fragment = url.partition('#')
     # Remove trailing slash from url if present
     if url.endswith('/'):
         url = url[:-1]
