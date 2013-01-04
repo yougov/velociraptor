@@ -11,7 +11,7 @@ django-reversion==1.6.1
 git+https://github.com/toastdriven/django-tastypie.git@eee008f3eef0f756b32635e7b74c1c9732cf593c
 django-yamlfield==0.2
 Fabric==1.4.0
-gevent==0.13.8
+https://github.com/downloads/SiteSupport/gevent/gevent-1.0rc2.tar.gz
 gevent-psycopg2==0.0.3
 gunicorn==0.14.6
 keyring==0.7.1
