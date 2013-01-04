@@ -138,22 +138,26 @@ class currentmongo {
   }
 }
 
-# 
+
 class lxc {
   Package {ensure => present, require => Exec [firstupdate]}
   package {
     automake:;
     libcap-dev:;
     libapparmor-dev:;
-    build-essential:;
   }
 
   # put the build script into /tmp
-  file { 'install_lxc.sh':
+  file { 
+  'install_lxc.sh':
     path    => '/tmp/install_lxc.sh',
     ensure  => file,
     require => Package['build-essential', 'automake', 'libcap-dev', 'libapparmor-dev'],
     source  => 'puppet:///modules/lxc/install_lxc.sh';
+  '/cgroup':
+    ensure => "directory",
+    owner  => "root",
+    mode   => 755;
   }
 
   exec {
@@ -161,12 +165,19 @@ class lxc {
       command => "sh /tmp/install_lxc.sh",
       timeout => "300",
       require => File['install_lxc.sh'];
-    mount_cgroup:
-      command => "mkdir -p /cgroup; mount none -t cgroup /cgroup",
-      require => Exec['build_lxc'],
-      unless => 'mount | grep "/cgroup type cgroup"';
   }
+
+  mount { "/cgroup":
+        device  => 'cgroup',
+        fstype  => 'cgroup',
+        ensure  => mounted,
+        atboot  => true,
+        options => 'defaults',
+        remounts => false,
+        require => File['/cgroup'];
+    }
 }
+
 
 package { 
   foreman:
