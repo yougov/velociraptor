@@ -274,7 +274,7 @@ th.rowlabel {
   display: none;
 }
 
-[class*="-STOPPED"] .ifstopped, .somestopped .ifstopped {
+[class*="-STOPPED"] .ifstopped, [class*="-FATAL"] .ifstopped, .somestopped .ifstopped {
   display: inline-block;
 }
 
