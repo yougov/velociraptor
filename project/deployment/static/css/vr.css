@@ -190,6 +190,7 @@ th.rowlabel {
 
 .titlecell {
   vertical-align: top;
+  text-align: right;
 }
 
 .proccell {
