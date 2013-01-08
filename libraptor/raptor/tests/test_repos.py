@@ -1,12 +1,11 @@
 import os
-import tempfile
-import shutil
 
 import pytest
 import envoy
 
 from raptor import repo, build
-from raptor.utils import tmpdir, CommandException
+from raptor.utils import tmpdir
+from raptor.tests import tmprepo
 
 
 def test_hg_folder_detection():
@@ -142,31 +141,3 @@ def test_git_get_version():
     with tmprepo('git_python_app.tar.gz', 'git') as r:
         r.update(rev)
         assert r.version == rev
-
-
-class tmprepo(object):
-    """
-    Context manager for creating a tmp dir, unpacking a specified repo tarball
-    inside it, cd-ing in there, letting you run stuff, and then cleaning up and
-    cd-ing back where you were when it's done.
-    """
-    def __init__(self, tarball, vcs_type, repo_class=None):
-        # Repo tarballs must be in the same directory as this file.
-        here = os.path.dirname(os.path.abspath(__file__))
-        self.tarball = os.path.join(here, tarball)
-        self.vcs_type = vcs_type
-        self.orig_path = os.getcwd()
-        self.repo_class = repo_class or repo.Repo
-
-    def __enter__(self):
-        self.temp_path = tempfile.mkdtemp()
-        os.chdir(self.temp_path)
-        cmd = 'tar -zxf %s --strip-components 1' % self.tarball
-        result = envoy.run(cmd)
-        if result.status_code != 0:
-            raise CommandException(result)
-        return self.repo_class('./', vcs_type=self.vcs_type)
-
-    def __exit__(self, type, value, traceback):
-        os.chdir(self.orig_path)
-        shutil.rmtree(self.temp_path, ignore_errors=True)

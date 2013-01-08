@@ -100,14 +100,6 @@ class BuildPack(models.Model):
     def get_repo(self):
         return build.add_buildpack(self.repo_url, vcs_type=self.repo_type)
 
-    def check_current(self, version):
-        """
-        Given a version hash (like one attached to an old build), tell whether
-        it's equal to this buildpack's latest version.
-        """
-        bp = build.add_buildpack(self.repo_url)
-        return bp.version == version
-
 
 class App(models.Model):
     namehelp = ("Used in release name.  Good app names are short and use "
@@ -273,9 +265,9 @@ class Build(models.Model):
     @classmethod
     def get_current(cls, app, tag):
         """
-        Given an app and a tag, look for a build that matches both, was
-        successfully built (or is currently building), and uses the latest
-        version of its buildpack.  If not found, return None.
+        Given an app and a tag, look for a build that matches both, and was
+        successfully built (or is currently building).  If not found, return
+        None.
         """
         # First check if there's a build for our app and the given tag
         builds = cls.objects.filter(
@@ -289,23 +281,13 @@ class Build(models.Model):
 
         # we found a qualifying build (either successful or in progress of
         # being built right this moment).
-        build = builds[0]
+        return builds[0]
 
-        # If build is in progress, that's ok.
-        if build.in_progress():
-            return build
+        # TODO: Also check that the build was made with the current version of
+        # the buildpack.  We used to have a check like this that used the
+        # buildpack revision hash, but it was removed when trying to figure out
+        # why we were seeing unnecessary builds.
 
-        # If it's fully built, only return it if it uses the current version of
-        # the buildpack.
-        try:
-            bp = BuildPack.objects.get(repo_url=build.buildpack_url)
-        except BuildPack.DoesNotExist:
-            return None
-
-        if bp.check_current(build.buildpack_version):
-            return build
-
-        return None
 
     def __unicode__(self):
         # Return the app name and version

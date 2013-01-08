@@ -1,4 +1,12 @@
+import os
+import tempfile
+import shutil
 import xmlrpclib
+
+import envoy
+
+from raptor import repo
+from raptor.utils import CommandException
 
 # A fake Supervisor xmlrpc interface.
 class FakeSupervisor(object):
@@ -63,3 +71,30 @@ class FakeRPC(object):
     def __init__(self):
         self.supervisor = FakeSupervisor()
 
+
+class tmprepo(object):
+    """
+    Context manager for creating a tmp dir, unpacking a specified repo tarball
+    inside it, cd-ing in there, letting you run stuff, and then cleaning up and
+    cd-ing back where you were when it's done.
+    """
+    def __init__(self, tarball, vcs_type, repo_class=None):
+        # Repo tarballs must be in the same directory as this file.
+        here = os.path.dirname(os.path.abspath(__file__))
+        self.tarball = os.path.join(here, tarball)
+        self.vcs_type = vcs_type
+        self.orig_path = os.getcwd()
+        self.repo_class = repo_class or repo.Repo
+
+    def __enter__(self):
+        self.temp_path = tempfile.mkdtemp()
+        os.chdir(self.temp_path)
+        cmd = 'tar -zxf %s --strip-components 1' % self.tarball
+        result = envoy.run(cmd)
+        if result.status_code != 0:
+            raise CommandException(result)
+        return self.repo_class('./', vcs_type=self.vcs_type)
+
+    def __exit__(self, type, value, traceback):
+        os.chdir(self.orig_path)
+        shutil.rmtree(self.temp_path, ignore_errors=True)
