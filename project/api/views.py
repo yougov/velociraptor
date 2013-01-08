@@ -8,6 +8,8 @@ from django.shortcuts import get_object_or_404
 from django import http
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
+import sseclient
+import requests
 
 from deployment import utils
 from deployment import models
@@ -160,3 +162,59 @@ def proc_event_stream(request):
         settings.EVENTS_PUBSUB_URL,
         channel=settings.PROC_EVENTS_CHANNEL,
     ), mimetype='text/event-stream')
+
+
+
+class ProcTailer(object):
+    """
+    Given a hostname, port, and procname, connect to the log tailing endpoint
+    for that proc and yield a string for each line in the log, as they come.
+    """
+    def __init__(self, hostname, port, procname):
+        self.hostname = hostname
+        self.port = port
+        self.procname = procname
+        self.buf = u''
+
+        self._connect()
+
+    def _connect(self):
+        url = 'http://%s:%s/logtail/%s' % (self.hostname, self.port, self.procname)
+
+        self.resp = requests.get(url, prefetch=False)
+        self.resp.raise_for_status()
+
+    def __iter__(self):
+        while True:
+            yield self.next()
+
+    def next(self):
+        while '\n' not in self.buf:
+            self.buf += next(self.resp.iter_content(decode_unicode=True))
+        head, sep, tail = self.buf.partition('\n')
+        self.buf = tail
+        return head + '\n'
+
+    def close(self):
+        self.resp.raw._pool.close()
+
+
+class SSETailer(ProcTailer):
+    """
+    Given a hostname, port, and procname, yield one event per log line.
+    """
+
+    def next(self):
+        # Remove the trailing newline from the data
+        data = super(SSETailer, self).next()[:-1]
+        e = sseclient.Event(data=data)
+        return e.dump()
+
+@auth_required
+def proc_log_stream(request, hostname, procname):
+    if request.META['HTTP_ACCEPT'] == 'text/event-stream':
+        return http.HttpResponse(SSETailer(hostname, settings.SUPERVISOR_PORT,
+                                           procname),
+                                 content_type='text/event-stream')
+    return http.HttpResponse(ProcTailer(hostname, settings.SUPERVISOR_PORT,
+                                        procname), content_type='text/plain')
