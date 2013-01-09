@@ -460,7 +460,7 @@ def uptest_host_procs(hostname, procs):
     env.linewise = True
 
     with always_disconnect():
-        results = {p: remote.run_uptests(p) for p in procs}
+        results = {p: remote.run_uptests(p, settings.PROC_USER) for p in procs}
     return hostname, results
 
 
