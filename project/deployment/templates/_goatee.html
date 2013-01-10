@@ -14,36 +14,49 @@
 </script>
 
 <script id="proc-details-tmpl" type="text/goatee">
-    <div class="modal proc-details-modal procmodal-<%statename%>" data-host="<%host%>" data-name="<%name%>">
+    <div class="modal proc-details-modal" data-host="<%host%>" data-name="<%name%>">
       <div class="modal-header">
           <a class="close" data-dismiss="modal">×</a>
           <h3><a href="http://<%host%>:<%port%>"><%app_name%>-<%proc_name%>@<%host%>:<%port%></a></h3>
       </div>
       <div class="modal-body">
-          <table class="attrs">
-              <tr><th class="rowlabel">Name</th><td><%name%></td></tr>
-              <tr><th class="rowlabel">Description</th><td><%description%></td></tr>
-              <tr><th class="rowlabel">State</th><td>
-                  <div class="procbox <%statename%>"></div>
-                  <%statename%>
-              </td></tr>
-              <tr><th class="rowlabel">App</th><td><%app_name%></td></tr>
-              <tr><th class="rowlabel">Version</th><td><%version%></td></tr>
-              <tr><th class="rowlabel">Config Recipe</th><td><%recipe_name%></td></tr>
-              <tr><th class="rowlabel">Release Hash</th><td><%hash%></td></tr>
-              <tr><th class="rowlabel">Proc Name</th><td><%proc_name%></td></tr>
-              <tr><th class="rowlabel">Host</th><td><%host%></td></tr>
-              <tr><th class="rowlabel">Port</th><td><%port%></td></tr>
-          </table>
+        <table class="attrs proc-details-table">
+        </table>
+        <div class="proc-log well"></div>
       </div>
-      <div class="modal-footer">
-          <button class="proc-destroy btn btn-danger">Destroy</button>
-          <button class="proc-stop btn btn-warning ifrunning">Stop</button>
-          <button class="proc-restart btn btn-warning ifrunning">Restart</button>
-          <button class="proc-start btn btn-success ifstopped">Start</button>
-      </div>
+      <div class="modal-footer"></div>
     </div>
 </script>
+
+
+{# partial template for just the details table in a proc modal #}
+<script id="proc-details-rows" type="text/goatee">
+      <tr><th class="rowlabel">Name</th><td><%name%></td></tr>
+      <tr><th class="rowlabel">Description</th><td><%description%></td></tr>
+      <tr><th class="rowlabel">State</th><td>
+          <div class="procbox <%statename%>"></div>
+          <%statename%>
+      </td></tr>
+      <tr><th class="rowlabel">App</th><td><%app_name%></td></tr>
+      <tr><th class="rowlabel">Version</th><td><%version%></td></tr>
+      <tr><th class="rowlabel">Config Recipe</th><td><%recipe_name%></td></tr>
+      <tr><th class="rowlabel">Release Hash</th><td><%hash%></td></tr>
+      <tr><th class="rowlabel">Proc Name</th><td><%proc_name%></td></tr>
+      <tr><th class="rowlabel">Host</th><td><%host%></td></tr>
+      <tr><th class="rowlabel">Port</th><td><%port%></td></tr>
+      <tr><th class="rowlabel">Tail</th><td><%logs_uri%></td></tr>
+</script>
+
+
+<script id="proc-details-buttons" type="text/goatee">
+<div class="buttonwrap procmodal-<%statename%>">
+  <button class="proc-destroy btn btn-danger">Destroy</button>
+  <button class="proc-stop btn btn-warning ifrunning">Stop</button>
+  <button class="proc-restart btn btn-warning ifrunning">Restart</button>
+  <button class="proc-start btn btn-success ifstopped">Start</button>
+</div>
+</script>
+
 
 <script id="app-details-tmpl" type="text/goatee">
   <div class="modal app-details-modal">
@@ -155,12 +168,13 @@
 </script>
 
 <script>
-
 // on DOM READY, make a library of all our templates
 $(function() {
 VR.Templates = {
   Proc: $('#proc-tmpl'),
   ProcModal: $('#proc-details-tmpl'),
+  ProcModalRows: $('#proc-details-rows'),
+  ProcModalButtons: $('#proc-details-buttons'),
   Host: $('#host-tmpl'),
   Swarm: $('#swarm-tmpl'),
   SwarmModal: $('#swarm-details-tmpl'),

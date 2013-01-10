@@ -29,8 +29,7 @@ VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl
       } else {
         VR.Dash.updateProcData(parsed);
       }
-      }, this
-  );
+  }, this);
 
   // bind proc change event stream to handler 
 };
@@ -41,11 +40,11 @@ VR.Dash.removeProc = function(procdata) {
   // remove any empty swarms or apps.
   var swarmName = procdata.recipe_name+'-'+procdata.proc_name;
 
-  var app = VR.Dash.Apps.find(function(a, idx, list) {return a.get('name') === procdata.app_name; });
-  if (!app) { return };
+  var app = VR.Dash.Apps.find(function(a, idx, list) {return a.get('name') === procdata.app_name;});
+  if (!app) {return;}
 
-  var swarm = app.swarms.find(function(s, idx, list) {return s.get('name') === swarmName});
-  if (!swarm) { return };
+  var swarm = app.swarms.find(function(s, idx, list) {return s.get('name') === swarmName;});
+  if (!swarm) {return;}
   swarm.procs.removeByData(procdata);
 
   // If the swarm now has no procs, remove from dashboard
@@ -57,7 +56,7 @@ VR.Dash.removeProc = function(procdata) {
   if (app.swarms.length === 0) {
     VR.Dash.Apps.remove(app);
   }
-}
+};
 
 VR.Dash.onHostChange = function(e) {
   // when we get a host change event from the SSE stream, parse its JSON and

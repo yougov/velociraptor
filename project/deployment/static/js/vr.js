@@ -4,6 +4,7 @@
 // This VR object is the only thing that Velociraptor puts in the global
 // namespace.  All our other code should be nested under here.
 VR = {};
+VR.Models = {};
 VR.Views = {};
 
 // VR.Urls contains data and functions for getting urls to the Velociraptor
@@ -57,6 +58,11 @@ VR.Urls = {
       // nested inside the Tastypie API, so they have a different url
       // pattern.
       return VR.Urls.getTasty('hosts', hostname) + 'procs/' + procname + '/';
+  },
+
+  getProcLog: function(hostname, procname) {
+      // proc logs are served as SSE streams in /api/streams/
+      return '/api/streams/proc_log/' + hostname + '/' + procname + '/';
   }
   // XXX: Additional routes for event streams are added to VR.Urls in
   // base.html, where we can pull URLs out of Django by using {% url ... %}.
@@ -68,9 +74,6 @@ VR.Urls = {
 // comes in on an API or event stream.
 VR.Messages = {};
 _.extend(VR.Messages, Backbone.Events);
-
-// All Backbone models should be stored on VR.Models.
-VR.Models = {};
 
 
 // Base model for all models that talk to the Tastypie API. This includes
@@ -87,9 +90,11 @@ VR.Models.Proc = Backbone.Model.extend({
       this.on('change', this.updateUrl);
       VR.Messages.on('change:' + this.id, this.set, this);
     },
+
     url: function() {
       return VR.Urls.getProc(this.get('host'), this.get('name'));
     },
+
     doAction: function(action) {
       var proc = this;
       $.ajax({
@@ -102,16 +107,50 @@ VR.Models.Proc = Backbone.Model.extend({
         dataType: 'json'
       });    
     },
+
     stop: function() { this.doAction('stop'); },
+
     start: function() { this.doAction('start'); },
+
     restart: function() { this.doAction('restart'); },
 
-    isRunning: function() {return this.get('statename') == 'RUNNING'},
+    isRunning: function() {return this.get('statename') == 'RUNNING';},
+
     isStopped: function() {
       var state = this.get('statename');
       return state === 'STOPPED' || state === 'FATAL';
+    },
+
+    getLog: function() {
+      // return a ProcLog model bound to this Proc model.
+      return new VR.Models.ProcLog({proc: this});
     }
 });
+
+
+VR.Models.ProcLog = Backbone.Model.extend({
+    // Should be initialized with {proc: <proc object>}
+    initialize: function(data) {
+      this.proc = data.proc;
+      this.url = VR.Urls.getProcLog(this.proc.get('host'), this.proc.get('name'));
+      this.lines = [];
+    },
+
+    connect: function() {
+      this.eventsource = new EventSource(this.url);
+      this.eventsource.onmessage = $.proxy(this.onmessage, this);
+    },
+
+    disconnect: function() {
+      this.eventsource.close();
+    },
+
+    onmessage: function(msg) {
+      this.lines.push(msg.data);
+      this.trigger('add', msg.data);
+    }
+});
+
 
 
 VR.Models.ProcList = Backbone.Collection.extend({
@@ -393,43 +432,117 @@ VR.Views.Proc = Backbone.View.extend({
 
 
 VR.Views.ProcModal = Backbone.View.extend({
-    initialize: function(proc, template) {
+    initialize: function(proc) {
       this.proc = proc;
-      this.template = template || VR.Templates.ProcModal;
       this.proc.on('change', this.render, this);
       this.proc.on('destroy', this.onProcDestroy, this);
       this.proc.on('remove', this.onProcDestroy, this);
+      this.fresh = true;
+      this.$el.on('shown', $.proxy(this.onShown, this));
+      this.$el.on('hidden', $.proxy(this.onHidden, this));
     },
+
     render: function() {
-      this.$el.html(this.template.goatee(this.proc.toJSON()));
+      // this render function is careful not to do a whole repaint, because
+      // that would mean that you'd lose your selection if you're trying to
+      // copy/paste from the streaming log section.  That'd be annoying!
+
+      var data = this.proc.toJSON();
+
+      if (this.fresh) {
+        // only do a whole render the first time.  After that just update the
+        // bits that have changed.
+        this.$el.html(VR.Templates.ProcModal.goatee(data));
+        this.fresh = false;
+      }
+      
+      // insert/update details table.
+      var detailsRows = VR.Templates.ProcModalRows.goatee(data);
+      this.$el.find('.proc-details-table').html(detailsRows);
+
+      // insert/update buttons
+      var detailsButtons = VR.Templates.ProcModalButtons.goatee(data);
+      this.$el.find('.modal-footer').html(detailsButtons);
     },
+
     events: {
       'click .proc-start': 'onStartBtn',
       'click .proc-stop': 'onStopBtn',
       'click .proc-restart': 'onRestartBtn',
       'click .proc-destroy': 'onDestroyBtn'
     },
+
     show: function() {
       this.render();
       this.$el.modal('show');
+      this.trigger('show');
     },
+
+    onShown: function() {
+      // show streaming logs
+      this.log = this.proc.getLog();
+      var logContainer = this.$el.find('.proc-log');
+      logContainer.html('');
+      this.logview = new VR.Views.ProcLog(this.log, logContainer);
+      this.log.connect();
+    },
+
+    onHidden: function() {
+      // stop the log stream.
+      this.log.disconnect();
+    },
+
     onStartBtn: function(ev) {
       this.proc.start();
     },
+
     onStopBtn: function(ev) {
       this.proc.stop();
     },
+
     onRestartBtn: function(ev) {
       this.proc.restart();
     },
+
     onDestroyBtn: function(ev) {
       this.proc.destroy();
     },
+
     onProcDestroy: function() {
       this.$el.modal('hide');
       this.$el.remove();
     }
 });
+
+
+VR.Views.ProcLog = Backbone.View.extend({
+    initialize: function(proclog, container) {
+      this.log = proclog;
+      this.container = container;
+      this.log.on('add', this.onmessage, this);
+      this.render();
+    },
+
+    render: function() {
+      this.container.append(this.el);
+    },
+
+    onmessage: function(line) {
+      var node = $('<div />');
+      node.text(line);
+      this.$el.append(node);
+      // set scroll to bottom of div.
+      var height = this.container[0].scrollHeight;
+      this.container.scrollTop(height);
+    },
+
+    clear: function() {
+      // stop listening for model changes
+      this.log.off('add', this.onmessage, this);
+      // clean out lines
+      this.lines = [];
+    }
+}); 
 
 
 VR.Views.Host = Backbone.View.extend({
@@ -763,6 +876,7 @@ VR.Events = {
     }
   }
 };
+
 
 
 // Util

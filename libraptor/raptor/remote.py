@@ -95,14 +95,17 @@ def get_template(name):
     return os.path.join(here, 'templates', name)
 
 
-class Deployment(object):
-    def __init__(self, release_name, proc, port, user, use_syslog, contain):
+class Deployer(object):
+    mountpoints = []
+    lxc_config_template = None
+    start_script_template = 'start_proc.sh'
+
+    def __init__(self, release_name, proc, port, user, use_syslog):
         self.release_name = release_name
         self.proc = proc
         self.port = port
         self.user = user
         self.use_syslog = use_syslog
-        self.contain = contain
         self.proc_name = '-'.join([release_name, proc, str(port)])
         self.proc_path = posixpath.join(PROCS_ROOT, self.proc_name)
         self.proc_tmp_path = posixpath.join(self.proc_path, 'tmp')
@@ -112,28 +115,32 @@ class Deployment(object):
                                                  "settings.yaml")
         self.proc_line = self.get_proc_line()
 
-    def run(self):
-
+    def configure_proc(self):
         sudo('mkdir -p ' + self.proc_path)
 
         self.write_proc_conf()
+        self.write_proc_lxc()
         self.write_start_proc_sh()
         self.create_proc_tmpdir()
         self.upload_uptester()
 
-        if self.contain:
-            # Make container mount points.  lxc will handle the actual mounts,
-            # but we need to make the mount points.
-            mountpoints = ('/app', '/bin', '/dev', '/etc', '/lib', '/lib64',
-                           '/opt', '/usr', '/proc', '/sys', '/dev/pts',
-                           '/dev/shm')
-            for m in mountpoints:
-                sudo('mkdir -p %s%s' % (self.proc_path, m))
+        self.create_mount_points()
 
+    def run(self):
+        self.configure_proc()
+        self.reload_supervisor()
+
+    def reload_supervisor(self):
         # For this to work, the host must have PROCS_ROOT/*/proc.conf in
         # the files include line in the main supervisord.conf
         sudo('supervisorctl reread')
         sudo('supervisorctl add ' + self.proc_name)
+
+    def create_mount_points(self):
+        # Make container mount points.  lxc will handle the actual mounts,
+        # but we need to make the folders.
+        for m in self.mountpoints:
+            sudo('mkdir -p %s%s' % (self.proc_path, m))
 
     def write_proc_conf(self):
         if self.use_syslog:
@@ -146,7 +153,7 @@ class Deployment(object):
             'port': self.port,
             'proc_path': self.proc_path,
             'stdout_log': stdout_log,
-            'user': 'root' if self.contain else self.user,
+            'user': self.get_proc_conf_user(),
             'release_path': self.release_path,
         }
         proc_conf_tmpl = get_template('proc.conf')
@@ -154,22 +161,22 @@ class Deployment(object):
         files.upload_template(proc_conf_tmpl, remote_supd, proc_conf_vars,
                               use_sudo=True)
 
-    def write_start_proc_sh(self):
-        if self.contain:
-            sh_script = get_template('start_contained.sh')
-            # write the lxc config.
-            lxc_tmpl = get_template('proc.lxc')
+    def write_proc_lxc(self):
+        # write the lxc config.
+        if self.lxc_config_template:
+            lxc_tmpl = get_template(self.lxc_config_template)
             remote_lxc_path = posixpath.join(self.proc_path, 'proc.lxc')
             files.upload_template(lxc_tmpl, remote_lxc_path, {
                 'proc_path': self.proc_path,
                 'release_path': self.release_path,
             }, use_sudo=True)
-        else:
-            sh_script = get_template('start_proc.sh')
+
+    def write_start_proc_sh(self):
+        sh_script = get_template(self.start_script_template)
 
         sh_remote = posixpath.join(self.proc_path, 'start_proc.sh')
         files.upload_template(sh_script, sh_remote, {
-            'envsh_path': '/app/env.sh' if self.contain else self.envsh_path,
+            'envsh_path': self.envsh_path,
             'settings_path': self.release_path + "/settings.yaml",
             'port': self.port,
             'cmd': self.proc_line,
@@ -179,6 +186,12 @@ class Deployment(object):
             'user': self.user,
         }, use_sudo=True)
         sudo('chmod +x %s' % sh_remote)
+
+    def get_proc_conf_user(self):
+        # Uncontained procs are just executed by Supervisor directly, so
+        # proc.conf needs to be configured with the real username that we want
+        # to run as
+        return self.user
 
     def create_proc_tmpdir(self):
         # Create a place for the proc to stick temporary files if it needs to.
@@ -217,12 +230,65 @@ class Deployment(object):
         sudo('chmod +x %s' % remote_path)
 
 
+class ContainedDeployer(Deployer):
+    start_script_template = 'start_contained.sh'
+
+    def get_proc_conf_user(self):
+        # Contained procs will be started by Supervisor as root, and then su to
+        # be the configured user once inside the container.
+        return 'root'
+
+
+class LucidDeployer(ContainedDeployer):
+    mountpoints = ('/app',
+                   '/bin',
+                   '/dev',
+                   '/etc',
+                   '/lib',
+                   '/lib64',
+                   '/opt',
+                   '/usr',
+                   '/proc',
+                   '/sys',
+                   '/dev/pts',
+                   '/dev/shm')
+
+    lxc_config_template = 'lucid.lxc'
+
+
+class PreciseDeployer(ContainedDeployer):
+    mountpoints = ('/app',
+                   '/bin',
+                   '/dev',
+                   '/etc',
+                   '/lib',
+                   '/lib64',
+                   '/opt',
+                   '/usr',
+                   '/proc',
+                   '/run',
+                   '/sys',
+                   '/dev/pts',)
+                   #'/run/shm')
+
+    lxc_config_template = 'precise.lxc'
+
+
 @task
 def configure_proc(release_name, proc, port, user='nobody', use_syslog=False,
                    contain=False):
-
-    d = Deployment(release_name, proc, port, user, use_syslog, contain)
-    d.run()
+    if not contain:
+        d = Deployer
+    else:
+        issue = sudo('cat /etc/issue')
+        if '10.04' in issue:
+            d = LucidDeployer
+        elif '12.04' in issue:
+            d = PreciseDeployer
+        else:
+            raise ValueError("Could not determine deployer type for %s" %
+                             issue)
+    d(release_name, proc, port, user, use_syslog).run()
 
 
 @task
