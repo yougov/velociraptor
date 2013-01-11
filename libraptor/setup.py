@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='raptor',
-    version='2.6',
+    version='2.7',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
     packages=find_packages(),
