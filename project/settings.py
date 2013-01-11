@@ -270,7 +270,7 @@ SUPERVISORD_WEB_PORT = 9001
 # celerybeat proc will run a task every day to clean up old builds.  Regardless
 # of the date cutoff, builds that are currently in use will be kept around, as
 # well as the N most recent builds up to BUILD_EXPIRATION_COUNT.
-BUILD_EXPIRATION_DAYS = None
+BUILD_EXPIRATION_DAYS = 30
 BUILD_EXPIRATION_COUNT = 10
 
 # Allow production to override these settings.

@@ -26,6 +26,8 @@ urlpatterns = patterns('',
     url(r'^log/$', ListView.as_view(model=DeploymentLogEntry,
                                     template_name='log.html'), name='log'),
     url(r'^log/rss/$', DeploymentLogFeed(), name='log_rss'),
+    url(r'^proclog/(?P<hostname>[a-zA-Z0-9_.-]+)/(?P<procname>[a-zA-Z0-9_.-]+)/$',
+        'deployment.views.proclog', name='proclog'),
 
     # Preview for Recipes configs
     url(r'^preview_recipe/(?P<recipe_id>\d+)/$',

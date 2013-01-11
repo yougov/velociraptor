@@ -690,8 +690,13 @@ def clean_old_builds():
         all_procs = set()
         for host in Host.objects.filter(active=True):
             all_procs.update(host.get_procs())
-        builds_in_use = {p.build for p in all_procs if p.build is not
-                         None}
+
+        builds_in_use = set()
+        for p in all_procs:
+            rs = Release.objects.filter(hash=proc.hash)
+            if rs:
+                builds_in_use.add(rs[0].build)
+        print "builds in use", builds_in_use
         old_builds.difference_update(builds_in_use)
 
         # Filter out any builds that are still within BUILD_EXPIRATION_COUNT

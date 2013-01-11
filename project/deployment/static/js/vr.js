@@ -63,6 +63,10 @@ VR.Urls = {
   getProcLog: function(hostname, procname) {
       // proc logs are served as SSE streams in /api/streams/
       return '/api/streams/proc_log/' + hostname + '/' + procname + '/';
+  },
+
+  getProcLogView: function(hostname, procname) {
+      return '/proclog/' + hostname + '/' + procname + '/';
   }
   // XXX: Additional routes for event streams are added to VR.Urls in
   // base.html, where we can pull URLs out of Django by using {% url ... %}.
@@ -434,10 +438,10 @@ VR.Views.Proc = Backbone.View.extend({
 VR.Views.ProcModal = Backbone.View.extend({
     initialize: function(proc) {
       this.proc = proc;
+      this.fresh = true;
       this.proc.on('change', this.render, this);
       this.proc.on('destroy', this.onProcDestroy, this);
       this.proc.on('remove', this.onProcDestroy, this);
-      this.fresh = true;
       this.$el.on('shown', $.proxy(this.onShown, this));
       this.$el.on('hidden', $.proxy(this.onHidden, this));
     },
@@ -448,6 +452,8 @@ VR.Views.ProcModal = Backbone.View.extend({
       // copy/paste from the streaming log section.  That'd be annoying!
 
       var data = this.proc.toJSON();
+      data.logs_uri = VR.Urls.getProcLog(data.host, data.name);
+      data.logs_view_uri = VR.Urls.getProcLogView(data.host, data.name);
 
       if (this.fresh) {
         // only do a whole render the first time.  After that just update the
@@ -516,9 +522,13 @@ VR.Views.ProcModal = Backbone.View.extend({
 
 
 VR.Views.ProcLog = Backbone.View.extend({
-    initialize: function(proclog, container) {
+    initialize: function(proclog, container, scrollContainer) {
       this.log = proclog;
       this.container = container;
+
+      // optionally allow passing in a different element to be scrolled.
+      this.scrollContainer = scrollContainer || container;
+
       this.log.on('add', this.onmessage, this);
       this.render();
     },
@@ -532,8 +542,8 @@ VR.Views.ProcLog = Backbone.View.extend({
       node.text(line);
       this.$el.append(node);
       // set scroll to bottom of div.
-      var height = this.container[0].scrollHeight;
-      this.container.scrollTop(height);
+      var height = this.scrollContainer[0].scrollHeight;
+      this.scrollContainer.scrollTop(height);
     },
 
     clear: function() {

@@ -95,6 +95,10 @@ def deploy(request):
     return render(request, 'basic_form.html', vars())
 
 
+@login_required
+def proclog(request, hostname, procname):
+    return render(request, 'proclog.html', vars())
+
 
 @login_required
 def edit_swarm(request, swarm_id=None):
