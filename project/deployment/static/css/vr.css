@@ -100,7 +100,8 @@ th {
 }
 
 .proc-log {
-  max-height: 120px;
+  /* the tallest we can go before there's a scroll box in the main modal */
+  height: 98px;
   overflow: auto;
   font-family: Monaco, Menlo, Consolas, 'Courier New', monospace;
   font-size: 10px;
