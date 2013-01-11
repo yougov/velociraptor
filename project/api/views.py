@@ -196,7 +196,10 @@ class ProcTailer(object):
         return head + '\n'
 
     def close(self):
-        self.resp.raw._pool.close()
+        # Close the connection
+        self.resp.raw._fp.close()
+        # Release the connection from the pool
+        self.resp.raw.release_conn()
 
 
 class SSETailer(ProcTailer):
