@@ -171,16 +171,17 @@ Date.prototype.format = function (mask, utc) {
 // A little hackishness to set up the swarm dropdown in the nav.
 $(function() {
 
-    var ESCAPE = 27;
+    var ESCAPE = 27, UP = 38, DOWN = 40, ENTER = 13;
 
     // filter-as-you-type on swarm dropdown in nav.
-    $('#swarm-filter').on('keyup', function(ev) {
-        var txt = $(this).val();
-        if (ev.keyCode == ESCAPE) {
-            $(this).parent('.dropdown-menu').hide();
-        } 
+    var swarmInput = $('#swarm-filter');
+    //swarmInput.on('keyup', function(ev) {
+    //});
 
-        $('#swarmlist li').each(function(idx, el) {
+    var hideByStart = function(els, txt) {
+      // take a jquery selector of elements.  Hide all the ones that don't
+      // start with "start", and show all the rest.
+      els.each(function(idx, el) {
             el = $(el);
             if (el.attr('rel').indexOf(txt.toLowerCase()) > -1) {
                 el.show();
@@ -188,7 +189,40 @@ $(function() {
                 el.hide();
             }
         });
-    });
+
+      return els.filter(':visible');
+    };
+
+    // listen for keyboard up/down and highlight results.
+    swarmInput.on('keyup', function(ev) {
+        if (ev.keyCode === ESCAPE) {
+            $(this).parent('.dropdown-menu').hide();
+            return;
+        } 
+        var txt = $(this).val();
+        var visible = hideByStart($('#swarmlist li'), txt);
+        var selectedLi = visible.filter('[class*="active"]');
+
+        if (ev.keyCode === DOWN) {
+            if (selectedLi.length) {
+              selectedLi.next('li').addClass('active');
+              selectedLi.removeClass('active');
+            } else {
+                visible.filter(':first').addClass('active');
+            }
+        }
+        if (ev.keyCode === UP) {
+            if (selectedLi.length) {
+                selectedLi.prev('li').addClass('active');
+                selectedLi.removeClass('active');
+            }
+        }
+        if (ev.keyCode === ENTER) {
+            if (selectedLi.length) {
+                window.location.href = selectedLi.find('a').attr('href');
+            }
+        }
+    });  
 
     // replace bootstrap dropdown behavior with our own, since we customized it
     // with a type filter.

@@ -72,7 +72,9 @@
                       <ul id="swarmlist">
                           <li rel="new_swarm"><a href="{% url new_swarm %}">New</a></li>
                           {% for swarm in swarms %}
-                          <li rel="{{ swarm.shortname.lower }}"><a href="{% url edit_swarm swarm.id %}">{{ swarm.shortname }}</a></li>
+                          <li rel="{{ swarm.shortname.lower }}">
+                            <a href="{% url edit_swarm swarm.id %}">{{ swarm.shortname }}</a>
+                          </li>
                           {% endfor %}
                       <ul>
                   </div>

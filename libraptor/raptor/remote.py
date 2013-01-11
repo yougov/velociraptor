@@ -22,10 +22,6 @@ from fabric import colors
 
 from raptor.models import Proc
 
-# TODO: Change these to /apps/ so that we don't have YG-isms in the code and
-# can more safely bind-mount /opt into app environments.  It's tricky, because
-# cleanup code will have to check both the old and new locations when it runs.
-# OR we do a one-time migration.
 PROCS_ROOT = '/apps/procs'
 RELEASES_ROOT = '/apps/releases'
 
@@ -38,8 +34,6 @@ LEGACY_RELEASES_ROOT = '/opt/yg/releases'
 
 @task
 def upload_release(build_path, config_path, release_path, envsh_path, user='nobody'):
-    # TODO: accept env_path that points to an env.sh file that can be sourced
-    # by the proc at startup to provide env vars.
 
     remote_procfile = posixpath.join(release_path, 'Procfile')
 
@@ -130,6 +124,24 @@ class Deployer(object):
         self.configure_proc()
         self.reload_supervisor()
 
+    def get_paths(self):
+        """
+        Return a dictionary of paths to be used when writing the proc config.
+        Must include keys for 'home', 'tmp', 'settings', and 'envsh'.
+        """
+        return {
+            'home': self.proc_tmp_path,
+            'tmp': self.proc_tmp_path,
+            'settings': self.yaml_settings_path,
+            'envsh': self.envsh_path,
+        }
+
+    def get_start_cmd(self):
+        """
+        Return the command that should be run to actually start up the process.
+        """
+        return 'exec %s' % self.proc_line
+
     def reload_supervisor(self):
         # For this to work, the host must have PROCS_ROOT/*/proc.conf in
         # the files include line in the main supervisord.conf
@@ -172,19 +184,17 @@ class Deployer(object):
             }, use_sudo=True)
 
     def write_start_proc_sh(self):
-        sh_script = get_template(self.start_script_template)
+        sh_script = get_template('start_proc.sh')
 
         sh_remote = posixpath.join(self.proc_path, 'start_proc.sh')
-        files.upload_template(sh_script, sh_remote, {
-            'envsh_path': self.envsh_path,
-            'settings_path': self.release_path + "/settings.yaml",
-            'port': self.port,
-            'cmd': self.proc_line,
-            'tmpdir': self.proc_tmp_path,
-            'proc_name': self.proc_name,
-            'procs_root': PROCS_ROOT,
-            'user': self.user,
-        }, use_sudo=True)
+
+        # The start_proc.sh template needs to be fed some paths, as well as a
+        # port and the command to be launched
+        tmpl_data = self.get_paths()
+        tmpl_data['cmd'] = self.get_start_cmd()
+        tmpl_data['port'] = self.port
+
+        files.upload_template(sh_script, sh_remote, tmpl_data, use_sudo=True)
         sudo('chmod +x %s' % sh_remote)
 
     def get_proc_conf_user(self):
@@ -237,6 +247,36 @@ class ContainedDeployer(Deployer):
         # Contained procs will be started by Supervisor as root, and then su to
         # be the configured user once inside the container.
         return 'root'
+
+    def get_paths(self):
+        """
+        Return a dictionary of paths to be used when writing the proc config.
+        Must include keys for 'home', 'tmp', 'settings', and 'envsh'.
+        """
+        # In a container, these paths are always the same.
+        return {
+            'home': '/tmp',
+            'tmp': '/tmp',
+            'settings': '/app/settings.yaml',
+            'envsh': '/app/env.sh',
+        }
+
+    def get_start_cmd(self):
+        inner_cmd = self.proc_line
+        container_name = self.proc_name
+        lxc_config_path = posixpath.join(self.proc_path, 'proc.lxc')
+        return build_container_cmd(inner_cmd, self.user, container_name,
+                                   lxc_config_path)
+
+
+def build_container_cmd(cmd, user, container_name, lxc_config_path):
+    """
+    Build up the shell command needed to launch a program inside a container.
+    This is used both in deployments and launching the uptester.
+    """
+    tmpl = """exec lxc-start --name %(container_name)s -f %(lxc_config_path)s -- su --preserve-environment --shell /bin/bash -c "cd /app;source /app/env.sh; exec %(cmd)s" %(user)s"""
+    return tmpl % vars()
+
 
 
 class LucidDeployer(ContainedDeployer):
@@ -331,15 +371,14 @@ def build_contained_uptests_command(proc_path, proc, host, port, user):
     Build the command string for uptesting the given proc inside its lxc
     container.
     """
-    tmpl = """lxc-start --name %(procname)s-uptest -f %(lxc_config)s -- su --preserve-environment -c "cd /app;source /app/env.sh; exec /uptester %(folder)s %(host)s %(port)s" %(user)s"""
-    return tmpl % {
-        'procname': posixpath.basename(proc_path),
-        'lxc_config': posixpath.join(proc_path, 'proc.lxc'),
+    cmd = "/uptester %(folder)s %(host)s %(port)s" % {
         'folder': posixpath.join('/app/uptests', proc),
         'host': host,
         'port': port,
-        'user': user,
     }
+    container_name = posixpath.basename(proc_path) + '-uptest'
+    lxc_config_path = posixpath.join(proc_path, 'proc.lxc')
+    return build_container_cmd(cmd, user, container_name, lxc_config_path)
 
 
 def build_uncontained_uptests_command(release_path, proc_path, proc, host,
