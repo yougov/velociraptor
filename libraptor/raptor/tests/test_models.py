@@ -145,12 +145,13 @@ class RedisCacheTests(unittest.TestCase):
     def setUp(self):
         self.server = FakeRPC()
         self.supervisor = self.server.supervisor
-        self.redis = redis.StrictRedis(**parse_redis_url('redis://localhost:6379/0'))
+        self.redis = redis.StrictRedis(**parse_redis_url('redis://localhost:6379/15'))
         self.host = Host('somewhere', self.server,
                          redis_or_url=self.redis)
 
     def tearDown(self):
-        self.redis.delete(self.host.cache_key)
+        # self.redis.delete(self.host.cache_key)
+        pass
 
     def test_proc_get_cache_set(self):
         # Ensure that single-proc data fetched from host is saved to cache
@@ -163,7 +164,6 @@ class RedisCacheTests(unittest.TestCase):
         self.host.get_procs(check_cache=True)
         cached = self.redis.hgetall(self.host.cache_key)
         parsed = {k: json.loads(v) for k, v in cached.items()}
-        parsed.pop('__full__')
         assert parsed == self.supervisor.process_info
 
     def test_get_procs_uses_cache(self):
@@ -181,18 +181,10 @@ class RedisCacheTests(unittest.TestCase):
     def test_full_set_partial_get(self):
         # Ensure that data cached from a full get is used when just requesting
         # a single proc
-        self.host.get_procs(check_cache=True)
+        procs = self.host.get_procs(check_cache=True)
         # If we actually hit the RPC, an exception will be raised
         self.supervisor.exception = AssertionError('cache not used')
         self.host.get_proc('dummyproc', check_cache=True)
-
-    def test_partial_set_full_get(self):
-        # Ensure that the cache is only used to return full proc data if it's
-        # been populated by a full (not just partial) fetch.
-        self.host.get_proc('dummyproc', check_cache=True)
-        self.supervisor.exception = AssertionError('Supervisor called')
-        with pytest.raises(AssertionError):
-            self.host.get_procs(check_cache=True)
 
     def test_absent_proc_decached(self):
         # Test that if a proc is in the cache but not returned from the host
@@ -212,12 +204,3 @@ class RedisCacheTests(unittest.TestCase):
     def test_nonexistent_proc_raises_proc_error(self):
         with pytest.raises(ProcError):
             self.host.get_proc('nonexistent')
-
-    def test_get_proc_cache_notfull(self):
-        self.host.get_proc('dummyproc')
-        assert self.redis.hget(self.host.cache_key, '__full__') == '0'
-
-    def test_get_procs_cache_full(self):
-        self.host.get_procs()
-        assert self.redis.hget(self.host.cache_key, '__full__') == '1'
-

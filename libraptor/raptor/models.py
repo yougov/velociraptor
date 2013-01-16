@@ -31,7 +31,7 @@ class Host(object):
     """
     def __init__(self, name, rpc_or_port=9001, supervisor_username=None,
                  supervisor_password=None, redis_or_url=None,
-                 redis_cache_prefix='host_procs_', redis_cache_lifetime=600):
+                 redis_cache_prefix='host_procs', redis_cache_lifetime=600):
         self.name = name
         self.username = supervisor_username
         self.password = supervisor_password
@@ -54,72 +54,57 @@ class Host(object):
             self.redis = redis.StrictRedis(**parse_redis_url(redis_or_url))
         else:
             self.redis = None
-        self.cache_key = redis_cache_prefix + name
+        self.cache_key = ':'.join([redis_cache_prefix, name])
         self.cache_lifetime = redis_cache_lifetime
-
-    def _get_and_cache_proc(self, name):
-        try:
-            data = self.supervisor.getProcessInfo(name)
-        except xmlrpclib.Fault as e:
-            if e.faultCode == 10: # BAD_NAME
-                # xmlrpclib exceptions are ugly and uninformative.  We can do
-                # better.
-                raise ProcError('host %s has no proc named %s' % (self.name, name))
-            raise
-        if self.redis:
-            self.cache_proc(data)
-        return data
 
     def get_proc(self, name, check_cache=False):
         if check_cache:
             # Note that if self.redis=None, and check_cache=True, an
             # AttributeError will be raised.
-            raw = self.redis.hget(self.cache_key, name)
-            if raw:
-                data = json.loads(raw)
+            cached_json = self.redis.hget(self.cache_key, name)
+            if cached_json:
+                return Proc(self, json.loads(cached_json))
             else:
-                data = self._get_and_cache_procs(name)
+                procs_dict = self._get_and_cache_procs()
         else:
-            data = self._get_and_cache_procs(name)
+            procs_dict = self._get_and_cache_procs()
 
-        data = {d['name']: json.dumps(d) for d in data_list}
-        return Proc(self, data)
+        if name in procs_dict:
+            return Proc(self, procs_dict[name])
+        else:
+            raise ProcError('host %s has no proc named %s' % (self.name, name))
+
 
     def _get_and_cache_procs(self):
-        all_data = self.supervisor.getAllProcessInfo()
+        proc_list = self.supervisor.getAllProcessInfo()
+        # getAllProcessInfo returns a list of dicts.  Reshape that into a dict
+        # of dicts, keyed by proc name.
+        proc_dict = {d['name']: d for d in proc_list}
         if self.redis:
-            self.cache_procs(all_data)
-        return all_data
+            # Use pipeline to do hash clear, set, and expiration in same redis call
+            with self.redis.pipeline() as pipe:
+
+                # First clear all existing data in the hash
+                pipe.delete(self.cache_key)
+                # Now set all the hash values, dumped to json.
+                dumped = {d: json.dumps(proc_dict[d]) for d in proc_dict}
+                pipe.hmset(self.cache_key, dumped)
+                pipe.expire(self.cache_key, self.cache_lifetime)
+                pipe.execute()
+
+        return proc_dict
 
     def get_procs(self, check_cache=False):
         if check_cache:
             unparsed = self.redis.hgetall(self.cache_key)
             if unparsed:
-                all_data = [json.loads(v) for v in unparsed.values()]
+                all_data = {v: json.loads(v) for v in unparsed.values()}
             else:
                 all_data = self._get_and_cache_procs()
         else:
             all_data = self._get_and_cache_procs()
 
-        return [Proc(self, d) for d in all_data]
-
-    def cache_procs(self, proc_dict):
-        """
-        Cache all process data for a host. Accepts a dict of dicts, where each
-        inner dict is structured like one returned from
-        supervisor.getProcessInfo or getAllProcessInfo, and caches that in a
-        Redis hash keyed by the name of each of the host's processes.
-        """
-
-        # Use pipeline to do hash clear, set, and expiration in same redis call
-        with self.redis.pipeline() as pipe:
-
-            # First clear all existing data in the hash
-            pipe.delete(self.cache_key)
-            # Now set all the hash values
-            pipe.hmset(self.cache_key, proc_dict)
-            pipe.expire(self.cache_key, self.cache_lifetime)
-            pipe.execute()
+        return [Proc(self, all_data[d]) for d in all_data]
 
     def shortname(self):
         return self.name.split(".")[0]
