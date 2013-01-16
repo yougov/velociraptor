@@ -136,7 +136,7 @@ CELERYBEAT_SCHEDULE = {
     },
     'clean_old_builds': {
         'task': 'deployment.tasks.clean_old_builds',
-        'schedule': crontab(hour=2),
+        'schedule': crontab(hour=2, minute=0),
         'options': {
             'expires': 120,
         },
