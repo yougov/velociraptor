@@ -78,10 +78,11 @@ class Host(object):
             if raw:
                 data = json.loads(raw)
             else:
-                data = self._get_and_cache_proc(name)
+                data = self._get_and_cache_procs(name)
         else:
-            data = self._get_and_cache_proc(name)
+            data = self._get_and_cache_procs(name)
 
+        data = {d['name']: json.dumps(d) for d in data_list}
         return Proc(self, data)
 
     def _get_and_cache_procs(self):
@@ -93,7 +94,7 @@ class Host(object):
     def get_procs(self, check_cache=False):
         if check_cache:
             unparsed = self.redis.hgetall(self.cache_key)
-            if unparsed and unparsed.pop('__full__', None) == '1':
+            if unparsed:
                 all_data = [json.loads(v) for v in unparsed.values()]
             else:
                 all_data = self._get_and_cache_procs()
@@ -102,36 +103,13 @@ class Host(object):
 
         return [Proc(self, d) for d in all_data]
 
-    def cache_proc(self, data):
+    def cache_procs(self, proc_dict):
         """
-        Cache data for a given proc.  Accepts a dictionary like that returned
-        from the Supevisor getProcessInfo call, and caches that inside a
-        per-host hash, using the proc name as the key, and the data dict as the
-        value.
+        Cache all process data for a host. Accepts a dict of dicts, where each
+        inner dict is structured like one returned from
+        supervisor.getProcessInfo or getAllProcessInfo, and caches that in a
+        Redis hash keyed by the name of each of the host's processes.
         """
-
-        # Using a pipeline here is not strictly necessary, but it turns 3 round
-        # trips into 1
-        with self.redis.pipeline() as pipe:
-
-            pipe.hset(self.cache_key, data['name'], json.dumps(data))
-
-            # We don't want to rely on the cache for a get_procs() if it's only
-            # been hydrated by a single get_proc.  So set a flag in the hash to
-            # indicate that get_procs should call Supervisor.  Use hsetnx so we
-            # only set that value if it's not already been set.
-            pipe.hsetnx(self.cache_key, '__full__', '0')
-            pipe.expire(self.cache_key, self.cache_lifetime)
-            pipe.execute()
-
-    def cache_procs(self, data_list):
-        """
-        Cache all process data for a host.  Accepts a list of dictionaries like
-        that returned from the Supervisor getAllProcessInfo call, and caches
-        that in a Redis hash keyed by the name of each of the host's processes.
-        """
-        data = {d['name']: json.dumps(d) for d in data_list}
-        data['__full__'] = '1'
 
         # Use pipeline to do hash clear, set, and expiration in same redis call
         with self.redis.pipeline() as pipe:
@@ -139,7 +117,7 @@ class Host(object):
             # First clear all existing data in the hash
             pipe.delete(self.cache_key)
             # Now set all the hash values
-            pipe.hmset(self.cache_key, data)
+            pipe.hmset(self.cache_key, proc_dict)
             pipe.expire(self.cache_key, self.cache_lifetime)
             pipe.execute()
 

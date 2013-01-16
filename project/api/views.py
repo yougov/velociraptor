@@ -181,7 +181,7 @@ class ProcTailer(object):
     def _connect(self):
         url = 'http://%s:%s/logtail/%s' % (self.hostname, self.port, self.procname)
 
-        self.resp = requests.get(url, prefetch=False)
+        self.resp = requests.get(url, stream=True)
         self.resp.raise_for_status()
 
     def __iter__(self):

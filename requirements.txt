@@ -19,7 +19,7 @@ paramiko==1.8.0
 psycopg2==2.4.4
 pymongo==2.1.1
 redis==2.6.2
-requests==0.14.2
+requests==1.0.4
 South==0.7.6
 sseclient==0.0.3
 yg.ldap==2.2
