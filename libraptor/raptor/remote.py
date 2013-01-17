@@ -274,11 +274,8 @@ def build_container_cmd(cmd, user, container_name, lxc_config_path):
     Build up the shell command needed to launch a program inside a container.
     This is used both in deployments and launching the uptester.
     """
-    #tmpl = """exec lxc-start --name %(container_name)s -f %(lxc_config_path)s -- su --preserve-environment --shell /bin/bash -c "cd /app;source /app/env.sh; exec %(cmd)s" %(user)s"""
-    # XXX testing lxc-execute.
-    tmpl = """exec lxc-execute --name %(container_name)s -f %(lxc_config_path)s -- su --preserve-environment --shell /bin/bash -c "cd /app;source /app/env.sh; exec %(cmd)s" %(user)s"""
+    tmpl = """exec lxc-start --name %(container_name)s -f %(lxc_config_path)s -- su --preserve-environment --shell /bin/bash -c "cd /app;source /app/env.sh; exec %(cmd)s" %(user)s"""
     return tmpl % vars()
-
 
 
 class LucidDeployer(ContainedDeployer):
