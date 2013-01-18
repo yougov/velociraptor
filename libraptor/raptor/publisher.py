@@ -94,9 +94,6 @@ def handle_event(event, host, pubsub_channel):
 
 class Event(object):
 
-    # Subclasses should define their own more-specific event name patterns.
-    pattern = re.compile('.*')
-
     def __init__(self, headers, payload, hostname):
         # Save the raw data
         self.headers = headers
