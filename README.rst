@@ -31,9 +31,8 @@ Now go make a sandwich while you wait for the precise64 VM image to download
 
 Installation of system-level dependencies inside the VM is done automatically
 using Vagrant's Puppet provisioner.  This includes some normal apt packages,
-(curl, Vim), some from Ubuntu PPAs (Postgres 9.1 and Python 2.7), and some
-installed with pip (Mercurial and Virtualenv).  You can see the Puppet manifest
-at manifests/yhost.pp.
+(curl, Vim, Postgres), and some installed with pip (Mercurial and Virtualenv).
+You can see the Puppet manifest at puppet/manifests/vr.pp.
 
 The first time you 'vagrant up', the Puppet provisioning could take about
 5 minutes.  It will be faster on later startups, since most packages will
@@ -43,7 +42,7 @@ Once the image is all downloaded and Puppet has done its thing, type this::
 
     vagrant ssh
 
-You're now inside your new Vagrant VM!.  The Velociraptor repo will be at
+You're now inside your new Vagrant VM!  The Velociraptor repo will be at
 /vagrant.  Now make a Python virtualenv for yourself.  It will use Python 2.7
 by default.  Virtualenvwrapper_ is pre-installed to make this extra easy::
 
@@ -181,6 +180,14 @@ mustache.js_). They are defined as HTML script blocks with type "text/goatee".
 
 Velociraptor makes liberal use of jQuery_, Backbone_, and Underscore_.
 
+Contact
+~~~~~~~
+
+You can ask questions about Velociraptor here:
+
+IRC: #velociraptor on Freenode
+Google Group: https://groups.google.com/forum/?fromgroups#!forum/velociraptor-dev
+
 .. _Twelve Factor App: http://www.12factor.net/
 .. _Vagrant: http://vagrantup.com/v1/docs/getting-started/index.html
 .. _VirtualBox: http://www.virtualbox.org/wiki/Downloads
@@ -193,3 +200,4 @@ Velociraptor makes liberal use of jQuery_, Backbone_, and Underscore_.
 .. _jQuery: http://jquery.com/
 .. _Backbone: http://backbonejs.org/
 .. _Underscore: http://underscorejs.org/
+.. _Google Group: https://groups.google.com/forum/?fromgroups#!forum/velociraptor-dev

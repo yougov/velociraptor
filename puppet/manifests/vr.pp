@@ -16,7 +16,6 @@ class yhost {
 
     package {
         ruby:;
-        libevent-dev:;
         vim:;
         curl:;
         libcurl4-gnutls-dev:;
@@ -145,6 +144,7 @@ class lxc {
     automake:;
     libcap-dev:;
     libapparmor-dev:;
+    build-essential:;
   }
 
   # put the build script into /tmp
