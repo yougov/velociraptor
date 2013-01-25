@@ -19,7 +19,7 @@ Go do that now.
 You'll also need a local Mercurial workspace containing the
 G/velociraptor/ directory tree::
 
-    hg clone ssh://dev.yougov.com/G/velociraptor
+    hg clone https://bitbucket.org/yougov/velociraptor
 
 Now enter the velociraptor tree and launch vagrant::
 
@@ -169,8 +169,6 @@ in the 'deployment' app inside the 'project'.  The 'deployment' app contains
 models.py, views.py, etc.  The Celery tasks that handle actual deployment
 actions are in project/deployment/tasks.py.
 
-All the URL routes are in project/urls.py.
-
 UI
 ~~
 
@@ -180,8 +178,6 @@ VR.Dash and VR.Squad, using vrdash.js and vrsquad.js, for example.
 
 Velociraptor uses goatee.js_ templates (a Django-friendly fork of
 mustache.js_). They are defined as HTML script blocks with type "text/goatee".
-Common templates are inside deployment/templates/base.html.  More limited use
-templates are defined in their respective HTML pages.
 
 Velociraptor makes liberal use of jQuery_, Backbone_, and Underscore_.
 
