@@ -16,12 +16,11 @@ The smoothest way to get running is to start up a VM with the included
 Vagrantfile.  This requires having VirtualBox_ and Vagrant_ installed.
 Go do that now.
 
-You'll also need a local Mercurial workspace containing the
-G/velociraptor/ directory tree::
+You'll need a local clone of the Velociraptor repo::
 
     hg clone https://bitbucket.org/yougov/velociraptor
 
-Now enter the velociraptor tree and launch vagrant::
+Now enter the velociraptor folder and launch vagrant::
 
     cd velociraptor
     vagrant up
@@ -94,8 +93,7 @@ That will start the Django dev server on port 8000 and the Celery daemon.
 Now open your web browser and type in http://localhost:8000.  You should see
 Velociraptor.  (The Vagrantfile is configured to forward ports 8000-8009 to the
 VM.  If you need these ports back for other development, you can stop your
-Vagrant VM with a `vagrant halt`, run from the same location where you ran
-`vagrant up`.)
+Vagrant VM with a `vagrant halt`.)
 
 Add Metadata
 ~~~~~~~~~~~~
@@ -163,10 +161,12 @@ inside will stay in sync.
 Structure
 ~~~~~~~~~
 
-Velociraptor is a Django project, and organized as such.  Most of the code is
-in the 'deployment' app inside the 'project'.  The 'deployment' app contains
-models.py, views.py, etc.  The Celery tasks that handle actual deployment
-actions are in project/deployment/tasks.py.
+Velociraptor's code is divided between the parts that are Django-specific (the
+web and worker processes), and the supporting library that is not.
+
+The Django parts are inside the 'project' folder.  The non-Django parts are in
+the 'libraptor' folder.  This may be moved into a separate repository in the
+future.
 
 UI
 ~~
