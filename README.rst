@@ -164,7 +164,7 @@ Structure
 Velociraptor's code is divided between the parts that are Django-specific (the
 web and worker processes), and the supporting library that is not.
 
-The Django parts are inside the 'project' folder.  The non-Django parts are in
+The Django parts are inside the 'vr' folder.  The non-Django parts are in
 the 'libraptor' folder.  This may be moved into a separate repository in the
 future.
 
