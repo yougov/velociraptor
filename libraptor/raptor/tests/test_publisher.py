@@ -57,14 +57,13 @@ def test_events_cache_all_procs():
     calls = pipe.mock.mock_calls
     assert calls[0][0] == 'delete'
     cache_key, hashdict = calls[1][1]
-    assert cache_key == 'host_procs_somewhere'
-    assert hashdict.pop('__full__', None) == '1'
+    assert cache_key == 'host_procs:somewhere'
     for k in hashdict:
         assert k in ('dummyproc', 'node_example-v2-local-f96054b7-web-5003')
         # Make sure the saved values are json dicts
         procdata = json.loads(hashdict[k])
         assert isinstance(procdata, dict)
-    assert calls[2] == call.expire('host_procs_somewhere', 600)
+    assert calls[2] == call.expire('host_procs:somewhere', 600)
     assert calls[3] == call.execute()
 
 

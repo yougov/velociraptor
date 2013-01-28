@@ -3,7 +3,7 @@ import urlparse
 from django.test.client import Client
 from django.core.urlresolvers import reverse
 
-from project.tests import get_user
+from vr.tests import get_user
 
 
 def test_login_required():

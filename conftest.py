@@ -1,4 +1,4 @@
-from project.tests import dbsetup
+from vr.tests import dbsetup
 
 
 def pytest_addoption(parser):

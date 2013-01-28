@@ -3,7 +3,7 @@ import base64
 from django.test.client import Client
 from django.core.urlresolvers import reverse
 
-from project.tests import get_user
+from vr.tests import get_user
 
 
 def get_api_url(resource_name, view_name):

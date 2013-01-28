@@ -3,10 +3,9 @@ import tempfile
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from django.core.files import File
-import mock
 
-from deployment import models
-from project.tests import randchars, randurl
+from vr.deployment import models
+from vr.tests import randchars, randurl
 
 
 def test_builds_get_current():
