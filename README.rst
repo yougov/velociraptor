@@ -66,7 +66,7 @@ Postgres database used by Velociraptor::
 
 Once your database is created, you'll need to create the tables::
 
-    cd /vagrant/project
+    cd /vagrant/vr
     ./manage.py syncdb
     ./manage.py migrate
 
