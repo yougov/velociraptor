@@ -1,6 +1,6 @@
 from django.contrib.syndication.views import Feed
 
-from deployment.models import DeploymentLogEntry
+from vr.deployment.models import DeploymentLogEntry
 
 class DeploymentLogFeed(Feed):
 	title = "Deployment Log"

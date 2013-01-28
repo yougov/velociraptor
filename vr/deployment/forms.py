@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate
 
 import yaml
 
-from deployment import models
+from vr.deployment import models
 
 
 class ConfigIngredientForm(forms.ModelForm):

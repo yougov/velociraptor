@@ -55,7 +55,7 @@ DATABASES = {
 
 BALANCERS = {
     'default': {
-        'BACKEND': 'deployment.balancer.dummy.DummyBalancer',
+        'BACKEND': 'vr.deployment.balancer.dummy.DummyBalancer',
     }
 }
 
@@ -121,21 +121,21 @@ PROC_EVENTS_CHANNEL = 'proc_events'
 
 CELERYBEAT_SCHEDULE = {
     'scooper': {
-        'task': 'deployment.tasks.scooper',
+        'task': 'vr.deployment.tasks.scooper',
         'schedule': timedelta(minutes=240),
         'options': {
             'expires': 120,
         },
     },
     'test_all_the_things': {
-        'task': 'deployment.tasks.uptest_all_procs',
+        'task': 'vr.deployment.tasks.uptest_all_procs',
         'schedule': timedelta(minutes=30),
         'options': {
             'expires': 120,
         },
     },
     'clean_old_builds': {
-        'task': 'deployment.tasks.clean_old_builds',
+        'task': 'vr.deployment.tasks.clean_old_builds',
         'schedule': crontab(hour=2, minute=0),
         'options': {
             'expires': 120,
@@ -174,7 +174,7 @@ MEDIA_ROOT = os.path.join(here, 'uploads/')
 MEDIA_URL = '/uploads/'
 
 # Store files using mongodb gridfs by default.
-DEFAULT_FILE_STORAGE = 'deployment.storages.GridFSStorage'
+DEFAULT_FILE_STORAGE = 'vr.deployment.storages.GridFSStorage'
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.CachedStaticFilesStorage'
 
 STATIC_ROOT = os.path.join(here, 'static')
@@ -211,7 +211,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.static',
     'django.core.context_processors.request',
     'django.contrib.messages.context_processors.messages',
-    'deployment.context_processors.raptor',
+    'vr.deployment.context_processors.raptor',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -225,7 +225,7 @@ MIDDLEWARE_CLASSES = (
 SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
 LOGIN_URL = '/login/'
 
-ROOT_URLCONF = 'project.urls'
+ROOT_URLCONF = 'vr.urls'
 
 TEMPLATE_DIRS = (
     os.path.join(here, 'templates'),
@@ -240,8 +240,8 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'djcelery',
     'django_extensions',
-    'deployment',   # Velociraptor UI
-    'api',          # Velociraptor API
+    'vr.deployment',   # Velociraptor UI
+    'vr.api',          # Velociraptor API
     'south',
     'reversion',
 )
@@ -318,7 +318,7 @@ setup_logger()
 # cleanup if necessary.
 if BUILD_EXPIRATION_DAYS is not None:
     CELERYBEAT_SCHEDULE['build_cleanup'] = {
-        'task': 'deployment.tasks.clean_old_builds',
+        'task': 'vr.deployment.tasks.clean_old_builds',
         'schedule': timedelta(days=1),
         'options': {'expires': 120}
     }

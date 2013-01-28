@@ -11,10 +11,10 @@ from django.views.decorators.csrf import csrf_exempt
 import sseclient
 import requests
 
-from deployment import utils
-from deployment import models
-from deployment import tasks
-from deployment import events
+from vr.deployment import utils
+from vr.deployment import models
+from vr.deployment import tasks
+from vr.deployment import events
 
 
 def auth_required(view_func):

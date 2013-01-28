@@ -1,6 +1,6 @@
 from django.conf import settings
 
-from deployment.models import Swarm, Squad
+from vr.deployment.models import Swarm, Squad
 
 
 def raptor(request):

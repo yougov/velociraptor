@@ -16,8 +16,8 @@ from django.utils import timezone
 import yaml
 import redis
 
-from deployment.fields import YAMLDictField
-from deployment import events
+from vr.deployment.fields import YAMLDictField
+from vr.deployment import events
 from raptor import repo, build, models as raptor_models
 from raptor.utils import parse_redis_url
 

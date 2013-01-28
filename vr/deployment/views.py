@@ -8,7 +8,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
 
 
-from deployment import forms, tasks, models, events
+from vr.deployment import forms, tasks, models, events
 
 
 @login_required

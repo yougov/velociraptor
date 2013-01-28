@@ -69,7 +69,7 @@ def main():
 
     sys.path.insert(0, os.path.join(here, 'project'))
 
-    os.environ['DJANGO_SETTINGS_MODULE'] = 'project.settings'
+    os.environ['DJANGO_SETTINGS_MODULE'] = 'vr.settings'
     sh('python project/manage.py collectstatic --noinput')
 
     # look for static/ folder.  If found, copy each file therein into mongo

@@ -12,7 +12,7 @@ setup(
         'paramiko>=1.8.0,<2.0',
         'envoy==0.0.2',
         'suds==0.4',
-        'supervisor>=3.0b3events',
+        'supervisor==3.0b2-dev-vr1',
         'redis>=2.6.2',
         'isodate>=0.4.4',
     ],
@@ -21,6 +21,8 @@ setup(
             'proc_publisher = raptor.publisher:main',
         ]
     },
+    # Custom version of supervisor that supports proc add/delete events
+    dependency_links = ['https://bitbucket.org/yougov/velociraptor/downloads/supervisor-3.0b2-dev-vr1.tar.gz#egg=supervisor-3.0b2-dev-vr1'],
     description=('Libraries and command line tools for deploying with '
                  'Velociraptor'),
 )

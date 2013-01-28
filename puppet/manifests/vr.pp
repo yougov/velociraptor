@@ -10,7 +10,7 @@ Exec { path => '/usr/bin:/bin:/usr/sbin:/sbin' }
 # We have to update first to ensure that apt can find the
 # python-software-properties package that will then let us add PPAs
 
-class yhost {
+class vrhost {
     
     Package {ensure => present, require => Exec [firstupdate]}
 
@@ -186,15 +186,7 @@ package {
     require => Package [ruby];
 }
 
-# Include the self-signed SSL cert that yg.ldap needs to make secure
-# connections to our domain controllers.
-file { 'ldap_cert':
-  path    => '/etc/ssl/YOUGOV-AD01-CA.rencer',
-  ensure  => file,
-  source  => 'puppet:///modules/ldap/YOUGOV-AD01-CA.rencer';
-}
-
-class {'yhost': }
+class {'vrhost': }
 class {'pipdeps': }
 class {'pg91': }
 class {'currentmongo': }

@@ -3,8 +3,8 @@ import reversion
 from django.contrib import admin
 from django.contrib.auth.models import Group
 
-from deployment import models
-from deployment.forms import ConfigIngredientForm
+from vr.deployment import models
+from vr.deployment.forms import ConfigIngredientForm
 
 
 class RecipeIngredientInline(admin.TabularInline):

@@ -4,7 +4,7 @@ the Server Sent Events API in modern browsers.
 
 To send a message:
 import redis
-from deployment.events import Sender
+from vr.deployment.events import Sender
 
 r = redis.Redis()
 sender = Sender(r, channel='foo')
@@ -13,7 +13,7 @@ sender.publish('this is my message')
 
 And to listen to messages:
 import redis
-from deployment.events import Listener
+from vr.deployment.events import Listener
 r = redis.Redis()
 listener = Listener(r, channels=['foo'])
 for message in listener:
@@ -30,7 +30,7 @@ import redis
 import sseclient
 from django.conf import settings
 
-from deployment import utils
+from vr.deployment import utils
 
 
 class Sender(object):
@@ -252,8 +252,7 @@ def eventify(user, action, obj, detail=None):
     all at once.
     """
     fragment = '%s %s' % (action, obj)
-    # create a log entry
-    from deployment import models
+    from vr.deployment import models # Imported late to avoid circularity
     logentry = models.DeploymentLogEntry(
         type=action,
         user=user,

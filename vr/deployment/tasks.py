@@ -20,10 +20,10 @@ from django.core.files.storage import default_storage
 from django.conf import settings
 from django.utils import timezone
 
-from deployment.models import (Release, Build, Swarm, Host, PortLock, App,
+from vr.deployment.models import (Release, Build, Swarm, Host, PortLock, App,
                                TestRun, TestResult)
-from deployment import models
-from deployment import balancer, events, utils
+from vr.deployment import models
+from vr.deployment import balancer, events, utils
 from raptor import repo, remote, build as rbuild
 from raptor.models import Proc
 from raptor.utils import tmpdir

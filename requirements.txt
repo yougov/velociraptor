@@ -1,26 +1,2 @@
--i http://cheese.yougov.net
-baton==0.1.5
-celery-schedulers==0.0.2
-Django==1.4
-django-celery==3.0.11
-django-extensions==0.7.1
-django-picklefield==0.2.0
-django-redis-cache==0.9.5
-django-reversion==1.6.1
-# Need a version of tastypie that supports MultiAuthentication
-git+https://github.com/toastdriven/django-tastypie.git@eee008f3eef0f756b32635e7b74c1c9732cf593c
-django-yamlfield==0.2
-Fabric==1.4.0
-https://github.com/downloads/SiteSupport/gevent/gevent-1.0rc2.tar.gz
-gevent-psycopg2==0.0.3
-gunicorn==0.17.2
-keyring==0.7.1
-paramiko==1.8.0
-psycopg2==2.4.4
-pymongo==2.1.1
-redis==2.6.2
-requests==1.0.4
-South==0.7.6
-sseclient==0.0.3
-yg.ldap==2.2
 ./libraptor
+.

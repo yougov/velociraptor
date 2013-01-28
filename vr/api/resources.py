@@ -5,7 +5,7 @@ from tastypie.authorization import Authorization
 from tastypie.api import Api
 from tastypie.constants import ALL_WITH_RELATIONS, ALL
 
-from deployment import models
+from vr.deployment import models
 
 
 # XXX Note that procs don't have a resource in this file.  It turns out that
