@@ -201,6 +201,7 @@ TEMPLATE_LOADERS = (
 
 TEMPLATE_DIRS = (
     os.path.join(here, 'templates'),
+    os.path.join(here, 'deployment', 'templates'),
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
@@ -296,7 +297,7 @@ djcelery.setup_loader()
 
 def setup_logger():
     """
-    creates a logger 'velociraptor'
+    creates a logger named 'velociraptor'
     """
     logger = logging.getLogger('velociraptor')
     logger.setLevel(logging.INFO)

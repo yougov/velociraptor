@@ -170,10 +170,12 @@ class ProcTailer(object):
     Given a hostname, port, and procname, connect to the log tailing endpoint
     for that proc and yield a string for each line in the log, as they come.
     """
-    def __init__(self, hostname, port, procname):
+    def __init__(self, hostname, port, procname, username=None, password=None):
         self.hostname = hostname
         self.port = port
         self.procname = procname
+        self.username = username
+        self.password = password
         self.buf = u''
 
         self._connect()
@@ -181,7 +183,11 @@ class ProcTailer(object):
     def _connect(self):
         url = 'http://%s:%s/logtail/%s' % (self.hostname, self.port, self.procname)
 
-        self.resp = requests.get(url, stream=True)
+        auth = None
+        if self.username:
+            auth = (self.username, self.password)
+
+        self.resp = requests.get(url, stream=True, auth=auth)
         self.resp.raise_for_status()
 
     def __iter__(self):
@@ -213,11 +219,17 @@ class SSETailer(ProcTailer):
         e = sseclient.Event(data=data)
         return e.dump()
 
+
 @auth_required
 def proc_log_stream(request, hostname, procname):
+    kwargs = dict(
+        hostname=hostname,
+        port=settings.SUPERVISOR_PORT,
+        procname=procname,
+        username=settings.SUPERVISOR_USERNAME,
+        password=settings.SUPERVISOR_PASSWORD,
+    )
     if request.META['HTTP_ACCEPT'] == 'text/event-stream':
-        return http.HttpResponse(SSETailer(hostname, settings.SUPERVISOR_PORT,
-                                           procname),
+        return http.HttpResponse(SSETailer(**kwargs),
                                  content_type='text/event-stream')
-    return http.HttpResponse(ProcTailer(hostname, settings.SUPERVISOR_PORT,
-                                        procname), content_type='text/plain')
+    return http.HttpResponse(ProcTailer(**kwargs), content_type='text/plain')
