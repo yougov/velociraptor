@@ -1,3 +1,0 @@
-[console_scripts]
-proc_publisher = raptor.publisher:main
-
