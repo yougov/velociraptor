@@ -31,4 +31,5 @@ celeryev.pid
 celerybeat-schedule
 celerybeat.pid
 libraptor/raptor.egg-info/*
+vr.egg-info/*
 TODO

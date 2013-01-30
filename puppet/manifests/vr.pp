@@ -38,7 +38,7 @@ class vrhost {
         command => "mkdir -p /var/log/supervisor";
 
       custom_supervisor:
-        command => "/usr/local/bin/pip-2.7 install -i http://cheese.yougov.net supervisor==3.0b3events",
+        command => "/usr/local/bin/pip-2.7 install https://bitbucket.org/yougov/velociraptor/downloads/supervisor-3.0b2-dev-vr1.tar.gz",
         require => Exec[pip27];
 
       start_supervisor:
