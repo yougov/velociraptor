@@ -1,9 +1,11 @@
 README.rst
 setup.py
 vr/__init__.py
+vr/gunicorn_config.py
 vr/manage.py
 vr/settings.py
 vr/urls.py
+vr/wsgi.py
 vr.egg-info/PKG-INFO
 vr.egg-info/SOURCES.txt
 vr.egg-info/dependency_links.txt

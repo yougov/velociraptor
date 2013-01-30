@@ -7,12 +7,9 @@ django-redis-cache==0.9.5
 django-reversion==1.6.1
 django-tastypie==0.9.12-alpha
 django-yamlfield==0.2
-Fabric==1.4.0
 gevent==1.0rc2
 gevent-psycopg2==0.0.3
 gunicorn==0.17.2
-keyring==0.7.1
-paramiko==1.8.0
 psycopg2==2.4.4
 pymongo==2.1.1
 redis==2.6.2
