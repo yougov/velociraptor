@@ -24,12 +24,9 @@ setup(
         'django-reversion==1.6.1',
         'django-tastypie==0.9.12-alpha',
         'django-yamlfield==0.2',
-        'Fabric==1.4.0',
         'gevent==1.0rc2',
         'gevent-psycopg2==0.0.3',
         'gunicorn==0.17.2',
-        'keyring==0.7.1',
-        'paramiko==1.8.0',
         'psycopg2==2.4.4',
         'pymongo==2.1.1',
         'redis==2.6.2',
@@ -42,7 +39,6 @@ setup(
             'proc_publisher = raptor.publisher:main',
         ]
     },
-    # Need a version of tastypie that supports MultiAuthentication
     dependency_links = [
         'https://bitbucket.org/yougov/velociraptor/downloads/django-tastypie-0.9.12-alpha.tar.gz#egg=django-tastypie-0.9.12-alpha',
         'https://github.com/downloads/SiteSupport/gevent/gevent-1.0rc2.tar.gz#egg=gevent-1.0rc2'

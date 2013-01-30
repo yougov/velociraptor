@@ -9,6 +9,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
+        'Fabric==1.4.0',
         'paramiko>=1.8.0,<2.0',
         'envoy==0.0.2',
         'suds==0.4',
