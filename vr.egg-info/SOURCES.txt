@@ -1,3 +1,4 @@
+MANIFEST.in
 README.rst
 setup.py
 vr/__init__.py
@@ -68,9 +69,20 @@ vr/deployment/migrations/0031_auto__chg_field_build_buildpack_revision__chg_fiel
 vr/deployment/migrations/0032_rename_buildpack_revision.py
 vr/deployment/migrations/0033_auto__add_unique_squad_name__add_unique_app_name.py
 vr/deployment/migrations/__init__.py
+vr/deployment/templates/base.html
+vr/deployment/templates/basic_form.html
+vr/deployment/templates/dash.html
+vr/deployment/templates/jstemplates.html
+vr/deployment/templates/log.html
+vr/deployment/templates/login.html
+vr/deployment/templates/proclog.html
+vr/deployment/templates/squad.html
+vr/deployment/templates/swarm.html
 vr/deployment/templatetags/__init__.py
 vr/deployment/templatetags/current_nav.py
 vr/deployment/templatetags/stripchar.py
+vr/templates/404.html
+vr/templates/500.html
 vr/tests/__init__.py
 vr/tests/test_api.py
 vr/tests/test_basic.py
