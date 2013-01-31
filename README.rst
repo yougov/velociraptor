@@ -91,9 +91,9 @@ read the Procfile and start the processes it lists::
 That will start the Django dev server on port 8000 and the Celery daemon. 
 
 Now open your web browser and type in http://localhost:8000.  You should see
-Velociraptor.  (The Vagrantfile is configured to forward ports 8000-8009 to the
-VM.  If you need these ports back for other development, you can stop your
-Vagrant VM with a `vagrant halt`.)
+Velociraptor.  (The Vagrantfile is configured to forward ports 8000, 9001, and
+5000-5009 to the VM.  If you need these ports back for other development, you
+can stop your Vagrant VM with a `vagrant halt`.)
 
 Add Metadata
 ~~~~~~~~~~~~
