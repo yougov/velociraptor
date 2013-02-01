@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo "COLLECTING AND SYNCING STATIC FILES"
+python collectstatic.py
