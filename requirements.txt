@@ -1,2 +1,4 @@
 ./libraptor
 .
+yg.ldap==2.2
+baton==0.1.5
