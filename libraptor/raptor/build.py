@@ -7,6 +7,7 @@ import yaml
 import envoy
 
 from raptor import repo
+from raptor.utils import CommandException
 
 
 HOME = (os.environ.get('RAPTOR_HOME') or os.path.expanduser('~/.raptor'))
@@ -16,6 +17,15 @@ CONFIG_FILE = os.path.join(HOME, 'config.yaml')
 
 
 log = logging.getLogger(__name__)
+
+
+
+class BuildError(CommandException):
+    """
+    Raise this when you fail to build a repo.  Pass in an envoy result object
+    on init.
+    """
+    pass
 
 
 class BuildPack(repo.Repo):
@@ -38,16 +48,11 @@ class BuildPack(repo.Repo):
         cache_folder = os.path.join(CACHE_HOME, '%s-%s' % (self.basename,
                                                            app_url_hash))
 
-        # use ordinary subprocess here instead of envoy because we want stdout
-        # to be printed to the terminal.
         log.info(' '.join([script, app.folder, cache_folder]))
-        # XXX letting this output get printed to stdout is nice for logs, but
-        # means that we can't very well capture failures and send them up to
-        # the web UI.  TODO: patch envoy to allow printing stdout, so we can
-        # have our cake and eat it too.
-        retcode = subprocess.call([script, app.folder, cache_folder])
-        assert retcode == 0, ("Failed compiling %s with %s buildpack" % (app,
-                                                                         self.basename))
+        result = envoy.run(' '.run([script, app.folder, cache_folder]))
+        if result.status_code != 0:
+            raise BuildError(result)
+
 
     def release(self, app):
         script = os.path.join(self.folder, 'bin', 'release')
