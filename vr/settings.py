@@ -117,7 +117,7 @@ EVENTS_BUFFER_LENGTH = 100
 # Event listener plugins on the application-running hosts should be configured
 # to send proc status messages to this channel on the redis at
 # EVENTS_PUBSUB_URL.
-PROC_EVENTS_CHANNEL = 'vr2_proc_events'
+PROC_EVENTS_CHANNEL = 'proc_events'
 
 CELERYBEAT_SCHEDULE = {
     'scooper': {
