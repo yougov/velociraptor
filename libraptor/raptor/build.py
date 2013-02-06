@@ -49,7 +49,7 @@ class BuildPack(repo.Repo):
                                                            app_url_hash))
 
         log.info(' '.join([script, app.folder, cache_folder]))
-        result = envoy.run(' '.run([script, app.folder, cache_folder]))
+        result = envoy.run(' '.join([script, app.folder, cache_folder]))
         if result.status_code != 0:
             raise BuildError(result)
 
