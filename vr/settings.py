@@ -107,17 +107,17 @@ CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 EVENTS_PUBSUB_URL = 'redis://localhost:6379/0'
 
 # Deployment event messages are put on this channel by the worker procs
-EVENTS_PUBSUB_CHANNEL = 'vr_events'
+EVENTS_PUBSUB_CHANNEL = 'vr2_events'
 
 # The most recent deployment events are cached so the dashboard can show what
 # has happened lately.
-EVENTS_BUFFER_KEY = 'vr_events_buffer'
+EVENTS_BUFFER_KEY = 'vr2_events_buffer'
 EVENTS_BUFFER_LENGTH = 100
 
 # Event listener plugins on the application-running hosts should be configured
 # to send proc status messages to this channel on the redis at
 # EVENTS_PUBSUB_URL.
-PROC_EVENTS_CHANNEL = 'proc_events'
+PROC_EVENTS_CHANNEL = 'vr2_proc_events'
 
 CELERYBEAT_SCHEDULE = {
     'scooper': {
