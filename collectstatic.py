@@ -7,10 +7,6 @@ the Heroku python buildpack.  Post compile hooks may change.
 See https://github.com/heroku/heroku-buildpack-python/pull/42
 """
 
-# XXX exit early just to see if we can deploy
-import sys
-sys.exit(0)
-
 import os
 import posixpath
 import sys
