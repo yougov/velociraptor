@@ -28,7 +28,6 @@ import sys
 import json
 import datetime
 import socket
-import re
 
 import redis
 from supervisor import childutils
@@ -42,12 +41,6 @@ def main():
         raise SystemExit('supervisor_events_publisher must be run as a '
                          'supervisor event listener')
 
-    # Get config from env vars
-    pubsub_channel = os.getenv('PROC_EVENTS_CHANNEL', 'proc_events')
-    cache_prefix = os.getenv('PROC_CACHE_PREFIX', 'host_procs_')
-    # Make the cached values live for 10 minutes by default.
-    cache_lifetime = int(os.getenv('PROC_CACHE_LIFETIME', 600))
-
     # Use Supervisor's own RPC interface to get full proc data on each process
     # state change, since the emitted events don't have everything we want.
     rpc = childutils.getRPCInterface(os.environ)
@@ -55,12 +48,10 @@ def main():
     rcon = redis.StrictRedis(**parse_redis_url(os.environ['REDIS_URL']))
     hostname = os.getenv('HOSTNAME', socket.getfqdn())
     log('proc_publisher starting with hostname %s' % hostname)
-    host = Host(hostname, rpc_or_port=rpc, redis_or_url=rcon,
-                redis_cache_prefix=cache_prefix,
-                redis_cache_lifetime=cache_lifetime)
+    host = Host(hostname, rpc_or_port=rpc, redis_or_url=rcon,)
 
     for e in EventStream(hostname):
-        handle_event(e, host, pubsub_channel)
+        handle_event(e, host, 'proc_events')
         log(e.emit())
 
 

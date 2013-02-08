@@ -174,7 +174,7 @@ class Proc(object):
             }
         except ValueError:
             return {
-                'app_name': '~UNKNOWN',
+                'app_name': name,
                 'version': 'UNKNOWN',
                 'recipe_name': 'UNKNOWN',
                 'hash': 'UNKNOWN',
