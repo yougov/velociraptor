@@ -47,11 +47,11 @@ class BuildPack(repo.Repo):
         cache_folder = os.path.join(CACHE_HOME, '%s-%s' % (self.basename,
                                                            app_url_hash))
 
-        log.info(' '.join([script, app.folder, cache_folder]))
-        result = envoy.run(' '.join([script, app.folder, cache_folder]))
+        cmd = ' '.join([script, app.folder, cache_folder])
+        log.info(cmd)
+        result = envoy.run(cmd)
         if result.status_code != 0:
             raise BuildError(result)
-
 
     def release(self, app):
         script = os.path.join(self.folder, 'bin', 'release')
