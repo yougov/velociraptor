@@ -12,6 +12,7 @@ from raptor.utils import CommandException
 HOME = (os.environ.get('RAPTOR_HOME') or os.path.expanduser('~/.raptor'))
 PACKS_HOME = os.path.join(HOME, 'buildpacks')
 CACHE_HOME = os.path.join(HOME, 'cache')
+BUILD_HOME = os.path.join(HOME, 'build')
 CONFIG_FILE = os.path.join(HOME, 'config.yaml')
 
 
@@ -43,9 +44,7 @@ class BuildPack(repo.Repo):
         log.info('Compiling %s with %s' % (app.basename, self.basename))
         script = os.path.join(self.folder, 'bin', 'compile')
 
-        app_url_hash = hashlib.md5(app.url).hexdigest()
-        cache_folder = os.path.join(CACHE_HOME, '%s-%s' % (self.basename,
-                                                           app_url_hash))
+        cache_folder = os.path.join(CACHE_HOME, get_unique_repo_folder(app.url))
 
         cmd = ' '.join([script, app.folder, cache_folder])
         log.info(cmd)
@@ -150,6 +149,42 @@ def add_buildpack(url, packs_dir=PACKS_HOME, vcs_type=None):
     bp = BuildPack(dest, url, vcs_type=vcs_type)
     bp.update()
     return bp
+
+
+def get_unique_repo_folder(repo_url):
+    """
+    Given a repository URL, return a folder name that's human-readable,
+    filesystem-friendly, and guaranteed unique to that repo.
+    """
+    return '%s-%s' % (repo.basename(repo_url), hashlib.md5(repo_url).hexdigest())
+
+
+# Some buildpacks assume that an app will always be built in the same folder.
+# The Python buildpack does this by virtue of relying on virtualenv+pip which
+# leave some symlinks (inside <cache_folder>/.heroku/venv/local/) that point to
+# paths inside the build folder.  If we don't provide a consistent build folder
+# to this buildpack, then we can't use the buildpack's caching feature.
+def get_build_folder(app_url):
+    return os.path.join(BUILD_HOME, get_unique_repo_folder(app_url))
+
+
+class use_buildfolder(object):
+    """Context manager for putting you into an app-specific build directory on
+    enter and returning you to where you started on exit.
+    """
+    def __init__(self, app_url):
+        self.app_url = app_url
+        self.orig_path = os.getcwd()
+
+    def __enter__(self):
+        self.temp_path = get_build_folder(self.app_url)
+        if not os.path.isdir(self.temp_path):
+            os.makedirs(self.temp_path, 0770)
+        os.chdir(self.temp_path)
+        return self.temp_path
+
+    def __exit__(self, type, value, traceback):
+        os.chdir(self.orig_path)
 
 
 def get_config(file_path=CONFIG_FILE):

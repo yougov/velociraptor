@@ -165,7 +165,7 @@ def build_app(build_id, callback=None):
     build.start_time = timezone.now()
     build.save()
     try:
-        with tmpdir() as here:
+        with rbuild.use_buildfolder(app.repo_url) as here:
             # Check out project and update to specified version
             app_path = os.path.join(here, repo.basename(app.repo_url))
             repo_kwargs = {
@@ -200,8 +200,8 @@ def build_app(build_id, callback=None):
             with open(name, 'rb') as localfile:
                 default_storage.save(filepath, localfile)
 
-            # XXX DEBUG.  Also write a copy locally so we can test untarring
-            envoy.run('cp %s /tmp/build.tar.bz2' % name)
+            # Delete the local file
+            os.remove(name)
 
             build.file = filepath
             build.end_time = time
