@@ -231,6 +231,8 @@ def make_proc(name, host, data):
     # XXX This function will throw DoesNotExist if either the app or
     # recipe can't be looked up.  So careful with what you rename.
     parts = name.split('-')
+    if len(parts) != 6:
+        return None
     try:
         app = App.objects.get(name=parts[0])
         recipe = ConfigRecipe.objects.get(app=app, name=parts[2])
@@ -309,8 +311,8 @@ class Host(models.Model):
         data['host'] = self.name
 
         # add in things parsed from each procname
-        data['procs'] = [make_proc(p['name'], self, p).as_dict() for p in
-                         data['procs']]
+        procs = self.make_procs(data['procs'])
+        data['procs'] = [proc.as_dict() for proc in procs]
         return data
 
     def get_used_ports(self):
@@ -345,11 +347,11 @@ class Host(models.Model):
         has a parseable name and whose app and recipe can be found in the DB.
         """
         procdata = self.procdata(use_cache)
-        procs = [make_proc(p['name'], self, p) for p in procdata['procs']]
+        procs = self.make_procs(procdata['procs'])
 
         # Filter out any procs for whom we couldn't look up an App or
         # ConfigRecipe
-        return [p for p in procs if p is not None]
+        return [p for p in procs if p.app is not None]
 
     def get_proc(self, name, use_cache=False):
         """
@@ -374,6 +376,13 @@ class Host(models.Model):
 
     class Meta:
         ordering = ('name',)
+
+    def make_procs(self, procs_def):
+        """
+        Given a dictionary of procs, construct a list of recognized Proc objects
+        """
+        procs = [make_proc(p['name'], self, p) for p in procs_def]
+        return filter(None, procs)
 
 
 class Squad(models.Model):
