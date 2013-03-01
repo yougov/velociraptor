@@ -32,11 +32,7 @@ parentpath = os.path.dirname(here)
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
-ADMINS = (
-    # Change this to the devops group email when we deploy this for real.
-    ('Brent Tubbs', 'brent.tubbs@yougov.com'),
-    ('Fernando Gutierrez', 'fernando.gutierrez@yougov.com'),
-)
+ADMINS = ()
 
 MANAGERS = ADMINS
 SERVER_EMAIL = 'velociraptor@' + getfqdn()
@@ -178,6 +174,8 @@ DEFAULT_FILE_STORAGE = 'vr.deployment.storages.GridFSStorage'
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.CachedStaticFilesStorage'
 
 STATIC_ROOT = os.path.join(here, 'static')
+
+print "settings.py STATIC_ROOT: %s" % STATIC_ROOT
 
 STATIC_URL = '/static/'
 ADMIN_MEDIA_PREFIX = '/static/admin/'

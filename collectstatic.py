@@ -24,9 +24,6 @@ MONGO_PORT = 27017
 MONGO_DB = 'yfiles'
 MONGO_COLLECTION = 'fs'
 
-# Relative path from pavement.py to your static files folder.
-STATICFILES_ROOT = 'vr/static'
-
 # Prefix for all uploaded file paths.
 # XXX THIS MUST BE CHANGED FOR OTHER BUILDS
 BASEPATH = 'raptor'
@@ -72,16 +69,20 @@ def main():
     os.environ['DJANGO_SETTINGS_MODULE'] = 'vr.settings'
     sh('python vr/manage.py collectstatic --noinput')
 
+    from vr.settings import STATIC_ROOT
+    print "Running collectstatic.py. here: %s, STATIC_ROOT: %s" % (here,
+                                                                   STATIC_ROOT)
+
     # look for static/ folder.  If found, copy each file therein into mongo
     # gridfs.
-    if os.path.exists(STATICFILES_ROOT):
+    if os.path.exists(STATIC_ROOT):
         heading("Syncing static files to GridFS")
 
         connection = Connection(MONGO_HOST, MONGO_PORT)
         db = connection[MONGO_DB]
         fs = GridFS(db, collection=MONGO_COLLECTION)
 
-        with chdir(STATICFILES_ROOT):
+        with chdir(STATIC_ROOT):
             for root, dirs, files in os.walk('.'):
                 # strip the "./" from the beginning of the root.
                 cleanroot = root[2:]
@@ -90,7 +91,7 @@ def main():
                     remotename = posixpath.join(BASEPATH, cleanroot, filename)
                     upload_file(fs, localname, remotename)
     else:
-        print "no %s folder found" % STATICFILES_ROOT
+        print "no %s folder found" % STATIC_ROOT
 
 if __name__ == '__main__':
     main()

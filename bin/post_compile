@@ -1,4 +1,4 @@
 #!/bin/bash
-
+echo "<----- bin/post_compile"
 echo "COLLECTING AND SYNCING STATIC FILES"
 .heroku/venv/bin/python collectstatic.py
