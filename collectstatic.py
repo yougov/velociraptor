@@ -61,17 +61,11 @@ def upload_file(fs, localname, remotename):
 def main():
     # We need both the current directory and the parent directory on sys.path
     # in order for collectstatic to work.
-    here = os.path.dirname(os.path.realpath(__file__))
-    sys.path.insert(0, here)
-
-    sys.path.insert(0, os.path.join(here, 'vr'))
-
     os.environ['DJANGO_SETTINGS_MODULE'] = 'vr.settings'
     sh('python vr/manage.py collectstatic --noinput')
 
     from vr.settings import STATIC_ROOT
-    print "Running collectstatic.py. here: %s, STATIC_ROOT: %s" % (here,
-                                                                   STATIC_ROOT)
+    print "Running collectstatic.py. STATIC_ROOT: %s" % STATIC_ROOT
 
     # look for static/ folder.  If found, copy each file therein into mongo
     # gridfs.
