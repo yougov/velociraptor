@@ -175,14 +175,7 @@ DEFAULT_FILE_STORAGE = 'vr.deployment.storages.GridFSStorage'
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.CachedStaticFilesStorage'
 
 # Use package's static folder if found, else fall back to local
-try:
-    package_static = pkg_resources.resource_filename('vr', 'static')
-    if os.path.isdir(package_static):
-        STATIC_ROOT = package_static
-    else:
-        STATIC_ROOT = os.path.join(here, 'static')
-except ImportError:
-    STATIC_ROOT = os.path.join(here, 'static')
+STATIC_ROOT = pkg_resources.resource_filename('vr', 'static')
 
 STATIC_URL = '/static/'
 ADMIN_MEDIA_PREFIX = '/static/admin/'
