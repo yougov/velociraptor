@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='vr',
-    version='1.4',
+    version='1.5',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
     packages=['vr',
@@ -34,11 +34,6 @@ setup(
         'South==0.7.6',
         'sseclient==0.0.3',
     ],
-    entry_points={
-        'console_scripts': [
-            'proc_publisher = raptor.publisher:main',
-        ]
-    },
     dependency_links = [
         'https://bitbucket.org/yougov/velociraptor/downloads/django-tastypie-0.9.12-alpha.tar.gz#egg=django-tastypie-0.9.12-alpha',
         'https://github.com/downloads/SiteSupport/gevent/gevent-1.0rc2.tar.gz#egg=gevent-1.0rc2'

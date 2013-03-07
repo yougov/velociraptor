@@ -9,7 +9,6 @@ See https://github.com/heroku/heroku-buildpack-python/pull/42
 
 import os
 import posixpath
-import sys
 import hashlib
 import subprocess
 import shlex
@@ -62,7 +61,7 @@ def main():
     # We need both the current directory and the parent directory on sys.path
     # in order for collectstatic to work.
     os.environ['DJANGO_SETTINGS_MODULE'] = 'vr.settings'
-    sh('python vr/manage.py collectstatic --noinput')
+    sh('python vr_django/vr/manage.py collectstatic --noinput')
 
     from vr.settings import STATIC_ROOT
     print "Running collectstatic.py. STATIC_ROOT: %s" % STATIC_ROOT

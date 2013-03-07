@@ -1,5 +1,5 @@
 -i http://cheese.yougov.net
 ./libraptor
-.
+./vr_django
 yg.ldap==2.2
 baton==0.1.5
