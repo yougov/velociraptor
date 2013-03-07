@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='vr',
-    version='1.5',
+    version='1.5.1',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
     packages=['vr',
