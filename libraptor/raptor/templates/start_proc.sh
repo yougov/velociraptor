@@ -12,5 +12,4 @@ export PORT=%(port)s
 export TMPDIR=%(tmp)s
 export HOME=%(home)s
 
-source %(envsh)s
 %(cmd)s 
