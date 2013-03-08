@@ -3,13 +3,12 @@ from setuptools import setup
 
 setup(
     name='vr',
-    version='1.5.2',
+    version='1.5.3',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
     packages=['vr',
               'vr.api',
               'vr.deployment',
-              'vr.gunicorn_config',
               'vr.tests',
               'vr.deployment.balancer',
               'vr.deployment.migrations',
