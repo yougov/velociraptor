@@ -1,3 +1,3 @@
-web: gunicorn -c vr_django/gunicorn_config.py vr.wsgi:app
+web: gunicorn -c vr_django/vr/gunicorn_config.py vr.wsgi:app
 worker: python vr_django/vr/manage.py celeryd -l info -c 4
 beat: python vr_django/vr/manage.py celerybeat --pidfile=
