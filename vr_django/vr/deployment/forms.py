@@ -135,5 +135,5 @@ class SwarmForm(forms.Form):
     class Media:
         js = (
             'js/dash_preview_recipe.js',
-              #'js/dash_latest_tag.js'
         )
+

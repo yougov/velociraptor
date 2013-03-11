@@ -103,6 +103,7 @@ th {
   overflow: auto;
   font-family: Monaco, Menlo, Consolas, 'Courier New', monospace;
   font-size: 10px;
+  white-space: pre;
 }
 
 .modal .proc-log {

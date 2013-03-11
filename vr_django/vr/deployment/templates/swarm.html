@@ -50,10 +50,12 @@
 
 {% block script %}
 <script src="{% static 'js/vrswarm.js' %}"></script>
+{% if swarm.id %}
 <script>
-
 $(function() {
   VR.Swarm.init('{{ swarm.id }}', $('#swarm-container'));
 });
 </script>
+{% endif %}
+{{ form.media }}
 {% endblock script %}
