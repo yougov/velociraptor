@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='vr',
-    version='1.5.6',
+    version='1.5.7',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
     packages=['vr',
@@ -32,11 +32,17 @@ setup(
         'redis==2.6.2',
         'requests==1.0.4',
         'South==0.7.6',
-        'sseclient==0.0.3',
+        'sseclient==0.0.4',
     ],
     dependency_links = [
         'https://bitbucket.org/yougov/velociraptor/downloads/django-tastypie-0.9.12-alpha.tar.gz#egg=django-tastypie-0.9.12-alpha',
         'https://github.com/downloads/SiteSupport/gevent/gevent-1.0rc2.tar.gz#egg=gevent-1.0rc2'
     ],
+    entry_points = {
+        'console_scripts': [
+            'vr_worker = vr.commands:start_celery',
+            'vr_beat = vr.commands:start_celerybeat',
+        ],
+    },
     description=('Velociraptor Django project.'),
 )

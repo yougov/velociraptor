@@ -94,6 +94,7 @@ MONGODB_URL = 'mongodb://localhost/velociraptor'
 CELERY_ENABLE_UTC = True
 CELERYBEAT_SCHEDULER = 'celery_schedulers.redis_scheduler.RedisScheduler'
 CELERYBEAT_SCHEDULE_FILENAME = 'redis://localhost:6379/0'
+CELERYD_CONCURRENCY = 4
 
 # Use Redis broker and results backend by default.  The RabbitMQ one isn't as
 # nice for chords.
