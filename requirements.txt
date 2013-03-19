@@ -3,3 +3,4 @@
 ./vr_django
 yg.ldap==2.2
 baton==0.1.5
+python-dateutil>=1.5,<2.0
