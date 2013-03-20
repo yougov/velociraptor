@@ -1,3 +1,0 @@
-#!/bin/bash
-echo "-----> bin/post_compile"
-.heroku/venv/bin/python collectstatic.py
