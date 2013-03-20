@@ -6,7 +6,7 @@ import yaml
 
 
 # Let South know how to handle our custom field type
-add_introspection_rules([], ["^deployment\.fields\.YAMLDictField"])
+add_introspection_rules([], ["^vr\.deployment\.fields\.YAMLDictField"])
 
 
 def validate_yaml_dict(value):
