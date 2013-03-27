@@ -22,43 +22,55 @@ from fabric import colors
 
 from raptor.models import Proc
 
+BUILDS_ROOT = '/apps/builds'
 PROCS_ROOT = '/apps/procs'
 RELEASES_ROOT = '/apps/releases'
 
-# Must check these locations as well when doing anything with existing procs
-# (uptests, cleanups).
-# TODO: remove this feature once YG is fully in the new locations.
-LEGACY_PROCS_ROOT = '/opt/yg/procs'
-LEGACY_RELEASES_ROOT = '/opt/yg/releases'
-
 
 @task
-def upload_release(build_path, config_path, release_path, envsh_path, user='nobody'):
+def upload_build(local_path, build_name, user='nobody'):
 
-    remote_procfile = posixpath.join(release_path, 'Procfile')
+    remote_path = posixpath.join(BUILDS_ROOT, build_name)
+    if not files.exists(remote_path):
+        sudo('mkdir -p ' + remote_path)
+    remote_procfile = posixpath.join(remote_path, 'Procfile')
 
     if files.exists(remote_procfile):
         colors.green('%s already on server.  No need to upload.' % remote_procfile)
         return
 
-    colors.green('Creating remote directory')
-    sudo('mkdir -p ' + release_path)
+
+    # check if the build is needed.  upload if so.
 
     colors.green('Uploading build')
     # Make a random filename for the remote tmp file.
-    rname = ''.join(random.choice(string.ascii_letters) for x in xrange(20))
-    remote_build_path = posixpath.join('/tmp', rname)
-    put(build_path, remote_build_path, use_sudo=True)
+    tmp_path = posixpath.join('/tmp',
+                              ''.join(random.choice(string.ascii_letters) for x
+                                      in xrange(20)))
+    put(local_path, tmp_path, use_sudo=True)
 
     colors.green('Unpacking build')
 
-    tar_cmd = 'tar xjf {remote_build_path} -C {release_path} --strip-components 1'
+    tar_cmd = 'tar xjf {tmp_path} -C {remote_path} --strip-components 1'
     tar_cmd = tar_cmd.format(**vars())
     sudo(tar_cmd)
-    sudo('chown -R {user} {release_path}'.format(**vars()))
-    sudo('chgrp -R admin {release_path}'.format(**vars()))
-    sudo('chmod -R g+w {release_path}'.format(**vars()))
+    sudo('chown -R {user} {remote_path}'.format(**vars()))
+    sudo('chgrp -R admin {remote_path}'.format(**vars()))
+    sudo('chmod -R g+w {remote_path}'.format(**vars()))
     # todo: mark directories as g+s
+
+    colors.green('Deleting build tarball')
+    sudo('rm ' + tmp_path)
+
+
+@task
+def upload_release(build_path, build_name, config_path, release_path, envsh_path, user='nobody'):
+    # See if /apps/releases/<name> exists.  If not, make it.
+    if not files.exists(release_path):
+        colors.green('Creating remote directory')
+        sudo('mkdir -p ' + release_path)
+
+    upload_build(build_path, build_name)
 
     colors.green('Uploading config')
     # If we let Fabric upload settings.yaml, it might step on its own toes when
@@ -68,10 +80,6 @@ def upload_release(build_path, config_path, release_path, envsh_path, user='nobo
                                                  'settings.yaml'), owner=user)
         ssh.put_file(envsh_path, posixpath.join(release_path, 'env.sh'),
                      owner=user)
-
-    colors.green('Deleting build tarball')
-    sudo('rm ' + remote_build_path)
-
 
 
 def parse_procfile(path):
@@ -94,7 +102,8 @@ class Deployer(object):
     lxc_config_template = None
     start_script_template = 'start_proc.sh'
 
-    def __init__(self, release_name, proc, port, user, use_syslog):
+    def __init__(self, build_name, release_name, proc, port, user, use_syslog):
+        self.build_name = build_name
         self.release_name = release_name
         self.proc = proc
         self.port = port
@@ -103,13 +112,19 @@ class Deployer(object):
         self.proc_name = '-'.join([release_name, proc, str(port)])
         self.proc_path = posixpath.join(PROCS_ROOT, self.proc_name)
         self.proc_tmp_path = posixpath.join(self.proc_path, 'tmp')
+        self.build_path = posixpath.join(BUILDS_ROOT, self.build_name)
         self.release_path = posixpath.join(RELEASES_ROOT, self.release_name)
-        self.envsh_path = posixpath.join(self.release_path, 'env.sh')
-        self.yaml_settings_path = posixpath.join(self.release_path,
+
+        self.envsh_path = posixpath.join(self.proc_path, 'env.sh')
+        self.yaml_settings_path = posixpath.join(self.proc_path,
                                                  "settings.yaml")
         self.proc_line = self.get_proc_line()
 
     def configure_proc(self):
+        """
+        Wrap all the functions needed to get a proc configured on the remote
+        host.
+        """
         sudo('mkdir -p ' + self.proc_path)
 
         self.write_proc_conf()
@@ -117,10 +132,22 @@ class Deployer(object):
         self.write_start_proc_sh()
         self.create_proc_tmpdir()
         self.upload_uptester()
-
         self.create_mount_points()
+        self.copy_config()
+
+    def copy_config(self):
+        """
+        On the remote host, copy settings.yaml and env.sh from the release
+        folder into the proc folder.
+        """
+
+        sudo('cp %(release_path)s/settings.yaml %(proc_path)s/' % self.__dict__)
+        sudo('cp %(release_path)s/env.sh %(proc_path)s/' % self.__dict__)
 
     def run(self):
+        """
+        Do everything needed to get the proc running on the remote host.
+        """
         self.configure_proc()
         self.reload_supervisor()
 
@@ -179,8 +206,8 @@ class Deployer(object):
             lxc_tmpl = get_template(self.lxc_config_template)
             remote_lxc_path = posixpath.join(self.proc_path, 'proc.lxc')
             files.upload_template(lxc_tmpl, remote_lxc_path, {
+                'build_path': self.build_path,
                 'proc_path': self.proc_path,
-                'release_path': self.release_path,
             }, use_sudo=True)
 
     def write_start_proc_sh(self):
@@ -215,7 +242,7 @@ class Deployer(object):
             # in order to add a new deploy of an existing release.
             tempdir = tempfile.mkdtemp()
             local_procfile = posixpath.join(tempdir, 'Procfile')
-            get(posixpath.join(self.release_path, 'Procfile'), local_procfile)
+            get(posixpath.join(self.build_path, 'Procfile'), local_procfile)
 
             procs = parse_procfile(local_procfile)
             if not self.proc in procs:
@@ -257,8 +284,8 @@ class ContainedDeployer(Deployer):
         return {
             'home': '/tmp',
             'tmp': '/tmp',
-            'settings': '/app/settings.yaml',
-            'envsh': '/app/env.sh',
+            'settings': '/settings.yaml',
+            'envsh': '/env.sh',
         }
 
     def get_start_cmd(self):
@@ -268,14 +295,6 @@ class ContainedDeployer(Deployer):
         return build_container_cmd(inner_cmd, self.user, container_name,
                                    lxc_config_path)
 
-
-def build_container_cmd(cmd, user, container_name, lxc_config_path):
-    """
-    Build up the shell command needed to launch a program inside a container.
-    This is used both in deployments and launching the uptester.
-    """
-    tmpl = """exec lxc-start --name %(container_name)s -f %(lxc_config_path)s -- su --preserve-environment --shell /bin/bash -c "cd /app;source /app/env.sh; exec %(cmd)s" %(user)s"""
-    return tmpl % vars()
 
 
 class LucidDeployer(ContainedDeployer):
@@ -314,25 +333,25 @@ class PreciseDeployer(ContainedDeployer):
 
 
 @task
-def configure_proc(release_name, proc, port, user='nobody', use_syslog=False,
+def configure_proc(build_name, release_name, proc, port, user='nobody', use_syslog=False,
                    contain=False):
     if not contain:
-        d = Deployer
+        deployer_cls = Deployer
     else:
         issue = sudo('cat /etc/issue')
         if '10.04' in issue:
-            d = LucidDeployer
+            deployer_cls = LucidDeployer
         elif '12.04' in issue:
-            d = PreciseDeployer
+            deployer_cls = PreciseDeployer
         else:
             raise ValueError("Could not determine deployer type for %s" %
                              issue)
-    d(release_name, proc, port, user, use_syslog).run()
+    deployer_cls(build_name, release_name, proc, port, user, use_syslog).run()
 
 
 @task
-def deploy_parcel(build_path, config_path, envsh_path, recipe, proc, port,
-                  user='nobody', use_syslog=False, contain=False,
+def deploy_parcel(build_path, config_path, envsh_path, recipe,
+                  proc, port, user='nobody', use_syslog=False, contain=False,
                   release_hash=None):
     # Builds have timstamps, but releases really don't care about them.  Two
     # releases created at different times with the same build and settings
@@ -342,6 +361,8 @@ def deploy_parcel(build_path, config_path, envsh_path, recipe, proc, port,
     nameparts = build_file.split('-')
     app_name = nameparts[0]
     version = nameparts[1]
+
+    build_name = '-'.join([app_name, version])
 
     # A release name should look like gryphon-2.2.3-ldc-d5338b8a07, where the
     # random looking chars at the end come from a hash of the build tarball and
@@ -358,11 +379,20 @@ def deploy_parcel(build_path, config_path, envsh_path, recipe, proc, port,
     proc_path = posixpath.join(PROCS_ROOT, proc_name)
     sudo('mkdir -p ' + proc_path)
 
-    upload_release(build_path, config_path, release_path, envsh_path,
-                   user=user)
+    upload_release(build_path, build_name, config_path, release_path,
+                   envsh_path, user=user)
 
-    configure_proc(release_name, proc, port, user, use_syslog=use_syslog,
-                   contain=contain)
+    configure_proc(build_name, release_name, proc, port, user,
+                   use_syslog=use_syslog, contain=contain)
+
+
+def build_container_cmd(cmd, user, container_name, lxc_config_path):
+    """
+    Build up the shell command needed to launch a program inside a container.
+    This is used both in deployments and launching the uptester.
+    """
+    tmpl = """exec lxc-start --name %(container_name)s -f %(lxc_config_path)s -- su --preserve-environment --shell /bin/bash -c "cd /app;source /env.sh; exec %(cmd)s" %(user)s"""
+    return tmpl % vars()
 
 
 def build_contained_uptests_command(proc_path, proc, host, port, user):
@@ -379,18 +409,18 @@ def build_contained_uptests_command(proc_path, proc, host, port, user):
     lxc_config_path = posixpath.join(proc_path, 'proc.lxc')
     return build_container_cmd(cmd, user, container_name, lxc_config_path)
 
-
-def build_uncontained_uptests_command(release_path, proc_path, proc, host,
+# XXX ensure that callers of thes uptest command are passing in build_path
+# instead of release_path.
+def build_uncontained_uptests_command(build_path, proc_path, proc, host,
                                       port, user):
     """
     Build the command string for uptesting a proc that's not inside an lxc
     container.
     """
-    tmpl = """su -c "cd %(release_path)s;source %(envsh_path)s;%(uptester)s %(folder)s %(host)s %(port)s" %(user)s"""
+    tmpl = """su -c "cd %(build_path)s;source %(envsh_path)s;%(uptester)s %(folder)s %(host)s %(port)s" %(user)s"""
     return tmpl % {
-        'release_path': release_path,
-        'envsh_path': posixpath.join(release_path, 'env.sh'),
-        'folder': posixpath.join(release_path, 'uptests', proc),
+        'release_path': build_path,
+        'folder': posixpath.join(build_path, 'uptests', proc),
         'host': host,
         'port': port,
         'user': user,
@@ -398,46 +428,18 @@ def build_uncontained_uptests_command(release_path, proc_path, proc, host,
     }
 
 
-def build_legacy_uptests_command(release_path, proc_path, proc, host, port,
-                                 user):
-    tmpl = """su -c "cd %(release_path)s;%(env_vars)s;%(uptester)s %(folder)s %(host)s %(port)s" %(user)s"""
-    env_vars = ('APP_SETTINGS_YAML=%(settings_path)s PATH=%(env_bin)s:$PATH'
-        % {
-            'settings_path': posixpath.join(release_path, 'settings.yaml'),
-            'env_bin': posixpath.join(release_path, 'env', 'bin'),
-        })
-    return tmpl % {
-        'release_path': release_path,
-        'env_vars': env_vars,
-        'folder': posixpath.join(release_path, 'uptests', proc),
-        'host': host,
-        'port': port,
-        'user': user,
-        'uptester': posixpath.join(proc_path, 'uptester'),
-    }
-
-
-def build_uptests_command(release_path, proc_path, proc, host, port, user):
+def build_uptests_command(build_path, proc_path, proc, host, port, user):
     """
     Pick from the available uptest command builders based on what's present in
-    the proc and release dirs.  Run that builder and return its result.
+    the proc and build dirs.  Run that builder and return its result.
     """
     lxc_conf_path = posixpath.join(proc_path, 'proc.lxc')
-    envsh_path = posixpath.join(release_path, 'env.sh')
     if files.exists(lxc_conf_path):
         return build_contained_uptests_command(proc_path, proc,
-                                              env.host_string,
-                                              port, user)
-    elif files.exists(envsh_path):
-        return build_uncontained_uptests_command(release_path,
-                                                proc_path, proc,
-                                                env.host_string,
-                                                port, user)
-
-    return build_legacy_uptests_command(release_path,
-                                                proc_path, proc,
-                                                env.host_string,
-                                                port, user)
+                                               env.host_string, port, user)
+    else:
+        return build_uncontained_uptests_command(build_path, proc_path, proc,
+                                                 env.host_string, port, user)
 
 
 @task
@@ -454,31 +456,18 @@ def ensure_uptester(proc_path):
 def run_uptests(proc, user='nobody'):
     procdata = Proc.parse_name(proc)
     procname = procdata['proc_name']
-    release_name = ('%(app_name)s-%(version)s-%(recipe_name)s-%(hash)s' %
-                    procdata)
-    release_path = posixpath.join(RELEASES_ROOT,
-                                  release_name)
-    procdata['release_path'] = release_path
+    build_name = '%(app_name)s-%(version)s' % procdata
+    build_path = posixpath.join(BUILDS_ROOT, build_name)
     proc_path = posixpath.join(PROCS_ROOT, proc)
 
-    # XXX LEGACY STUFF
-    legacy_release_path = posixpath.join(LEGACY_RELEASES_ROOT, release_name)
-    if (not files.exists(release_path)) and files.exists(legacy_release_path):
-        release_path = legacy_release_path
-
-    legacy_proc_path = posixpath.join(LEGACY_PROCS_ROOT, proc)
-    if (not files.exists(proc_path)) and files.exists(legacy_proc_path):
-        proc_path = legacy_proc_path
-    # XXX END LEGACY STUFF
-
-    tests_path = posixpath.join(release_path, 'uptests', procname)
+    tests_path = posixpath.join(build_path, 'uptests', procname)
     try:
         ensure_uptester(proc_path)
         if files.exists(tests_path):
             # determine whether we're running contained or uncontained
-            cmd = build_uptests_command(release_path, proc_path,
-                                                    procname, env.host_string,
-                                                    procdata['port'], user)
+            cmd = build_uptests_command(build_path, proc_path, procname,
+                                        env.host_string, procdata['port'],
+                                        user)
 
             result = sudo(cmd)
             # Though the uptester emits JSON to stdout, it's possible for the
@@ -549,11 +538,6 @@ def delete_proc(proc):
     if files.exists(proc_dir):
         sudo('rm -rf %s' % proc_dir)
 
-    # TODO: remove this when legacy is no longer needed
-    legacy_proc_dir = posixpath.join(LEGACY_PROCS_ROOT, proc)
-    if files.exists(legacy_proc_dir):
-        sudo('rm -rf %s' % legacy_proc_dir)
-
 
 @task
 def delete_release(releases_root, procs_root, release, cascade=False):
@@ -605,7 +589,6 @@ def clean_releases_folders(releases_root, procs_root, execute=True):
 @task
 def clean_releases(execute=True):
     clean_releases_folders(RELEASES_ROOT, PROCS_ROOT, execute)
-    clean_releases_folders(LEGACY_RELEASES_ROOT, LEGACY_PROCS_ROOT, execute)
 
 
 class SSHConnection(object):
