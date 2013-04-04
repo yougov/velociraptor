@@ -664,7 +664,7 @@ def _clean_host_releases(hostname):
     env.linewise = True
 
     with always_disconnect():
-        remote.clean_releases(execute=True)
+        remote.clean_releases_and_builds()
 
 
 @task

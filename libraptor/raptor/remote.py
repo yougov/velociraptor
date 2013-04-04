@@ -409,8 +409,7 @@ def build_contained_uptests_command(proc_path, proc, host, port, user):
     lxc_config_path = posixpath.join(proc_path, 'proc.lxc')
     return build_container_cmd(cmd, user, container_name, lxc_config_path)
 
-# XXX ensure that callers of thes uptest command are passing in build_path
-# instead of release_path.
+
 def build_uncontained_uptests_command(build_path, proc_path, proc, host,
                                       port, user):
     """
@@ -540,8 +539,9 @@ def delete_proc(proc):
 
 
 @task
-def delete_release(releases_root, procs_root, release, cascade=False):
-    procs = sudo('ls -1 %s' % procs_root).split()
+def delete_release(release, releases_root=RELEASES_ROOT, procs_root=PROCS_ROOT,
+                   cascade=False):
+    procs = get_procs()
 
     releases_in_use = set(['%(app_name)s-%(version)s-%(recipe_name)s-%(hash)s' %
                            Proc.parse_name(p) for p in procs])
@@ -562,7 +562,21 @@ def delete_release(releases_root, procs_root, release, cascade=False):
 
 
 @task
-def clean_releases_folders(releases_root, procs_root, execute=True):
+def delete_build(build, builds_root=BUILDS_ROOT, releases_root=RELEASES_ROOT,
+                 procs_root=PROCS_ROOT, cascade=False):
+    build_releases = get_build_releases(build)
+    if len(build_releases):
+        if not cascade:
+            raise SystemExit("NOT DELETING %s. Build is currently in use, "
+                             "and cascade=False" % build)
+        else:
+            for release in build_releases:
+                delete_release(release, releases_root, procs_root, cascade)
+    sudo('rm -rf %s/%s' % (builds_root, build))
+
+
+@task
+def clean_releases_folders(releases_root=RELEASES_ROOT, procs_root=PROCS_ROOT):
     """ Check in releases_root for releases not being used by procs, so we can
     clean them up.
 
@@ -572,8 +586,8 @@ def clean_releases_folders(releases_root, procs_root, execute=True):
 
     if files.exists(procs_root, use_sudo=True) and \
         files.exists(releases_root, use_sudo=True):
-        procs = sudo('ls -1 %s' % procs_root).split()
-        releases = sudo('ls -1 %s' % releases_root).split()
+        procs = get_procs()
+        releases = get_releases()
         releases_in_use = set([
             '%(app_name)s-%(version)s-%(recipe_name)s-%(hash)s' %
             Proc.parse_name(p) for p in procs])
@@ -581,14 +595,92 @@ def clean_releases_folders(releases_root, procs_root, execute=True):
         for release in releases:
             if release not in releases_in_use:
                 deleted.append(release)
-                if execute:
-                    delete_release(releases_root, procs_root, release, False)
+                delete_release(release, releases_root, procs_root, False)
         colors.green("Cleaned up %i releases." % len(deleted))
 
 
+def clean_builds_folders(builds_root=BUILDS_ROOT, releases_root=RELEASES_ROOT):
+    """
+    Check in builds_root for builds not being used by releases.
+    """
+
+    if files.exists(builds_root, use_sudo=True) and files.exists(releases_root,
+                                                                 use_sudo=True):
+        releases = get_releases()
+        builds = set(get_builds())
+
+        builds_in_use = set([release_to_build(r) for r in releases])
+        unused_builds = builds.difference(builds_in_use)
+        for build in unused_builds:
+            delete_build(build, builds_root, releases_root)
+
+
 @task
-def clean_releases(execute=True):
-    clean_releases_folders(RELEASES_ROOT, PROCS_ROOT, execute)
+def get_procs(procs_root=PROCS_ROOT):
+    """
+    Return the names of all the procs on the host.
+    """
+    return sudo('ls -1 %s' % procs_root).split()
+
+
+@task
+def get_releases(releases_root=RELEASES_ROOT):
+    """
+    Return the names of all the releases on the host.
+    """
+    return sudo('ls -1 %s' % releases_root).split()
+
+
+@task
+def get_builds(builds_root=BUILDS_ROOT):
+    """
+    Return the names of all the builds on the host.
+    """
+    return sudo('ls -1 %s' % builds_root).split()
+
+
+@task
+def get_release_procs(release, release_root=RELEASES_ROOT, procs_root=PROCS_ROOT):
+    """
+    Given a release name, return a list of all the procs on the host that use
+    that release.
+    """
+    procs = get_procs()
+    def proc_to_release(proc):
+        """
+        Given a proc name, return the name of the release that it uses.
+        """
+        tmpl = '%(app_name)s-%(version)s-%(recipe_name)s-%(hash)s'
+        return tmpl % Proc.parse_name(p)
+    return [p for p in procs if proc_to_release(p)==release]
+
+
+def release_to_build(release):
+    """
+    Given a release name, return the name of the build that it uses.
+    """
+    try:
+        return "%s-%s" % tuple(release.split('-')[:2])
+    except ValueError:
+        return "unknown-unknown"
+
+@task
+def get_build_releases(build, builds_root=BUILDS_ROOT,
+                       releases_root=RELEASES_ROOT):
+    releases = get_releases()
+    return [r for r in releases if release_to_build(r)==build]
+
+
+@task
+def clean_releases_and_builds():
+    """
+    Delete any releases not in use by procs on the host.
+
+    Then delete any builds not in use by releases on the host.
+    """
+    clean_releases_folders(RELEASES_ROOT, PROCS_ROOT)
+
+    clean_builds_folders(BUILDS_ROOT, RELEASES_ROOT)
 
 
 class SSHConnection(object):
