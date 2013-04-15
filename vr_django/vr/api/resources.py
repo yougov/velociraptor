@@ -37,26 +37,6 @@ class SquadResource(ModelResource):
 v1.register(SquadResource())
 
 
-class RecipeResource(ModelResource):
-    ingredients = fields.ToManyField('api.resources.IngredientResource',
-                                     'ingredients')
-    app = fields.ToOneField('api.resources.AppResource', 'app')
-
-    class Meta:
-        queryset = models.ConfigRecipe.objects.all()
-        resource_name = 'recipes'
-        filtering = {
-            'app': ALL_WITH_RELATIONS,
-            'name': ALL,
-        }
-        authentication = auth.MultiAuthentication(
-            auth.BasicAuthentication(),
-            auth.SessionAuthentication(),
-        )
-        authorization = Authorization()
-v1.register(RecipeResource())
-
-
 class IngredientResource(ModelResource):
     recipes = fields.ToManyField('api.resources.RecipeResource', 'recipes')
 

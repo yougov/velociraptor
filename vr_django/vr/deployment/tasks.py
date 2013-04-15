@@ -70,7 +70,7 @@ class event_on_exception(object):
 
 @task
 @event_on_exception(['deploy'])
-def deploy(release_id, recipe_name, hostname, proc, port, contain=False):
+def deploy(release_id, swarm_name, hostname, proc, port, contain=False):
     with remove_port_lock(hostname, port):
         release = Release.objects.get(id=release_id)
         msg_title = '%s-%s-%s' % (release.build.app.name, release.build.tag, proc)
@@ -94,13 +94,13 @@ def deploy(release_id, recipe_name, hostname, proc, port, contain=False):
         with tmpdir():
             # write the settings.yaml locally
             with open('settings.yaml', 'wb') as f:
-                f.write(release.config)
+                f.write(release.config_yaml)
 
             # write the env.sh locally
             with open('env.sh', 'wb') as f:
                 def format_var(key, val):
                     return '%(key)s="%(val)s"' % vars()
-                e = release.env_vars or {}
+                e = release.env_yaml or {}
                 env_str = '\n'.join(format_var(k, e[k]) for k in e)
                 f.write(env_str)
 
@@ -119,7 +119,7 @@ def deploy(release_id, recipe_name, hostname, proc, port, contain=False):
                               build_path=build_filename,
                               config_path='settings.yaml',
                               envsh_path='env.sh',
-                              recipe=recipe_name,
+                              swarm=swarm_name,
                               proc=proc,
                               release_hash=release.hash,
                               port=port,
@@ -206,7 +206,7 @@ def build_app(build_id, callback=None):
             build.file = filepath
             build.end_time = time
             build.status = 'success'
-            build.env_vars = app_repo.release().get('config_vars')
+            build.env_yaml = app_repo.release().get('config_vars')
             build.buildpack_url = app_repo.buildpack.url
             build.buildpack_version = app_repo.buildpack.version
     except:
@@ -313,20 +313,10 @@ def swarm_release(swarm_id):
     # Bail out if the build doesn't have a file
     assert build.file, "Build %s has no file" % build
 
-    # IF the release hasn't been frozen yet, then it was probably waiting on a
-    # build being done.  Freeze it now.
-    if not swarm.release.hash:
-        # Release has not been frozen yet, probably because we were waiting on
-        # the build.  Since there's a build file now, saving will force the
-        # release to hash itself.
-        release = swarm.release
-        release.config = swarm.recipe.to_yaml()
-        release.save()
-    elif swarm.release.parsed_config() != swarm.recipe.assemble():
-        # Our frozen release doesn't have current config.  We'll need to make a
-        # new release, with the same build, and link the swarm to that.
-        swarm.release = swarm.recipe.get_current_release(build.tag)
-        swarm.save()
+    # swarm.get_current_release(tag) will check whether there's a release with
+    # the right build and config, and create one if not.
+    swarm.release = swarm.get_current_release(build.tag)
+    swarm.save()
 
     # OK we have a release.  Next: see if we need to do a deployment.
     # Query squad for list of procs.
@@ -404,7 +394,7 @@ def swarm_deploy_to_host(swarm_id, host_id, ports):
     for port in ports:
         deploy(
             swarm.release.id,
-            swarm.release.recipe.name,
+            swarm.name,
             host.name,
             swarm.proc_name,
             port,

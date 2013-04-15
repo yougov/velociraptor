@@ -47,26 +47,9 @@ class HostForm(forms.ModelForm):
         model = models.Host
 
 
-class ReleaseForm(forms.Form):
-    build_id = forms.ChoiceField(choices=[], label='Build')
-    recipe_id = forms.ChoiceField(choices=[], label='Recipe')
-
-    def __init__(self, *args, **kwargs):
-        super(ReleaseForm, self).__init__(*args, **kwargs)
-        self.fields['build_id'].choices = [(b.id, b) for b in
-                                           models.Build.objects.all()]
-        self.fields['recipe_id'].choices = [(p.id, p) for p in
-                                             models.ConfigRecipe.objects.all()]
-
-    def clean(self):
-        # Look up the build's app, and the recipe's app, and make sure they
-        # match.
-        build = models.Build.objects.get(id=self.cleaned_data['build_id'])
-        recipe = models.ConfigRecipe.objects.get(
-            id=self.cleaned_data['recipe_id'])
-        if not build.app.id == recipe.app.id:
-            raise forms.ValidationError("Build app doesn't match Recipe app")
-        return self.cleaned_data
+class ReleaseForm(forms.ModelForm):
+    class Meta:
+        model = models.Release
 
 
 class DeploymentForm(forms.Form):
@@ -76,6 +59,11 @@ class DeploymentForm(forms.Form):
     # release.  But I guess we can't narrow that down until a release is
     # picked.
     proc = forms.CharField(max_length=50)
+
+    name_help = ("Distinguish between app instances with different config. "
+                 "Must be filesystem safe and have no dashes or spaces.  App "
+                 "name and version will be prepended automatically.")
+    swarm_name = forms.CharField(help_text=name_help)
 
     hostname = forms.ChoiceField(choices=[])
     port = forms.IntegerField()
@@ -104,24 +92,24 @@ class SwarmForm(forms.Form):
     """
     Form for creating or updating a swarm.
     """
-    recipe_id = forms.ChoiceField(choices=[], label='Recipe')
-    squad_id = forms.ChoiceField(choices=[], label='Squad')
+    app_id = forms.ChoiceField(choices=[], label='App')
     tag = forms.CharField(max_length=50)
+    swarm_name = forms.CharField(max_length=50)
     proc_name = forms.CharField(max_length=50)
+    squad_id = forms.ChoiceField(choices=[], label='Squad')
     size = forms.IntegerField()
     pool = forms.CharField(max_length=50, required=False)
 
     balancer_help = "Required if a pool is specified."
     balancer = forms.ChoiceField(choices=[], label='Balancer', required=False,
                                  help_text=balancer_help)
-    active = forms.BooleanField(initial=True)
 
     def __init__(self, data, *args, **kwargs):
         super(SwarmForm, self).__init__(data, *args, **kwargs)
-        self.fields['recipe_id'].choices = [(p.id, p) for p in
-                                            models.ConfigRecipe.objects.all()]
         self.fields['squad_id'].choices = [(s.id, s) for s in
                                             models.Squad.objects.all()]
+        self.fields['app_id'].choices = [(a.id, a) for a in
+                                            models.App.objects.all()]
         self.fields['balancer'].choices = [('', '-------')] + [(b, b) for b in
                                                                settings.BALANCERS]
 

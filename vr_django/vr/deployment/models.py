@@ -60,14 +60,17 @@ class DeploymentLogEntry(models.Model):
 
 
 class ConfigIngredient(models.Model):
-    label = models.CharField(max_length=50, unique=True)
-    value = YAMLDictField(help_text=("Must be valid YAML dict."))
+    name = models.CharField(max_length=50, unique=True)
+    config_yaml = YAMLDictField(help_text=("Config for settings.yaml. "
+                                           "Must be valid YAML dict."))
+    env_yaml = YAMLDictField(help_text=("Environment variables. "
+                                        "Must be valid YAML dict."))
 
     def __unicode__(self):
         return self.label
 
     class Meta:
-        ordering = ['label', ]
+        ordering = ['name', ]
 
 
 repo_choices = (
@@ -127,95 +130,6 @@ class Tag(models.Model):
     name = models.CharField(max_length=20)
 
 
-class ConfigRecipe(models.Model):
-    app = models.ForeignKey(App)
-    namehelp = ("Used in release name.  Good recipe names are short and use "
-                "no spaces or dashes (underscores are OK)")
-    name = models.CharField(verbose_name="ConfigRecipe Name", max_length=20,
-                            help_text=namehelp,
-                            validators=[no_spaces, no_dashes])
-    ingredients = models.ManyToManyField(ConfigIngredient,
-                                         through='RecipeIngredient')
-
-    env_vars = YAMLDictField(help_text=("YAML dict of env vars to be set at "
-                                        "runtime"), null=True, blank=True)
-
-    def __unicode__(self):
-        return '%s-%s' % (self.app.name, self.name)
-
-    def assemble(self, custom_ingredients=None):
-        """ Use current RecipeIngredients objects to assemble a dict of
-        options, or use a custom list of ConfigIngredient ids that might
-        be generated from a preview view. """
-        out = {}
-        if custom_ingredients is None:
-            ingredients = [i.ingredient for i in
-                           RecipeIngredient.objects.filter(recipe=self)]
-        else:
-            ingredients = ConfigIngredient.objects.filter(
-                id__in=custom_ingredients)
-
-        for i in ingredients:
-            out.update(i.value)
-        return out
-
-    def to_yaml(self, custom_dict=None):
-        """ Use assemble method to build a yaml file, or use a custom_dict
-        that might be constructed from a preview view """
-        if custom_dict is None:
-            return yaml.safe_dump(self.assemble(), default_flow_style=False)
-        else:
-            return yaml.safe_dump(custom_dict, default_flow_style=False)
-
-    def get_current_release(self, tag):
-        """
-        Retrieve or create a Release that has current config and a build with
-        the specified tag.
-        """
-
-        build = Build.get_current(self.app, tag)
-        if build is None:
-            build = Build(app=self.app, tag=tag)
-            build.save()
-        # If there's a release linked to the given recipe, that uses the given
-        # build, and has current config, then return that.  Else make a new
-        # release that satisfies those constraints, and return that.
-        releases = Release.objects.filter(recipe=self,
-                                          build__tag=tag).order_by('-id')
-
-        # only re-use a release if it has current env vars too
-        env_vars = dict(build.env_vars or {})
-        env_vars.update(self.env_vars or {})
-
-        if (releases and releases[0].parsed_config() == self.assemble()
-            and dict(releases[0].env_vars or {}) == env_vars):
-            return releases[0]
-        release = Release(recipe=self, build=build, config=self.to_yaml())
-        release.save()
-        return release
-
-    class Meta:
-        unique_together = ('app', 'name')
-        ordering = ('app__name', 'name')
-
-
-class RecipeIngredient(models.Model):
-    """
-    Through-table for the many:many relationship between configingredients and
-    configrecipes.  Managed manually so we can have some extra fields.
-    """
-    ingredient = models.ForeignKey(ConfigIngredient)
-    recipe = models.ForeignKey(ConfigRecipe)
-
-    ohelp = "Order for merging when creating release. Higher number takes "\
-            "precedence."
-    order = models.IntegerField(blank=True, null=True,  help_text=ohelp)
-
-    class Meta:
-        unique_together = ('ingredient', 'recipe')
-        ordering = ['order']
-
-
 class Build(models.Model):
     app = models.ForeignKey(App)
     tag = models.CharField(max_length=50)
@@ -235,7 +149,7 @@ class Build(models.Model):
     status = models.CharField(max_length=20, choices=build_status_choices,
                               default='pending')
 
-    env_vars = YAMLDictField(help_text=("YAML dict of env vars from "
+    env_yaml = YAMLDictField(help_text=("YAML dict of env vars from "
                                         "buildpack"), null=True, blank=True)
 
     buildpack_url = models.CharField(max_length=200, null=True, blank=True)
@@ -297,47 +211,36 @@ class Build(models.Model):
         ordering = ['-id']
 
 
+def get_config_hash(config_dict, env_dict):
+    md5chars = hashlib.md5(bytes(config_dict) + bytes(env_dict)).hexdigest()
+    return md5chars[:8]
+
+
 class Release(models.Model):
-    recipe = models.ForeignKey(ConfigRecipe)
     build = models.ForeignKey(Build)
-    config = models.TextField(blank=True, null=True, help_text="YAML text to "
+    config_yaml = models.TextField(blank=True, null=True, help_text="YAML text to "
                              "be written to settings.yaml at deploy time.")
+    env_yaml = YAMLDictField(help_text=("YAML dict of env vars to be set "
+                                           "at runtime"), null=True, blank=True)
 
     # Hash will be computed on saving the model.
     hash = models.CharField(max_length=32, blank=True, null=True)
 
-    env_vars = YAMLDictField(help_text=("YAML dict of env vars to be set "
-                                           "at runtime"), null=True, blank=True)
 
     def __unicode__(self):
-        return u'-'.join([self.build.app.name, self.build.tag,
-                          self.recipe.name, self.hash or 'PENDING'])
+        return u'-'.join([self.build.app.name, self.build.tag, self.hash])
 
     def compute_hash(self):
-        # Compute self.hash from the config contents and build file.
-        buildcontents = default_storage.open(self.build.file.name, 'rb').read()
-
-        md5chars = hashlib.md5(buildcontents + bytes(self.config) +
-                               bytes(self.env_vars)).hexdigest()
-        return md5chars[:8]
+        return get_config_hash(self.config_yaml, self.env_yaml)
 
     def save(self, *args, **kwargs):
-        # If there's a build, then copy the env vars and compute the hash
-        if self.build.file.name:
-            # copy env vars from build
-            self.env_vars = dict(self.build.env_vars or {})
-
-            # update with env vars from recipe
-            if self.env_vars is None:
-                self.env_vars = self.recipe.env_vars or {}
-            else:
-                self.env_vars.update(self.recipe.env_vars or {})
-
-            self.hash = self.compute_hash()
+        # Ensure that releases always have a correct hash value for the config
+        # they're storing.
+        self.hash = self.compute_hash()
         super(Release, self).save(*args, **kwargs)
 
     def parsed_config(self):
-        return yaml.safe_load(self.config or '')
+        return yaml.safe_load(self.config_yaml or '')
 
     class Meta:
         ordering = ['-id']
@@ -418,7 +321,10 @@ class Swarm(models.Model):
     This is the payoff.  Save a swarm record and then you can tell Velociraptor
     to 'make it so'.
     """
-    recipe = models.ForeignKey(ConfigRecipe)
+    name_help = ("Short name to distinguish between deployments of the same "
+                 "app. Must be filesystem-safe, with no dashes or spaces.")
+    name = models.CharField(max_length=50, help_text=name_help)
+    app = models.ForeignKey(App, null=True)
     squad = models.ForeignKey(Squad)
     release = models.ForeignKey(Release)
     proc_name = models.CharField(max_length=50)
@@ -435,10 +341,14 @@ class Swarm(models.Model):
     balancer = models.CharField(max_length=50, choices=_balancer_choices,
                                 blank=True, null=True)
 
-    # If set to true, then the workers will periodically check this swarm's
-    # status and make sure it has enough workers, running the right version,
-    # with the right config.  Someday.
-    active = models.BooleanField(default=True)
+    config_yaml = YAMLDictField(help_text=("Config for settings.yaml. "
+                                           "Must be valid YAML dict."))
+    env_yaml = YAMLDictField(help_text=("Environment variables. "
+                                        "Must be valid YAML dict."))
+
+    ing_help = "Optional config shared with other swarms."
+    config_ingredients = models.ManyToManyField(ConfigIngredient,
+                                                help_text=ing_help)
 
     def save(self):
         if self.pool and not self.balancer:
@@ -447,26 +357,30 @@ class Swarm(models.Model):
         super(Swarm, self).save()
 
     class Meta:
-        unique_together = ('recipe', 'squad', 'proc_name')
-        ordering = ['recipe__app__name', 'recipe__name', 'proc_name']
+        unique_together = ('app', 'squad', 'proc_name')
+        ordering = ['app__name', 'name', 'proc_name']
 
     def __unicode__(self):
-        return u'%(rname)s-%(proc)s' % {
-            'rname': self.release.__unicode__(),
-            'proc': self.proc_name,
-        }
+        # app-version-swarmname-release_hash-procname
+        return u'-'.join([
+            self.app.name,
+            self.release.build.tag,
+            self.name,
+            self.release.hash,
+            self.proc_name
+        ])
 
     def shortname(self):
         return u'%(app)s-%(version)s-%(proc)s' % {
-            'app': self.recipe.app.name,
+            'app': self.app.name,
             'version': self.release.build.tag,
             'proc': self.proc_name
         }
 
     def get_procs(self, check_cache=False):
         """
-        Return all running procs on the squad that share this swarm's proc name
-        and recipe.
+        Return all running procs on the squad that share this swarm's name and
+        proc name.
         """
         if not self.release:
             return []
@@ -476,9 +390,9 @@ class Swarm(models.Model):
             procs += host.get_procs(check_cache=check_cache)
 
         def is_mine(proc):
-            return p.recipe_name == self.recipe.name and \
+            return p.recipe_name == self.name and \
                    p.proc_name == self.proc_name and \
-                   p.app_name == self.recipe.app.name
+                   p.app_name == self.app.name
 
         return [p for p in procs if is_mine(p)]
 
@@ -509,6 +423,79 @@ class Swarm(models.Model):
 
     def get_next_host(self):
         return self.get_prioritized_hosts()[0]
+
+    # Methods copied off the deprecated ConfigRecipe class.  Some of these will
+    # be needed to replace things that the configrecipe used to do.
+
+    #def assemble(self, custom_ingredients=None):
+        #""" Use current RecipeIngredients objects to assemble a dict of
+        #options, or use a custom list of ConfigIngredient ids that might
+        #be generated from a preview view. """
+        #out = {}
+        #if custom_ingredients is None:
+            #ingredients = [i.ingredient for i in
+                           #RecipeIngredient.objects.filter(recipe=self)]
+        #else:
+            #ingredients = ConfigIngredient.objects.filter(
+                #id__in=custom_ingredients)
+
+        #for i in ingredients:
+            #out.update(i.value)
+        #return out
+
+    #def to_yaml(self, custom_dict=None):
+        #""" Use assemble method to build a yaml file, or use a custom_dict
+        #that might be constructed from a preview view """
+        #if custom_dict is None:
+            #return yaml.safe_dump(self.assemble(), default_flow_style=False)
+        #else:
+            #return yaml.safe_dump(custom_dict, default_flow_style=False)
+
+    def get_config(self, build):
+        """
+        Pull the build's env var dict.  Update with the swarm's
+        config_ingredients' config and env var dicts.  Finally update with the
+        swarm's own config and env var dicts.  Return the result.  Used to
+        create the config dicts that get stored with a release.
+        """
+        config = {}
+        env = dict(build.env_yaml)
+
+        # Only bother checking the m:m if we've been saved, since it's not
+        # possible for m:ms to exist on a Swarm that's already been saved.
+        if self.id:
+            for ing in self.config_ingredients.all():
+                config.update(ing.config_yaml)
+                env.update(ing.env_yaml)
+
+        config.update(self.config_yaml or {})
+        env.update(self.env_yaml or {})
+
+        return config, env
+
+    def get_current_release(self, tag):
+        """
+        Retrieve or create a Release that has current config and a build with
+        the specified tag.
+        """
+
+        build = Build.get_current(self.app, tag)
+        if build is None:
+            build = Build(app=self.app, tag=tag)
+            build.save()
+
+        config, env = self.get_config(build)
+
+        # If there's an existing release with our bild 
+        releases = Release.objects.filter(hash=get_config_hash(config, env),
+                                          build=build).order_by('-id')
+        if releases:
+            return releases[0]
+
+        release = Release(build=build, config_yaml=config, env_yaml=env)
+        release.save()
+        return release
+
 
 
 class PortLock(models.Model):

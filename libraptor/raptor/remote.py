@@ -350,7 +350,7 @@ def configure_proc(build_name, release_name, proc, port, user='nobody', use_sysl
 
 
 @task
-def deploy_parcel(build_path, config_path, envsh_path, recipe,
+def deploy_parcel(build_path, config_path, envsh_path, swarm,
                   proc, port, user='nobody', use_syslog=False, contain=False,
                   release_hash=None):
     # Builds have timstamps, but releases really don't care about them.  Two
@@ -370,7 +370,7 @@ def deploy_parcel(build_path, config_path, envsh_path, recipe,
     if release_hash is None:
         chars = open(build_path, 'rb').read() + open(config_path, 'rb').read()
         release_hash = hashlib.md5(chars).hexdigest()[:8]
-    release_name = '-'.join([app_name, version, recipe, release_hash])
+    release_name = '-'.join([app_name, version, swarm, release_hash])
     release_path = posixpath.join(RELEASES_ROOT, release_name)
 
     # Ensure that the proc path is written before the release is uploaded, to

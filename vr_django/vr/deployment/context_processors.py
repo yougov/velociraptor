@@ -6,7 +6,7 @@ from vr.deployment.models import Swarm, Squad
 def raptor(request):
     return {
         # For showing a list of all swarms in the nav
-        'swarms': Swarm.objects.filter(active=True),
+        'swarms': Swarm.objects.filter(),
         'squads': Squad.objects.all(),
         # Don't show web log links if syslogging is enabled
         'log_links': not settings.PROC_SYSLOG,

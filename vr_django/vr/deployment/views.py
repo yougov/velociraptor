@@ -58,9 +58,13 @@ def upload_build(request):
 def release(request):
     form = forms.ReleaseForm(request.POST or None)
     if form.is_valid():
-        build = models.Build.objects.get(id=form.cleaned_data['build_id'])
-        recipe = models.ConfigRecipe.objects.get(id=form.cleaned_data['recipe_id'])
-        release = recipe.get_current_release(build.tag)
+        # Take the env vars from the build, update with vars from the form, and
+        # save on the instance.
+        release = form.instance
+        env_yaml = release.build.env_yaml or {}
+        env_yaml.update(release.env_yaml or {})
+        release.env_yaml = env_yaml
+        form.save()
         events.eventify(request.user, 'release', release)
         return HttpResponseRedirect(reverse('deploy'))
     return render(request, 'basic_form.html', {
@@ -81,7 +85,7 @@ def deploy(request):
 
         release = models.Release.objects.get(id=data['release_id'])
         job = tasks.deploy.delay(release_id=data['release_id'],
-                                 recipe_name=release.recipe.name,
+                                 swarm_name=data['swarm_name'],
                                  hostname=data['hostname'],
                                  proc=data['proc'],
                                  port=data['port'],
@@ -106,13 +110,13 @@ def edit_swarm(request, swarm_id=None):
         # Need to populate form from swarm
         swarm = models.Swarm.objects.get(id=swarm_id)
         initial = {
-            'recipe_id': swarm.recipe.id,
+            'app_id': swarm.app.id,
             'squad_id': swarm.squad.id,
             'tag': swarm.release.build.tag,
+            'swarm_name': swarm.name,
             'proc_name': swarm.proc_name,
             'size': swarm.size,
             'pool': swarm.pool or '',
-            'active': swarm.active,
             'balancer': swarm.balancer,
         }
     else:
@@ -122,27 +126,27 @@ def edit_swarm(request, swarm_id=None):
     form = forms.SwarmForm(request.POST or None, initial=initial)
     if form.is_valid():
         data = form.cleaned_data
-        swarm.recipe = models.ConfigRecipe.objects.get(id=data['recipe_id'])
+        swarm.app = models.App.objects.get(id=data['app_id'])
         swarm.squad = models.Squad.objects.get(id=data['squad_id'])
+        swarm.name = data['swarm_name']
         swarm.proc_name = data['proc_name']
         swarm.size = data['size']
         swarm.pool = data['pool'] or None
         swarm.balancer = data['balancer'] or None
-        swarm.active = data['active']
-        swarm.release = swarm.recipe.get_current_release(data['tag'])
+        swarm.release = swarm.get_current_release(data['tag'])
         swarm.save()
         tasks.swarm_start.delay(swarm.id)
         import textwrap
         ev_data = dict(data)
-        ev_data.update(user=request.user.username, app=swarm.recipe.app.name,
-                       recipe=swarm.recipe, shortname=swarm.shortname(),
+        ev_data.update(user=request.user.username, app=swarm.app.name,
+                       shortname=swarm.shortname(),
                        squad=swarm.squad.name)
         ev_detail = textwrap.dedent(
             """%(user)s swarmed %(shortname)s
 
             App: %(app)s
             Version: %(tag)s
-            Recipe: %(recipe)s
+            Swarm Name: %(swarm_name)s
             Proc Name: %(proc_name)s
             Squad: %(squad)s
             Size: %(size)s
