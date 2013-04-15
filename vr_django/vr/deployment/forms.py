@@ -60,10 +60,7 @@ class DeploymentForm(forms.Form):
     # picked.
     proc = forms.CharField(max_length=50)
 
-    name_help = ("Distinguish between app instances with different config. "
-                 "Must be filesystem safe and have no dashes or spaces.  App "
-                 "name and version will be prepended automatically.")
-    swarm_name = forms.CharField(help_text=name_help)
+    config_name = forms.CharField(help_text=models.config_name_help)
 
     hostname = forms.ChoiceField(choices=[])
     port = forms.IntegerField()
@@ -94,7 +91,8 @@ class SwarmForm(forms.Form):
     """
     app_id = forms.ChoiceField(choices=[], label='App')
     tag = forms.CharField(max_length=50)
-    swarm_name = forms.CharField(max_length=50)
+    config_name = forms.CharField(max_length=50,
+                                  help_text=models.config_name_help)
     proc_name = forms.CharField(max_length=50)
     squad_id = forms.ChoiceField(choices=[], label='Squad')
     size = forms.IntegerField()

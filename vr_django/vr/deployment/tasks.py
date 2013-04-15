@@ -70,7 +70,7 @@ class event_on_exception(object):
 
 @task
 @event_on_exception(['deploy'])
-def deploy(release_id, swarm_name, hostname, proc, port, contain=False):
+def deploy(release_id, config_name, hostname, proc, port, contain=False):
     with remove_port_lock(hostname, port):
         release = Release.objects.get(id=release_id)
         msg_title = '%s-%s-%s' % (release.build.app.name, release.build.tag, proc)
@@ -119,7 +119,7 @@ def deploy(release_id, swarm_name, hostname, proc, port, contain=False):
                               build_path=build_filename,
                               config_path='settings.yaml',
                               envsh_path='env.sh',
-                              swarm=swarm_name,
+                              swarm=config_name,
                               proc=proc,
                               release_hash=release.hash,
                               port=port,
@@ -394,7 +394,7 @@ def swarm_deploy_to_host(swarm_id, host_id, ports):
     for port in ports:
         deploy(
             swarm.release.id,
-            swarm.name,
+            swarm.config_name,
             host.name,
             swarm.proc_name,
             port,

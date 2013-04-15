@@ -315,19 +315,20 @@ class Squad(models.Model):
     class Meta:
         ordering = ('name',)
 
+config_name_help = ("Short name like 'prod' or 'europe' to distinguish between "
+             "deployments of the same app. Must be filesystem-safe, "
+             "with no dashes or spaces.")
 
 class Swarm(models.Model):
     """
     This is the payoff.  Save a swarm record and then you can tell Velociraptor
     to 'make it so'.
     """
-    name_help = ("Short name to distinguish between deployments of the same "
-                 "app. Must be filesystem-safe, with no dashes or spaces.")
-    name = models.CharField(max_length=50, help_text=name_help)
     app = models.ForeignKey(App, null=True)
-    squad = models.ForeignKey(Squad)
     release = models.ForeignKey(Release)
+    config_name = models.CharField(max_length=50, help_text=config_name_help)
     proc_name = models.CharField(max_length=50)
+    squad = models.ForeignKey(Squad)
     size = models.IntegerField(help_text='The number of procs in the swarm',
                                default=1)
 
@@ -358,14 +359,14 @@ class Swarm(models.Model):
 
     class Meta:
         unique_together = ('app', 'squad', 'proc_name')
-        ordering = ['app__name', 'name', 'proc_name']
+        ordering = ['app__name', 'config_name', 'proc_name']
 
     def __unicode__(self):
         # app-version-swarmname-release_hash-procname
         return u'-'.join([
             self.app.name,
             self.release.build.tag,
-            self.name,
+            self.config_name,
             self.release.hash,
             self.proc_name
         ])
@@ -390,7 +391,7 @@ class Swarm(models.Model):
             procs += host.get_procs(check_cache=check_cache)
 
         def is_mine(proc):
-            return p.recipe_name == self.name and \
+            return p.recipe_name == self.config_name and \
                    p.proc_name == self.proc_name and \
                    p.app_name == self.app.name
 

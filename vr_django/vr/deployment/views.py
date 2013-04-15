@@ -85,7 +85,7 @@ def deploy(request):
 
         release = models.Release.objects.get(id=data['release_id'])
         job = tasks.deploy.delay(release_id=data['release_id'],
-                                 swarm_name=data['swarm_name'],
+                                 config_name=data['config_name'],
                                  hostname=data['hostname'],
                                  proc=data['proc'],
                                  port=data['port'],
@@ -113,7 +113,7 @@ def edit_swarm(request, swarm_id=None):
             'app_id': swarm.app.id,
             'squad_id': swarm.squad.id,
             'tag': swarm.release.build.tag,
-            'swarm_name': swarm.name,
+            'config_name': swarm.config_name,
             'proc_name': swarm.proc_name,
             'size': swarm.size,
             'pool': swarm.pool or '',
@@ -128,7 +128,7 @@ def edit_swarm(request, swarm_id=None):
         data = form.cleaned_data
         swarm.app = models.App.objects.get(id=data['app_id'])
         swarm.squad = models.Squad.objects.get(id=data['squad_id'])
-        swarm.name = data['swarm_name']
+        swarm.config_name = data['config_name']
         swarm.proc_name = data['proc_name']
         swarm.size = data['size']
         swarm.pool = data['pool'] or None
@@ -146,7 +146,7 @@ def edit_swarm(request, swarm_id=None):
 
             App: %(app)s
             Version: %(tag)s
-            Swarm Name: %(swarm_name)s
+            Config Name: %(config_name)s
             Proc Name: %(proc_name)s
             Squad: %(squad)s
             Size: %(size)s
