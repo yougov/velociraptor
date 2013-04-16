@@ -6,8 +6,10 @@
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>{% block title %}{% if site_title %}{{ site_title }}{% else %}Velociraptor{% endif %}{% endblock title %}</title>
-  <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}" type="text/css" media="screen">
-  <link rel="stylesheet" href="{% static 'css/bootstrap-responsive.css' %}" type="text/css" media="screen">
+  <!--<link rel="stylesheet" href="{% static 'css/bootstrap.css' %}" type="text/css" media="screen">-->
+  <!--<link rel="stylesheet" href="{% static 'css/bootstrap-responsive.css' %}" type="text/css" media="screen">-->
+  <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.css' %}" type="text/css" media="screen">
+  <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap-responsive.css' %}" type="text/css" media="screen">
   <link rel="stylesheet" href="{% static 'css/font-awesome.css' %}" type="text/css" media="screen">
   <link rel="stylesheet" href="{% static 'font/roboto/stylesheet.css' %}" type="text/css" media="screen">
   <link rel="stylesheet" href="{% static 'css/vr.css' %}" type="text/css" media="screen">
@@ -113,7 +115,8 @@
     <script src="{% static 'js/underscore-min.js' %}"></script>
     <script src="{% static 'js/backbone-min.js' %}"></script>
     <script src="{% static 'js/goatee.js' %}"></script>
-    <script src="{% static 'js/bootstrap.js' %}"></script>
+    <!--<script src="{% static 'js/bootstrap.js' %}"></script>-->
+    <script src="{% static 'bootstrap/js/bootstrap.js' %}"></script>
     <script src="{% static 'js/vr.js' %}"></script>
 
 {# GOATEE TEMPLATES #}
