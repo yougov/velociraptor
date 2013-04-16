@@ -4,6 +4,7 @@ import urlparse
 
 from django.http import HttpResponse
 from celery.result import AsyncResult
+import yaml
 
 
 def json_response(obj, status=200):
@@ -63,3 +64,7 @@ def parse_redis_url(url):
         'db': int(parsed.path.replace('/', '')),
     }
 
+
+def yamlize(dct):
+    "Shortcut so I don't have to type all the YAML options so much."
+    return yaml.safe_dump(dct, default_flow_style=False)

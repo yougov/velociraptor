@@ -49,13 +49,15 @@
 {% endblock content %}
 
 {% block script %}
+{{ form.media }}
 <script src="{% static 'js/vrswarm.js' %}"></script>
 {% if swarm.id %}
 <script>
 $(function() {
   VR.Swarm.init('{{ swarm.id }}', $('#swarm-container'));
+  // enable using tabs in the textareas
+  $('.codearea').tabby({tabString:'  '});
 });
 </script>
 {% endif %}
-{{ form.media }}
 {% endblock script %}

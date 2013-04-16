@@ -93,11 +93,14 @@ v1.register(BuildResource())
 
 
 class SwarmResource(ModelResource):
-    recipe = fields.ToOneField('api.resources.RecipeResource', 'recipe')
+    app = fields.ToOneField('api.resources.AppResource', 'app')
     squad = fields.ToOneField('api.resources.SquadResource', 'squad')
     release = fields.ToOneField('api.resources.ReleaseResource', 'release')
 
     shortname = fields.CharField('shortname')
+
+    compiled_config = fields.DictField('get_config')
+    compiled_env = fields.DictField('get_env')
 
     class Meta:
         queryset = models.Swarm.objects.all()
@@ -125,8 +128,8 @@ class SwarmResource(ModelResource):
         bundle.data['version'] = bundle.obj.release.build.tag
 
         # Also add in convenience data
-        bundle.data.update(app_name=bundle.obj.recipe.app.name,
-                           recipe_name=bundle.obj.recipe.name)
+        bundle.data.update(app_name=bundle.obj.app.name,
+                           recipe_name=bundle.obj.config_name)
         return bundle
 v1.register(SwarmResource())
 

@@ -95,6 +95,7 @@ th {
   border-radius: 0px;
 }
 
+
 .proc-details-modal {
   width: 700px;
 }
@@ -402,15 +403,20 @@ th.rowlabel {
 }
 
 .raptorform .controls select {
-  width: 190px
-}
-
-.raptorform .controls input {
-  width: 175px;
+  width: calc(100% - -9px);
 }
 
 .raptorform .controls {
   margin-left: 80px;
+}
+
+.raptorform .codearea {
+  font-family: Monaco, Menlo, Consolas, 'Courier New', monospace;
+}
+
+/* y u make my form fields so ugly bootstrap? */
+.raptorform input, .raptorform textarea, .raptorform .uneditable-input {
+  width: calc(100% - 5px);
 }
 
 @media (max-width: 979px) {

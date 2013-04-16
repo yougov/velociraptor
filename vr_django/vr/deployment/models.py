@@ -62,9 +62,11 @@ class DeploymentLogEntry(models.Model):
 class ConfigIngredient(models.Model):
     name = models.CharField(max_length=50, unique=True)
     config_yaml = YAMLDictField(help_text=("Config for settings.yaml. "
-                                           "Must be valid YAML dict."))
+                                           "Must be valid YAML dict."),
+                                blank=True, null=True)
     env_yaml = YAMLDictField(help_text=("Environment variables. "
-                                        "Must be valid YAML dict."))
+                                        "Must be valid YAML dict."),
+                             blank=True, null=True)
 
     def __unicode__(self):
         return self.label
@@ -343,13 +345,15 @@ class Swarm(models.Model):
                                 blank=True, null=True)
 
     config_yaml = YAMLDictField(help_text=("Config for settings.yaml. "
-                                           "Must be valid YAML dict."))
+                                           "Must be valid YAML dict."),
+                                blank=True, null=True)
     env_yaml = YAMLDictField(help_text=("Environment variables. "
-                                        "Must be valid YAML dict."))
+                                        "Must be valid YAML dict."),
+                             blank=True, null=True)
 
     ing_help = "Optional config shared with other swarms."
     config_ingredients = models.ManyToManyField(ConfigIngredient,
-                                                help_text=ing_help)
+                                                help_text=ing_help, blank=True)
 
     def save(self):
         if self.pool and not self.balancer:
@@ -452,27 +456,42 @@ class Swarm(models.Model):
         #else:
             #return yaml.safe_dump(custom_dict, default_flow_style=False)
 
-    def get_config(self, build):
+    def get_config(self):
         """
-        Pull the build's env var dict.  Update with the swarm's
-        config_ingredients' config and env var dicts.  Finally update with the
-        swarm's own config and env var dicts.  Return the result.  Used to
-        create the config dicts that get stored with a release.
+        Pull the swarm's config_ingredients' config dicts.  Update with the
+        swarm's own config dict.  Return the result.  Used to create the yaml
+        dict that gets stored with a release.
         """
         config = {}
-        env = dict(build.env_yaml)
 
         # Only bother checking the m:m if we've been saved, since it's not
         # possible for m:ms to exist on a Swarm that's already been saved.
         if self.id:
             for ing in self.config_ingredients.all():
-                config.update(ing.config_yaml)
-                env.update(ing.env_yaml)
+                config.update(ing.config_yaml or {})
 
         config.update(self.config_yaml or {})
+
+        return config
+
+    def get_env(self, build=None):
+        """
+        Pull the build's env var dict.  Update with the swarm's
+        config_ingredients' env var dicts.  Finally update with the swarm's own
+        env var dict.  Return the result.  Used to create the yaml dict that
+        gets stored with a release.
+        """
+        env = dict(build.env_yaml or {}) if build else {}
+
+        # Only bother checking the m:m if we've been saved, since it's not
+        # possible for m:ms to exist on a Swarm that's already been saved.
+        if self.id:
+            for ing in self.config_ingredients.all():
+                env.update(ing.env_yaml or {})
+
         env.update(self.env_yaml or {})
 
-        return config, env
+        return env
 
     def get_current_release(self, tag):
         """
@@ -485,7 +504,8 @@ class Swarm(models.Model):
             build = Build(app=self.app, tag=tag)
             build.save()
 
-        config, env = self.get_config(build)
+        env = self.get_env(build)
+        config = self.get_config()
 
         # If there's an existing release with our bild 
         releases = Release.objects.filter(hash=get_config_hash(config, env),

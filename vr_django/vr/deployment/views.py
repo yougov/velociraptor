@@ -6,9 +6,11 @@ from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
+import yaml
 
 
-from vr.deployment import forms, tasks, models, events
+from vr.deployment import forms, tasks, models, events, utils
+from vr.deployment.utils import yamlize
 
 
 @login_required
@@ -114,6 +116,8 @@ def edit_swarm(request, swarm_id=None):
             'squad_id': swarm.squad.id,
             'tag': swarm.release.build.tag,
             'config_name': swarm.config_name,
+            'config_yaml': yamlize(swarm.config_yaml),
+            'env_yaml': yamlize(swarm.env_yaml),
             'proc_name': swarm.proc_name,
             'size': swarm.size,
             'pool': swarm.pool or '',
@@ -129,6 +133,8 @@ def edit_swarm(request, swarm_id=None):
         swarm.app = models.App.objects.get(id=data['app_id'])
         swarm.squad = models.Squad.objects.get(id=data['squad_id'])
         swarm.config_name = data['config_name']
+        swarm.config_yaml = data['config_yaml']
+        swarm.env_yaml = data['env_yaml']
         swarm.proc_name = data['proc_name']
         swarm.size = data['size']
         swarm.pool = data['pool'] or None
