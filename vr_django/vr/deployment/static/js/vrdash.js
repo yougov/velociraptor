@@ -26,8 +26,9 @@ VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl
       var parsed = JSON.parse(e.data);
       if (parsed.event == 'PROCESS_GROUP_REMOVED') {
         VR.Dash.removeProc(parsed);
+        VR.ProcMessages.trigger('destroyproc:'+parsed.id, parsed);
       } else {
-        VR.Dash.updateProcData(parsed);
+        VR.ProcMessages.trigger('updateproc:'+parsed.id, parsed);
       }
   }, this);
 
@@ -71,7 +72,9 @@ VR.Dash.getHostData = function() {
 
 VR.Dash.onHostList = function(data, stat, xhr) {
     _.each(data.objects, function(el) {
-        _.each(el.procs, VR.Dash.updateProcData);
+        _.each(el.procs, function(data) {
+          VR.ProcMessages.trigger('updateproc:'+data.id, data);
+        });
     });
    setTimeout(VR.Dash.getHostData, VR.Dash.Options.refreshInterval);
 };
@@ -96,11 +99,3 @@ VR.Dash.onActiveHostData = function(data, stat, xhr) {
     VR.Dash.onHostData(el);
   });
 };
-
-VR.Dash.updateProcData = function(data) {
-    app = VR.Dash.Apps.getOrCreate(data.app_name);
-    VR.Dash.Apps.add(app);
-    var s = app.swarms.getByProcData(data);
-    var p = s.procs.getOrCreate(data);
-};
-

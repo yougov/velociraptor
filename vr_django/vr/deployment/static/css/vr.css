@@ -200,6 +200,39 @@ th.rowlabel {
   margin-top: 0px;
 }
 
+/*.appcell > .procboxes {*/
+  /*position: relative;*/
+  /*top: 2px;*/
+/*}*/
+
+.approw.biggened > .appcell > .procboxes {
+  display: none;
+}
+
+.approw > .appcell > .swarmtable {
+  display: none;
+}
+
+.approw.biggened > .appcell > .swarmtable {
+  display: block;
+}
+
+.swarmbox.biggened > .procgrid > .procview {
+  display: none;
+}
+
+.swarmbox {
+  vertical-align: top;
+}
+
+.swarmbox .hostview {
+  display: none;
+}
+
+.swarmbox.biggened .hostview {
+  display: table-row;
+}
+
 .clickable-text:hover {
   color: #08C;
   cursor: pointer;
@@ -210,12 +243,20 @@ th.rowlabel {
   text-align: right;
 }
 
-.proccell {
+.dash-apps tr {
+  vertical-align: top;
+}
+
+.appcell {
   padding-top: 6px;
 }
 
 .swarmbox {
   float: left;
+}
+
+.swarmbox .expandtree {
+  top: 0;
 }
 
 .biggened .swarmbox {
@@ -224,12 +265,7 @@ th.rowlabel {
 
 .swarmtitle {
   color: #999;
-  line-height: 23px;
-  display: none;
-}
-
-.biggened .swarmtitle {
-  display: block;
+  line-height: 20px;
 }
 
 .hostblock {
@@ -259,6 +295,36 @@ th.rowlabel {
   margin: 0 4px 4px 0;
   cursor: pointer;
   background-color: #999;
+}
+
+.hostview th {
+  font-family: "Roboto";
+  font-size: 12px;
+  padding-right: 15px;
+  color: #666;
+}
+
+
+#swarmlist li a {
+  display: block;
+  padding: 3px 20px;
+  clear: both;
+  font-weight: normal;
+  line-height: 20px;
+  color: #333333;
+  white-space: nowrap;
+}
+
+#swarmlist li a:hover, #swarmlist li.active a {
+  background-color: #009cf0;
+  color: white;
+}
+
+/* use a flat blue for highlighting selected items in dropdown instead of bootstrap gradient */
+.dropdown-menu > li > a:hover, .dropdown-menu > li.active > a {
+  background-color: #009cf0;
+  color: white;
+  background-image: none;
 }
 
 
@@ -403,7 +469,7 @@ th.rowlabel {
 }
 
 .raptorform .controls select {
-  width: calc(100% - -9px);
+  width: calc(100% - 5px);
 }
 
 .raptorform .controls {
@@ -416,7 +482,7 @@ th.rowlabel {
 
 /* y u make my form fields so ugly bootstrap? */
 .raptorform input, .raptorform textarea, .raptorform .uneditable-input {
-  width: calc(100% - 5px);
+  width: calc(100% - 19px);
 }
 
 @media (max-width: 979px) {

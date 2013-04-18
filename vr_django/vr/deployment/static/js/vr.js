@@ -73,11 +73,12 @@ VR.Urls = {
 };
 
 // All proc objects should subscribe to messages from this object, in the form
-// "change:<proc id>", and update themselves when such a message comes in.
+// "updateproc:<id>" and "destroyproc:<id>" and update themselves when such a
+// message comes in.
 // This saves having to drill down through collections or the DOM later if data
 // comes in on an API or event stream.
-VR.Messages = {};
-_.extend(VR.Messages, Backbone.Events);
+VR.ProcMessages = {};
+_.extend(VR.ProcMessages, Backbone.Events);
 
 
 // Base model for all models that talk to the Tastypie API. This includes
@@ -92,7 +93,7 @@ VR.Models.Tasty = Backbone.Model.extend({
 VR.Models.Proc = Backbone.Model.extend({
     initialize: function() {
       this.on('change', this.updateUrl);
-      VR.Messages.on('change:' + this.id, this.set, this);
+      VR.ProcMessages.on('updateproc:' + this.id, this.set, this);
     },
 
     url: function() {
@@ -229,18 +230,42 @@ VR.Models.Host = VR.Models.Tasty.extend({
       var p = new VR.Models.Proc(el);
       this.procs.add(p);
     }, this);
+
+    this.procs.on('add', this.onAddProc, this);
+  },
+
+  onProcData: function(ev, data) {
+    // backbone will instsantiate a new Proc and handle deduplication in the collection for us, 
+    // if procs have a consistent 'id' attribute, which they do.
+    this.procs.add(data);
+  },
+
+  onAddProc: function(proc) {
+    this.trigger('addproc', proc);
   }
 });
 
 
 VR.Models.HostList = Backbone.Collection.extend({
-  model: VR.Models.Host
+  model: VR.Models.Host,
+  onProcData: function(ev, data) {
+    // see if we already have a host for this proc.  If not, make one.  Pass the proc down to that host.
+    var hostId = [data.app_name, data.recipe_name, data.host].join('-');
+
+    var host = this.get(hostId);
+    if (!host) {
+      host = new VR.Models.Host({ id: hostId, name: data.host });
+      this.add(host);
+    }
+    host.onProcData(ev, data);
+  }
 });
 
 
 VR.Models.Swarm = VR.Models.Tasty.extend({
     initialize: function() {
-      this.procs = new VR.Models.ProcList();
+      this.hosts = new VR.Models.HostList();
+      this.hosts.on('addproc', this.onAddProc, this);
     },
 
     procIsMine: function(fullProcName) {
@@ -272,8 +297,17 @@ VR.Models.Swarm = VR.Models.Tasty.extend({
           swarm.set(data.objects[0]);
         };
       });
-    }
+    },
 
+    onProcData: function(ev, data) {
+      // called when proc data comes down from above 
+      this.hosts.onProcData(ev, data);
+    },
+
+    onAddProc: function(proc) {
+      // called when a new proc is added down below.  Bubble it up to owners.
+      this.trigger('addproc', proc);
+    }
 });
 
 
@@ -295,10 +329,11 @@ VR.Models.SwarmList = Backbone.Collection.extend({
       }
       // else create, add, and return.
       swarm = new VR.Models.Swarm({
-          name: swarmname,
+          name: swarmname
         });
 
       swarm.fetchByProcData(procData);
+      swarm.on('addproc', this.onAddProc, this);
       this.add(swarm);
       return swarm;
     },
@@ -313,6 +348,13 @@ VR.Models.SwarmList = Backbone.Collection.extend({
           return swarm.procs.models.length === 0;
         }, this);
       _.each(empty_swarms, function(swarm) {this.remove(swarm);}, this);
+    },
+
+    onProcData: function(ev, data) {
+      // when we hear from above that new proc data has come in, send that down
+      // the tree.
+      var swarm = this.getByProcData(data);
+      swarm.onProcData(ev, data);
     }
 });
 
@@ -320,12 +362,26 @@ VR.Models.SwarmList = Backbone.Collection.extend({
 VR.Models.App = VR.Models.Tasty.extend({
     initialize: function() {
       this.swarms = new VR.Models.SwarmList();
+      this.swarms.on('addproc', this.onAddProc, this);
+    },
+
+    onProcData: function(ev, data) {
+      this.swarms.onProcData(ev, data);
+    },
+
+    onAddProc: function(proc) {
+      this.trigger('addproc', proc);
     }
 });
 
 
 VR.Models.AppList = Backbone.Collection.extend({
     model: VR.Models.App,
+    
+    initialize: function() {
+      this.on('change', this.updateUrl);
+      VR.ProcMessages.on('all', this.onProcData, this);
+    },
 
     comparator: function(app) {
       return app.id;
@@ -349,6 +405,19 @@ VR.Models.AppList = Backbone.Collection.extend({
       this.add(app);
 
       return app;
+    },
+
+    onProcData: function(ev, data) {
+      // handle updates differently from removals.
+      var parsed = ev.split(":");
+      if (parsed[0] === 'updateproc') {
+        var app = this.getOrCreate(data.app_name);
+        app.onProcData(ev, data);
+      } else if (parsed[0] === 'destroyproc') {
+        // TODO: here's where we should handle drilling down to remove
+        // destroyed procs, empty swarms, and empty apps, rather than from the
+        // outside in vrdash.js.
+      }
     },
 
     cull: function(host, cutoff) {
@@ -409,8 +478,7 @@ VR.Views.Proc = Backbone.View.extend({
       this.modalTemplate = modalTemplate || VR.Templates.ProcModal;
 
       this.proc.on('change', this.render, this);
-      this.proc.on('destroy', this.onRemove, this);
-      this.proc.on('remove', this.onRemove, this);
+      this.proc.on('remove', this.onProcRemove, this);
       this.render();
     },
     render: function() {
@@ -421,16 +489,16 @@ VR.Views.Proc = Backbone.View.extend({
       'click': 'onClick'
     },
 
+    onProcRemove: function(proc) {
+      this.remove();
+    },
+
     onClick: function(ev) {
       if (!this.modal) {
         this.modal = new VR.Views.ProcModal(this.proc);   
       }
 
       this.modal.show();
-    },
-
-    onRemove: function() {
-      this.$el.remove();
     }
 });
 
@@ -511,7 +579,7 @@ VR.Views.ProcModal = Backbone.View.extend({
     },
 
     onDestroyBtn: function(ev) {
-      this.proc.destroy();
+      this.proc.destroy({wait: true});
     },
 
     onProcDestroy: function() {
@@ -556,7 +624,7 @@ VR.Views.ProcLog = Backbone.View.extend({
 
 
 VR.Views.Host = Backbone.View.extend({
-    el: '<div class="hostview"></div>',
+    el: '<tr class="hostview"></tr>',
     initialize: function(host, template) {
       this.host = host;
       this.template = template || VR.Templates.Host;
@@ -581,17 +649,42 @@ VR.Views.Host = Backbone.View.extend({
 });
 
 
+VR.Views.ProcList = Backbone.View.extend({
+    el: '<div class="procboxes"></div>',
+    initialize: function(owner) {
+      // owner is an object that may fire the 'addproc' event, which could be
+      // an app, swarm, or host.
+      this.owner = owner;
+      // whenever the owner adds a proc, add a view to ourself.
+      this.owner.on('addproc', this.addProcView, this);
+    },
+
+    addProcView: function(proc) {
+      // create a procview.
+      var pv = new VR.Views.Proc(proc);
+      // insert it in my container
+      this.$el.append(pv.el);
+    }
+});
+
+
 VR.Views.Swarm = Backbone.View.extend({
-    el: '<div class="swarmbox"></div>',
+    el: '<tr class="swarmbox"></tr>',
     initialize: function(swarm, template) {
       this.swarm = swarm;
       this.template = template || VR.Templates.Swarm;
+      // what a new host gets added, make sure we render a hostview for it
+      this.swarm.hosts.on('add', this.hostAdded, this);
+
       // when a new proc is added, make sure it gets rendered in here
-      this.swarm.procs.on('add', this.procAdded, this);
+      this.swarm.hosts.on('addproc', this.procAdded, this);
       this.swarm.on('remove', this.onRemove, this);
+
+      this.procsEl = this.$el.find('.procgrid');
     },
     events: {
-      'click .swarmtitle': 'onClick'
+      'click .swarmtitle': 'onClick',
+      'click th .expandtree': 'toggleExpanded'
     },
     onClick: function(ev) {
       if (!this.modal) {
@@ -600,10 +693,19 @@ VR.Views.Swarm = Backbone.View.extend({
 
       this.modal.show();
     },
+    toggleExpanded: function() {
+      this.$el.toggleClass('biggened');
+      this.$el.find('i').toggleClass('icon-caret-right').toggleClass('icon-caret-down');
+    },
+    hostAdded: function(host) {
+      //console.log('host added', host);
+      var hv = new VR.Views.Host(host);
+      this.$el.find('.hosttable').append(hv.el);
+    },
     procAdded: function(proc) {
       var pv = new VR.Views.Proc(proc);
       pv.render();
-      this.$el.find('.procgrid').append(pv.el);
+      this.$el.children('.procgrid').append(pv.el);
     },
     render: function() {
       this.$el.html(this.template.goatee(this.swarm.toJSON()));
@@ -703,17 +805,18 @@ VR.Views.App = Backbone.View.extend({
     swarmAdded: function(swarm) {
       var sv = new VR.Views.Swarm(swarm);
       sv.render();
-      this.$el.find('.proccell').append(sv.el);
+      this.$el.find('.swarmtable').append(sv.el);
     },
 
     events: {
-      'click .expandtree': 'toggleExpanded',
+      'click .titlecell .expandtree': 'toggleExpanded',
       'click .apptitle': 'appModal'
     },
 
     toggleExpanded: function() {
       this.$el.toggleClass('biggened');
-      this.$el.find('i').toggleClass('icon-caret-right').toggleClass('icon-caret-down');
+      // only toggle this arrow, not the ones deeper inside
+      this.$el.find('.titlecell > .expandtree > i').toggleClass('icon-caret-right').toggleClass('icon-caret-down');
     },
 
     appModal: function() {
@@ -726,6 +829,8 @@ VR.Views.App = Backbone.View.extend({
 
     render: function() {
       this.$el.html(this.template.goatee(this.app.toJSON()));
+      var plv = new VR.Views.ProcList(this.app);
+      this.$el.find('td').append(plv.el);
     },
 
     onRemove: function() {

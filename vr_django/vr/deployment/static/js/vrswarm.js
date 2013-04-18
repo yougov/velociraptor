@@ -9,7 +9,6 @@ Swarm.init = function(swarmId, container) {
   var url = VR.Urls.getTasty('swarms', swarmId);
   $.getJSON(url, function(data, sts, xhr) {
       
-      console.log(data);
       Swarm.swarm = new VR.Models.Swarm(data);
       Swarm.swarm.procs.on('add', Swarm.addProcView);
 

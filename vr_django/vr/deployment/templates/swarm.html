@@ -1,11 +1,17 @@
 {% extends 'base.html' %}
 {% load static from staticfiles %}
+{% load formfield %}
 
 {% block content %}
+<form method='post' class='raptorform'{% if enctype %}enctype="{{ enctype }}"{% endif %}>{% csrf_token %}
 <div class="row">
 <div class="span12">
+
     {% if swarm.id %}
-    <h1>Swarm: {{ swarm.shortname }}</h1>
+    <h1 class="float">Swarm: {{ swarm.shortname }}
+      <span id="swarm-container" class="row-fluid">
+      </span>
+    </h1>
     {% else %}
     <h1>New Swarm</h1>
     {% endif %}
@@ -13,39 +19,43 @@
 </div>
 
 <div class="row">
-  <div class="span4">
 
-  <form method='post' class='well raptorform'{% if enctype %}enctype="{{ enctype }}"{% endif %}>{% csrf_token %}
-     
-      {% if instructions %}
-        {# No, we dont' have to close that <p> tag.  This is HTML5 baby! #}
-        <p>{{ instructions }}
-      {% endif %}
-  <div class="form-horizontal">
-    {% for field in form %}
-      <div class="control-group">
-          <label class="control-label" for="{{field.name}}">{{field.label}}</label>
-          <div class="controls">
-            {{field}}
-            <small class="helptext">{{ field.help_text }}</small>
-          </div>
+  <div class="span4">
+      <div class="tabbable">
+        <ul class="nav nav-list">
+          <li class="active"><a href="#general" data-toggle="tab">General</a></li>
+          <li><a href="#config" data-toggle="tab">Config</a></li>
+          <li><a href="#routing" data-toggle="tab">Routing</a></li>
+        </ul>    
       </div>
-    {% endfor %}
+  </div>
+  <div class="span4">
+    <div class="tab-content">
+      <div class="tab-pane active form-horizontal" id="general">
+          {% formfield form.app_id %}
+          {% formfield form.tag %}
+          {% formfield form.proc_name %}
+          {% formfield form.config_name %}
+          {% formfield form.squad_id %}
+          {% formfield form.size %}
+      </div>
+      <div class="tab-pane form-horizontal" id="config">
+          {% formfield form.config_yaml %}
+          {% formfield form.env_yaml %}
+      </div>
+      <div class="tab-pane form-horizontal" id="routing">
+          {% formfield form.pool %}
+          {% formfield form.balancer %}
+      </div>
+    </div>
+
     <div class="control-row">
       <button type="submit" class="btn btn-primary">Swarm</button>
     </div>
   </div>
-  </form>
-  </div>
 
-  {% if swarm.id %}
-  <div class="span8">
-      <h2>Procs</h2>
-      <div id="swarm-container" class="row-fluid">
-      </div>
-  </div>
-  {% endif %}
 </div>
+</form>
 {% endblock content %}
 
 {% block script %}

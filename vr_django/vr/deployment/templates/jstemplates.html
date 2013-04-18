@@ -1,12 +1,11 @@
 
 <script id="app-tmpl" type="text/goatee">
-  <th class="titlecell"><div class="apptitle clickable-text"><%name%></div><div class="expandtree clickable-text"><i class="icon-caret icon-caret-right"></span></div></th><td class="proccell"></td>
+<th class="titlecell"><div class="apptitle clickable-text"><%name%></div><div class="expandtree"><i class="icon-caret icon-caret-right"></i></div></th><td class="appcell"><table class="swarmtable"></table></td>
 </script>
 
+
 <script id="swarm-tmpl" type="text/goatee">
-  <div class="procgrid">
-    <div class="swarmtitle clickable-text"><%name%></div>
-  </div>
+<th><span class="swarmtitle clickable-text"><%name%></span><div class="expandtree"><i class="icon-caret icon-caret-right"></i></div></th><td class="procgrid"><table class="hosttable"></table></td>
 </script>
 
 <script id="proc-tmpl" type="text/goatee">
@@ -79,6 +78,7 @@
   </div>
 </script>
 
+
 <script id="swarm-details-tmpl" type="text/goatee">
   <div class="modal swarm-details-modal">
         <div class="modal-header">
@@ -134,11 +134,8 @@
 </script>
 
 <script id="host-tmpl" type="text/goatee">
-<div data-hostname="<%name%>">
-  <h4><%name%></h4>
-  {# Note that VR.Views.Host relies on this procgrid div being present #}
-  <div class="procgrid"></div>
-</div>
+  <th data-hostname="<%name%>"><%name%></th>
+  <td class="procgrid"></td>
 </script>
 
 <script id="event-tmpl" type="text/goatee">
