@@ -94,6 +94,9 @@ VR.Models.Proc = Backbone.Model.extend({
     initialize: function() {
       this.on('change', this.updateUrl);
       VR.ProcMessages.on('updateproc:' + this.id, this.set, this);
+      VR.ProcMessages.on('destroyproc:'+this.id, this.onDestroyMsg, this); 
+
+      _.bindAll(this);
     },
 
     url: function() {
@@ -129,6 +132,10 @@ VR.Models.Proc = Backbone.Model.extend({
     getLog: function() {
       // return a ProcLog model bound to this Proc model.
       return new VR.Models.ProcLog({proc: this});
+    },
+
+    onDestroyMsg: function(data) {
+      this.trigger('destroy', this, this.collection);
     }
 });
 
@@ -189,18 +196,6 @@ VR.Models.ProcList = Backbone.Collection.extend({
       _.each(stale, function(proc) {this.remove(proc);}, this);
     },
 
-    removeByData: function(data) {
-      // Given an object like we'd get from the API or on an event stream, see if
-      // there's a proc in the collection that matches it, and remove it if so.
-
-      var proc = _.find(this.models, function(proc) {
-          return proc.id === data.id;
-        });
-      if (proc) {
-        this.remove(proc);
-      }
-    },
-
     stopAll: function() {
       this.each(function(proc) {
         proc.stop();
@@ -232,6 +227,7 @@ VR.Models.Host = VR.Models.Tasty.extend({
     }, this);
 
     this.procs.on('add', this.onAddProc, this);
+    this.procs.on('remove', this.onRemoveProc, this);
   },
 
   onProcData: function(ev, data) {
@@ -242,6 +238,14 @@ VR.Models.Host = VR.Models.Tasty.extend({
 
   onAddProc: function(proc) {
     this.trigger('addproc', proc);
+  },
+
+  onRemoveProc: function(proc) {
+    this.trigger('removeproc', proc);
+    // if there are no more procs, then remove self
+    if (this.procs.length === 0 && this.collection) {
+      this.collection.remove(this);
+    }
   }
 });
 
@@ -265,7 +269,7 @@ VR.Models.HostList = Backbone.Collection.extend({
 VR.Models.Swarm = VR.Models.Tasty.extend({
     initialize: function() {
       this.hosts = new VR.Models.HostList();
-      this.hosts.on('addproc', this.onAddProc, this);
+      this.hosts.on('all', this.onHostsEvent, this);
     },
 
     procIsMine: function(fullProcName) {
@@ -304,9 +308,43 @@ VR.Models.Swarm = VR.Models.Tasty.extend({
       this.hosts.onProcData(ev, data);
     },
 
-    onAddProc: function(proc) {
-      // called when a new proc is added down below.  Bubble it up to owners.
-      this.trigger('addproc', proc);
+    onHostsEvent: function(event, model, collection, options) {
+      // all events on our hosts list should be bubbled up to be events on 
+      // the swarm itself.
+      this.trigger.apply(this, arguments);
+
+      // if all my hosts are gone, I should go too.
+      if (event === 'remove' && this.hosts.length === 0 && this.collection) {
+        this.collection.remove(this);
+      }
+    },
+
+    getProcs: function() {
+      // loop over all hosts in this.hosts and build up an array with all their procs.
+      // return that.
+      var procsArrayArray = _.map(this.hosts.models, function(host){return host.procs.models;});
+      return _.flatten(procsArrayArray);
+    },
+
+    // convenience methods since we'll so often work with procs at the swarm level.
+    // FIXME: Provide a server-side view that will restart all procs in a swarm with a
+    // single API call, instead of doing all this looping.
+    stopAll: function() {
+      this.hosts.each(function(host) {
+        host.procs.stopAll();
+      });
+    },
+
+    startAll: function() {
+      this.hosts.each(function(host) {
+        host.procs.startAll();
+      });
+    },
+
+    restartAll: function() {
+      this.hosts.each(function(host) {
+        host.procs.restartAll();
+      });
     }
 });
 
@@ -362,7 +400,7 @@ VR.Models.SwarmList = Backbone.Collection.extend({
 VR.Models.App = VR.Models.Tasty.extend({
     initialize: function() {
       this.swarms = new VR.Models.SwarmList();
-      this.swarms.on('addproc', this.onAddProc, this);
+      this.swarms.on('all', this.onSwarmsEvent, this);
     },
 
     onProcData: function(ev, data) {
@@ -371,6 +409,13 @@ VR.Models.App = VR.Models.Tasty.extend({
 
     onAddProc: function(proc) {
       this.trigger('addproc', proc);
+    },
+
+    onSwarmsEvent: function(event, model, collection, options) {
+      this.trigger.apply(this, arguments);
+      if (event === 'removeproc') {
+        console.log(this.swarms);
+      }
     }
 });
 
@@ -479,6 +524,7 @@ VR.Views.Proc = Backbone.View.extend({
 
       this.proc.on('change', this.render, this);
       this.proc.on('remove', this.onProcRemove, this);
+      this.proc.on('destroy', this.onProcRemove, this);
       this.render();
     },
     render: function() {
@@ -579,7 +625,7 @@ VR.Views.ProcModal = Backbone.View.extend({
     },
 
     onDestroyBtn: function(ev) {
-      this.proc.destroy({wait: true});
+      this.proc.destroy({wait: true, sync: true});
     },
 
     onProcDestroy: function() {
@@ -698,7 +744,6 @@ VR.Views.Swarm = Backbone.View.extend({
       this.$el.find('i').toggleClass('icon-caret-right').toggleClass('icon-caret-down');
     },
     hostAdded: function(host) {
-      //console.log('host added', host);
       var hv = new VR.Views.Host(host);
       this.$el.find('.hosttable').append(hv.el);
     },
@@ -718,37 +763,41 @@ VR.Views.Swarm = Backbone.View.extend({
 VR.Views.SwarmModal = Backbone.View.extend({
     initialize: function(swarm, template) {
       this.swarm = swarm;
-      this.attributes.proc_length = this.swarm.procs.length;
       this.current_state = '';
       this.template = template || VR.Templates.SwarmModal;
 
-      // we subscribe to the proc's activity here too to update the list.
-      this.swarm.procs.on('add', this.procAdded, this);
-      this.swarm.procs.on('change', this.updateState, this);
-      this.swarm.on('remove', this.onRemove, this);
+      // FIXME: if a new proc is added to the swarm/host while the modal is open
+      // will we see it?  I think we need to listen for 'addproc' on the swarm to
+      // catch that.
+      this.listenTo(this.swarm, 'remove', this.remove);
+      this.listenTo(this.swarm, 'all', this.onSwarmEvent, this);
+
+      this.swarm.hosts.each(function(host) {
+          this.listenTo(host.procs, 'all', this.updateState, this);
+      }, this);
     },
     events: {
       'click .swarm-start': 'onStartBtn',
       'click .swarm-stop': 'onStopBtn',
       'click .swarm-restart': 'onRestartBtn'
     },
+
     render: function() {
       this.$el.html(this.template.goatee(this.swarm.toJSON()));
 
-      // We trigger the procModel on render to build the current procboxes at start.
-      // using for-loop here instead of _.each for scope.
-      for (var i = 0; i < this.swarm.procs.length; i++) {
-          var procModel = this.swarm.procs.models[i];
-          this.procAdded(procModel);
-      }
-      
+      var procs = this.swarm.getProcs();
+      _.each(procs, function(proc) {
+          this.procAdded(proc);
+      }, this);
     },
+
     show: function() {
       this.render();
       this.$el.modal('show');
 
       this.updateState();
     },
+
     procAdded: function(proc) {
       var pv = new VR.Views.Proc(proc);
       // unbind the model click events inside the swarm modal.
@@ -763,14 +812,15 @@ VR.Views.SwarmModal = Backbone.View.extend({
 
       // if there are any stopped/fatal procs, add the class to show the start
       // button.
-      if (this.swarm.procs.some(function(proc) {return proc.isStopped();})) {
+      var procs = this.swarm.getProcs();
+      if (_.some(procs, function(proc) {return proc.isStopped();})) {
         this.$el.find('.modal').addClass('somestopped');
       } else {
         this.$el.find('.modal').removeClass('somestopped');
       }
 
       // if there are any running procs, add the class to show the stop button
-      if (this.swarm.procs.some(function(proc) {return proc.isRunning();})) {
+      if (_.some(procs, function(proc) {return proc.isRunning();})) {
         this.$el.find('.modal').addClass('somerunning');
       } else {
         this.$el.find('.modal').removeClass('somerunning');
@@ -781,13 +831,19 @@ VR.Views.SwarmModal = Backbone.View.extend({
       this.$el.remove();
     },
     onStartBtn: function(ev) {
-      this.swarm.procs.startAll();
+      this.swarm.startAll();
     },
     onStopBtn: function(ev) {
-      this.swarm.procs.stopAll();
+      this.swarm.stopAll();
     },
     onRestartBtn: function(ev) {
-      this.swarm.procs.restartAll();
+      this.swarm.restartAll();
+    },
+    onSwarmEvent: function(event, model, collection, options) {
+      console.log(arguments);
+    },
+    onProcEvent: function(event, model, collection, options) {
+      console.log(arguments);
     }
 
 });

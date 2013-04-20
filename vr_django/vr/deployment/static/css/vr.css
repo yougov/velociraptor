@@ -251,8 +251,8 @@ th.rowlabel {
   padding-top: 6px;
 }
 
-.swarmbox {
-  float: left;
+.swarmbox th {
+  text-align: right;
 }
 
 .swarmbox .expandtree {
@@ -265,7 +265,7 @@ th.rowlabel {
 
 .swarmtitle {
   color: #999;
-  line-height: 20px;
+  line-height: 22px;
 }
 
 .hostblock {
@@ -300,7 +300,8 @@ th.rowlabel {
 .hostview th {
   font-family: "Roboto";
   font-size: 12px;
-  padding-right: 15px;
+  padding-right: 12px;
+  line-height: 18px;
   color: #666;
 }
 

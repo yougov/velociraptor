@@ -25,7 +25,6 @@ VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl
   procEvents.onmessage = $.proxy(function(e) {
       var parsed = JSON.parse(e.data);
       if (parsed.event == 'PROCESS_GROUP_REMOVED') {
-        VR.Dash.removeProc(parsed);
         VR.ProcMessages.trigger('destroyproc:'+parsed.id, parsed);
       } else {
         VR.ProcMessages.trigger('updateproc:'+parsed.id, parsed);
@@ -76,6 +75,9 @@ VR.Dash.onHostList = function(data, stat, xhr) {
           VR.ProcMessages.trigger('updateproc:'+data.id, data);
         });
     });
+
+   // poll the API once every minute to refresh the host list, just in case
+   // it somehow didn't stay in sync from the pubsub.
    setTimeout(VR.Dash.getHostData, VR.Dash.Options.refreshInterval);
 };
 

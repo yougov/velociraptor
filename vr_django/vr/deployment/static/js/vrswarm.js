@@ -8,6 +8,8 @@ Swarm.init = function(swarmId, container) {
 
   var url = VR.Urls.getTasty('swarms', swarmId);
   $.getJSON(url, function(data, sts, xhr) {
+      // FIXME: swarms don't have procs anymore.  they have hosts that have procs.
+      // need to listen for something nested here :\
       
       Swarm.swarm = new VR.Models.Swarm(data);
       Swarm.swarm.procs.on('add', Swarm.addProcView);
