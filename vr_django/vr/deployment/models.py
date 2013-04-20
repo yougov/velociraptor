@@ -69,7 +69,7 @@ class ConfigIngredient(models.Model):
                              blank=True, null=True)
 
     def __unicode__(self):
-        return self.label
+        return self.name
 
     class Meta:
         ordering = ['name', ]
@@ -230,7 +230,7 @@ class Release(models.Model):
 
 
     def __unicode__(self):
-        return u'-'.join([self.build.app.name, self.build.tag, self.hash])
+        return u'-'.join([self.build.app.name, self.build.tag, self.hash or ''])
 
     def compute_hash(self):
         return get_config_hash(self.config_yaml, self.env_yaml)
