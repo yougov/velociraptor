@@ -1,4 +1,5 @@
 import sys
+import os
 
 if 'runserver' in sys.argv:
     from gevent import monkey
@@ -58,7 +59,7 @@ BALANCERS = {
 
 # Without this, the build host will choke when trying to connect to a local
 # redis that doesn't exist.
-if 'collectstatic' not in sys.argv:
+if 'collectstatic' not in sys.argv and not os.getenv('COLLECTSTATIC'):
     CACHES = {
         'default': {
             'BACKEND': 'redis_cache.RedisCache',
