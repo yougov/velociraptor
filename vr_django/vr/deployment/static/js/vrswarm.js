@@ -8,15 +8,12 @@ Swarm.init = function(swarmId, container) {
 
   var url = VR.Urls.getTasty('swarms', swarmId);
   $.getJSON(url, function(data, sts, xhr) {
-      // FIXME: swarms don't have procs anymore.  they have hosts that have procs.
-      // need to listen for something nested here :\
-      
       Swarm.swarm = new VR.Models.Swarm(data);
-      Swarm.swarm.procs.on('add', Swarm.addProcView);
-
+      Swarm.swarm.on('addproc', Swarm.addProcView);
       _.each(data.procs, function(pdata, idx, lst) {
-        Swarm.swarm.procs.getOrCreate(pdata);
+        Swarm.swarm.onProcData(null, pdata);
       });
+
     }
   );
 
@@ -27,9 +24,10 @@ Swarm.init = function(swarmId, container) {
     // only respond to proc events for procs that are part of this swarm.
     if (Swarm.swarm.procIsMine(parsed.name)) {
       if (parsed.event == 'PROCESS_GROUP_REMOVED') {
-        Swarm.removeProc(parsed);
+        VR.ProcMessages.trigger('destroyproc:'+parsed.id, parsed);
       } else {
-        Swarm.swarm.procs.getOrCreate(parsed);
+        Swarm.swarm.onProcData(e, parsed);
+        VR.ProcMessages.trigger('updateproc:'+parsed.id, parsed);
       }
     }
   }, this);
@@ -40,12 +38,4 @@ Swarm.addProcView = function(proc) {
   Swarm.container.append(view.el);
 };
 
-Swarm.removeProc = function(data) {
-  var proc = _.find(VR.Swarm.swarm.procs.models, function(p) {
-    return p.id === data.id;
-  });
-  if (proc) {
-    Swarm.swarm.procs.remove(proc);
-  };
-};
 })();

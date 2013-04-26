@@ -122,7 +122,7 @@ VR.Models.Proc = Backbone.Model.extend({
 
     restart: function() { this.doAction('restart'); },
 
-    isRunning: function() {return this.get('statename') == 'RUNNING';},
+    isRunning: function() {return this.get('statename') === 'RUNNING';},
 
     isStopped: function() {
       var state = this.get('statename');
@@ -550,6 +550,7 @@ VR.Views.Proc = Backbone.View.extend({
 
 
 VR.Views.ProcModal = Backbone.View.extend({
+    el: '<div class="modalwrap" tabindex="-1"></div>',
     initialize: function(proc) {
       this.proc = proc;
       this.fresh = true;
@@ -761,6 +762,7 @@ VR.Views.Swarm = Backbone.View.extend({
 });
 
 VR.Views.SwarmModal = Backbone.View.extend({
+    el: '<div class="modalwrap" tabindex="-1"></div>',
     initialize: function(swarm, template) {
       this.swarm = swarm;
       this.current_state = '';
@@ -895,6 +897,7 @@ VR.Views.App = Backbone.View.extend({
 });
 
 VR.Views.AppModal = Backbone.View.extend({
+    el: '<div class="modalwrap" tabindex="-1"></div>',
     initialize: function(app, template) {
       this.app = app;
       this.template = template || VR.Templates.AppModal;

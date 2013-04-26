@@ -93,9 +93,11 @@ class SwarmForm(forms.Form):
     tag = forms.CharField(max_length=50)
     config_name = forms.CharField(max_length=50,
                                   help_text=models.config_name_help)
-    config_yaml = forms.CharField(widget=forms.widgets.Textarea(attrs={'class':
+    config_yaml = forms.CharField(required=False,
+                                  widget=forms.widgets.Textarea(attrs={'class':
                                                                        'codearea'}))
-    env_yaml = forms.CharField(widget=forms.widgets.Textarea(attrs={'class':
+    env_yaml = forms.CharField(required=False,
+                               widget=forms.widgets.Textarea(attrs={'class':
                                                                     'codearea'}))
     proc_name = forms.CharField(max_length=50)
     squad_id = forms.ChoiceField(choices=[], label='Squad')
