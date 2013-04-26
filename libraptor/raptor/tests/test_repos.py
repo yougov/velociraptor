@@ -141,3 +141,9 @@ def test_git_get_version():
     with tmprepo('git_python_app.tar.gz', 'git') as r:
         r.update(rev)
         assert r.version == rev
+
+
+def test_basename_trailing_space():
+    # Catches https://bitbucket.org/yougov/velociraptor/issue/10/
+    url = "ssh://hg@bitbucket.org/yougov/velociraptor "
+    assert repo.basename(url) == 'velociraptor'

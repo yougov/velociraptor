@@ -142,6 +142,10 @@ def basename(url):
     Return the name of the folder that you'd get if you cloned 'url' into the
     current working directory.
     """
+    # It's easy to accidentally have whitespace on the beginning or end of the
+    # url.
+    url = url.strip()
+
     url, sep, fragment = url.partition('#')
     # Remove trailing slash from url if present
     if url.endswith('/'):
