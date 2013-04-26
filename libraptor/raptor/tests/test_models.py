@@ -84,7 +84,7 @@ class FakeProcCase(unittest.TestCase):
 
     def test_as_dict(self):
         assert self.dummyproc.as_dict() == {
-             'app_name': '~UNKNOWN',
+             'app_name': 'dummyproc',
              'description': 'pid 5556, uptime 16:05:53',
              'exitstatus': 0,
              'group': 'dummyproc',
