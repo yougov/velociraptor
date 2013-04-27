@@ -413,9 +413,6 @@ VR.Models.App = VR.Models.Tasty.extend({
 
     onSwarmsEvent: function(event, model, collection, options) {
       this.trigger.apply(this, arguments);
-      if (event === 'removeproc') {
-        console.log(this.swarms);
-      }
     }
 });
 
@@ -842,10 +839,10 @@ VR.Views.SwarmModal = Backbone.View.extend({
       this.swarm.restartAll();
     },
     onSwarmEvent: function(event, model, collection, options) {
-      console.log(arguments);
+      //console.log(arguments);
     },
     onProcEvent: function(event, model, collection, options) {
-      console.log(arguments);
+      //console.log(arguments);
     }
 
 });

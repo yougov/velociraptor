@@ -8,6 +8,7 @@ import contextlib
 import re
 import traceback
 import functools
+import hashlib
 from collections import defaultdict
 
 import envoy
@@ -94,7 +95,9 @@ def deploy(release_id, config_name, hostname, proc, port, contain=False):
         with tmpdir():
             # write the settings.yaml locally
             with open('settings.yaml', 'wb') as f:
-                f.write(release.config_yaml)
+                conf = yaml.safe_dump(release.config_yaml,
+                                      default_flow_style=False)
+                f.write(conf)
 
             # write the env.sh locally
             with open('env.sh', 'wb') as f:
@@ -196,6 +199,10 @@ def build_app(build_id, callback=None):
 
             tar_params = {'filename': name, 'folder': app_repo.folder}
             run('tar -C %(folder)s -cjf %(filename)s .' % tar_params)
+
+            # compute and remember the tarball's MD5 hash
+            with open(name, 'rb') as f:
+                build.hash = hashlib.md5(f.read()).hexdigest()
             filepath = 'builds/' + name
             with open(name, 'rb') as localfile:
                 default_storage.save(filepath, localfile)
@@ -206,6 +213,9 @@ def build_app(build_id, callback=None):
             build.file = filepath
             build.end_time = time
             build.status = 'success'
+
+            # Ask the buildpack for any necessary env vars.  Store them with
+            # the build.
             build.env_yaml = app_repo.release().get('config_vars')
             build.buildpack_url = app_repo.buildpack.url
             build.buildpack_version = app_repo.buildpack.version
@@ -295,6 +305,7 @@ def swarm_start(swarm_id):
         # waiting list.
         swarm_wait_for_build(swarm, build)
     else:
+        # Build hasn't been kicked off yet.  Do that now.
         callback = swarm_release.subtask((swarm.id,))
         build_app.delay(build.id, callback)
 

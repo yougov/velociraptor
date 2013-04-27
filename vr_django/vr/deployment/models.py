@@ -151,6 +151,8 @@ class Build(models.Model):
     status = models.CharField(max_length=20, choices=build_status_choices,
                               default='pending')
 
+    hash = models.CharField(max_length=32, blank=True, null=True)
+
     env_yaml = YAMLDictField(help_text=("YAML dict of env vars from "
                                         "buildpack"), null=True, blank=True)
 
@@ -213,14 +215,49 @@ class Build(models.Model):
         ordering = ['-id']
 
 
-def get_config_hash(config_dict, env_dict):
-    md5chars = hashlib.md5(bytes(config_dict) + bytes(env_dict)).hexdigest()
-    return md5chars[:8]
+def stringify(thing, acc=''):
+    """
+    Turn things into strings that are consistent regardless of Python
+    implementation or hash seed.
+    """
+    if isinstance(thing, dict):
+        return str([stringify(x) for x in sorted(thing.items())])
+    elif isinstance(thing, (list, tuple)):
+        return str([stringify(x) for x in thing])
+    elif isinstance(thing, (basestring, int, float)) or thing is None:
+        return str(thing)
+    elif isinstance(thing, set):
+        return stringify(sorted(thing))
+    else:
+        e = "%s is type %s, which is not stringifiable"
+        raise TypeError(e % (thing, type(thing)))
+
+
+def make_hash(*args):
+    """
+    Given any number of simple arguments (scalars, lists, tuples, dicts), turn
+    them all into strings, cat them together, and return an md5 sum.
+    """
+    return hashlib.md5(''.join(stringify(a) for a in args)).hexdigest()
+
+
+def compute_release_hash(build, config_dict, env_dict):
+    """
+    Given the build and config from a release, generate the 8 byte hash to be
+    used in the release's proc names.
+    """
+    return make_hash(build.hash, config_dict, env_dict)[:8]
+
+
+
+config_name_help = ("Short name like 'prod' or 'europe' to distinguish between "
+             "deployments of the same app. Must be filesystem-safe, "
+             "with no dashes or spaces.")
 
 
 class Release(models.Model):
     build = models.ForeignKey(Build)
-    config_yaml = models.TextField(blank=True, null=True, help_text="YAML text to "
+    config_yaml = YAMLDictField(blank=True, null=True, help_text="YAML text to "
                              "be written to settings.yaml at deploy time.")
     env_yaml = YAMLDictField(help_text=("YAML dict of env vars to be set "
                                            "at runtime"), null=True, blank=True)
@@ -233,13 +270,7 @@ class Release(models.Model):
         return u'-'.join([self.build.app.name, self.build.tag, self.hash or ''])
 
     def compute_hash(self):
-        return get_config_hash(self.config_yaml, self.env_yaml)
-
-    def save(self, *args, **kwargs):
-        # Ensure that releases always have a correct hash value for the config
-        # they're storing.
-        self.hash = self.compute_hash()
-        super(Release, self).save(*args, **kwargs)
+        return compute_release_hash(self.build, self.config_yaml, self.env_yaml)
 
     def parsed_config(self):
         return yaml.safe_load(self.config_yaml or '')
@@ -316,10 +347,6 @@ class Squad(models.Model):
 
     class Meta:
         ordering = ('name',)
-
-config_name_help = ("Short name like 'prod' or 'europe' to distinguish between "
-             "deployments of the same app. Must be filesystem-safe, "
-             "with no dashes or spaces.")
 
 class Swarm(models.Model):
     """
@@ -429,33 +456,6 @@ class Swarm(models.Model):
     def get_next_host(self):
         return self.get_prioritized_hosts()[0]
 
-    # Methods copied off the deprecated ConfigRecipe class.  Some of these will
-    # be needed to replace things that the configrecipe used to do.
-
-    #def assemble(self, custom_ingredients=None):
-        #""" Use current RecipeIngredients objects to assemble a dict of
-        #options, or use a custom list of ConfigIngredient ids that might
-        #be generated from a preview view. """
-        #out = {}
-        #if custom_ingredients is None:
-            #ingredients = [i.ingredient for i in
-                           #RecipeIngredient.objects.filter(recipe=self)]
-        #else:
-            #ingredients = ConfigIngredient.objects.filter(
-                #id__in=custom_ingredients)
-
-        #for i in ingredients:
-            #out.update(i.value)
-        #return out
-
-    #def to_yaml(self, custom_dict=None):
-        #""" Use assemble method to build a yaml file, or use a custom_dict
-        #that might be constructed from a preview view """
-        #if custom_dict is None:
-            #return yaml.safe_dump(self.assemble(), default_flow_style=False)
-        #else:
-            #return yaml.safe_dump(custom_dict, default_flow_style=False)
-
     def get_config(self):
         """
         Pull the swarm's config_ingredients' config dicts.  Update with the
@@ -507,13 +507,28 @@ class Swarm(models.Model):
         env = self.get_env(build)
         config = self.get_config()
 
-        # If there's an existing release with our bild 
-        releases = Release.objects.filter(hash=get_config_hash(config, env),
-                                          build=build).order_by('-id')
-        if releases:
-            return releases[0]
+        # If there's a release with the build and config we need, re-use it.
+        # First filter by build in the DB query...
+        releases = Release.objects.filter(build=build).order_by('-id')
 
+        # ...then filter in Python for equivalent config (identical keys/values
+        # in different order are treated as the same)
+        match = lambda r: r.config_yaml == config and r.env_yaml == env
+        releases = [r for r in releases if match(r)]
+        if releases:
+            # We found one!
+            release = releases[0]
+            # Just in case it hasn't been hashed since the build completed, do
+            # that now.
+            rhash = release.compute_hash()
+            if release.hash != rhash:
+                release.hash = rhash
+                release.save()
+            return release
+
+        # Go ahead and make one.
         release = Release(build=build, config_yaml=config, env_yaml=env)
+        release.hash = release.compute_hash()
         release.save()
         return release
 

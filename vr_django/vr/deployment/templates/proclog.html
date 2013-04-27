@@ -10,9 +10,6 @@
 $(function() {
   var url = "{% url api_host_proc hostname procname %}";
   $.getJSON(url, function(data, sts, xhr) {
-    console.log('data', data);
-    console.log('sts', sts);
-    console.log('xhr', xhr);
     var proc = new VR.Models.Proc(data);
     var container = $('.proc-log');
     var log = proc.getLog();

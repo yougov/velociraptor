@@ -486,6 +486,12 @@ th.rowlabel {
   width: calc(100% - 19px);
 }
 
+.raptorform .errorlist {
+  list-style-type: none;
+  margin: 0;
+  color: red;
+}
+
 @media (max-width: 979px) {
   .raptorform .control-label {
     clear: both;
