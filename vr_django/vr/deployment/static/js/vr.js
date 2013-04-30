@@ -546,8 +546,14 @@ VR.Views.Proc = Backbone.View.extend({
 });
 
 
-VR.Views.ProcModal = Backbone.View.extend({
-    el: '<div class="modalwrap" tabindex="-1"></div>',
+VR.Views.BaseModal = Backbone.View.extend({
+    // base class for bootstrap modal views, which need to have tabindex set in
+    // order for them to be dismissable with the Escape key.
+    el: '<div class="modalwrap" tabindex="-1"></div>'
+});
+
+
+VR.Views.ProcModal = VR.Views.BaseModal.extend({
     initialize: function(proc) {
       this.proc = proc;
       this.fresh = true;
@@ -758,8 +764,7 @@ VR.Views.Swarm = Backbone.View.extend({
     }
 });
 
-VR.Views.SwarmModal = Backbone.View.extend({
-    el: '<div class="modalwrap" tabindex="-1"></div>',
+VR.Views.SwarmModal = VR.Views.BaseModal.extend({
     initialize: function(swarm, template) {
       this.swarm = swarm;
       this.current_state = '';
@@ -893,8 +898,7 @@ VR.Views.App = Backbone.View.extend({
     }
 });
 
-VR.Views.AppModal = Backbone.View.extend({
-    el: '<div class="modalwrap" tabindex="-1"></div>',
+VR.Views.AppModal = VR.Views.BaseModal.extend({
     initialize: function(app, template) {
       this.app = app;
       this.template = template || VR.Templates.AppModal;
@@ -945,7 +949,7 @@ VR.Views.Event = Backbone.View.extend({
         this.model = model;
         this.model.on('destroy', this.onDestroy, this);
         this.template = template || VR.Templates.Event;
-        this.modalTemplate = modalTemplate || VR.Templates.EventDetail;
+        this.modalTemplate = modalTemplate || VR.Templates.EventModal;
         this.render();
     },
 
@@ -962,10 +966,10 @@ VR.Views.Event = Backbone.View.extend({
     },
 
     onClick: function(ev) {
-      // When you click an Event, you should see an EventDetail modal.  These
+      // When you click an Event, you should see an EventModal modal.  These
       // are created on the fly when first requested.
       if (!this.modal) {
-        this.modal = new VR.Views.EventDetail(this.model, this.modalTemplate);   
+        this.modal = new VR.Views.EventModal(this.model, this.modalTemplate);   
       }
 
       this.modal.show();
@@ -974,10 +978,10 @@ VR.Views.Event = Backbone.View.extend({
 
 
 // The modal that provides additional details about the event.
-VR.Views.EventDetail = Backbone.View.extend({
+VR.Views.EventModal = VR.Views.BaseModal.extend({
     initialize: function(model, template) {
       this.model = model;
-      this.template = template || VR.Templates.EventDetail;
+      this.template = template || VR.Templates.EventModal;
       this.model.on('change', this.render, this);
       this.model.on('remove', this.onRemove, this);
     },
