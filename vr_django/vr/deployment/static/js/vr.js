@@ -759,8 +759,11 @@ VR.Views.Swarm = Backbone.View.extend({
     render: function() {
       this.$el.html(this.template.goatee(this.swarm.toJSON()));
     },
-    onRemove: function() {
-      this.$el.remove();
+    onRemove: function(model) {
+      // filter out host removal events that have bubbled up from below
+      if (model === this) {
+        this.$el.remove();
+      }
     }
 });
 
@@ -869,8 +872,7 @@ VR.Views.App = Backbone.View.extend({
     },
 
     events: {
-      'click .titlecell .expandtree': 'toggleExpanded',
-      'click .apptitle': 'appModal'
+      'click .apptitle, .titlecell .expandtree': 'toggleExpanded'
     },
 
     toggleExpanded: function() {
@@ -879,38 +881,19 @@ VR.Views.App = Backbone.View.extend({
       this.$el.find('.titlecell > .expandtree > i').toggleClass('icon-caret-right').toggleClass('icon-caret-down');
     },
 
-    appModal: function() {
-      if (!this.modal) {
-        this.modal = new VR.Views.AppModal(this.app);   
-      }
-
-      this.modal.show();
-    },
-
     render: function() {
       this.$el.html(this.template.goatee(this.app.toJSON()));
       var plv = new VR.Views.ProcList(this.app);
       this.$el.find('td').append(plv.el);
     },
 
-    onRemove: function() {
-      this.$el.remove();
-    }
-});
-
-VR.Views.AppModal = VR.Views.BaseModal.extend({
-    initialize: function(app, template) {
-      this.app = app;
-      this.template = template || VR.Templates.AppModal;
-    },
-
-    render: function() {
-      this.$el.html(this.template.goatee(this.app.toJSON()));
-    },
-
-    show: function() {
-      this.render();
-      this.$el.modal('show');
+    onRemove: function(model) {
+      console.log('vr.views.app.remove', model);
+      // swarm removal events are bubbled up here as well as app removal
+      // events.  Only remove self if self.app is the thing just removed
+      if (model === this.app) {
+        this.$el.remove();
+      }
     }
 });
 

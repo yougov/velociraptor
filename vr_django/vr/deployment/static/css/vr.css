@@ -264,8 +264,9 @@ th.rowlabel {
 }
 
 .swarmtitle {
-  color: #999;
+  color: #08C;
   line-height: 22px;
+  text-decoration: underline;
 }
 
 .hostblock {
