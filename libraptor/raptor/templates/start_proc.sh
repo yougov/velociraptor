@@ -1,15 +1,8 @@
 #!/bin/bash
 
-# If you're viewing this inside a proc directory on an app host, this is the
-# file used to actually start up a Velociraptor-managed process.
+# For apps running in containers, this script will set up the container and
+# then call the script to start the actual app.
 
-# If you're viewing this inside our source code repo, this file is a template
-# that will be used to write a real start_proc.sh at deploy time.  The magic
-# strings will be substituted with real values by Python.
-
-export APP_SETTINGS_YAML="%(settings)s"
-export PORT=%(port)s
-export TMPDIR=%(tmp)s
-export HOME=%(home)s
-
+# For uncontained apps, this script will do almost nothing, just calling the
+# script with the actual command.
 %(cmd)s 

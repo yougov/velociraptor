@@ -100,7 +100,6 @@ def get_template(name):
 class Deployer(object):
     mountpoints = []
     lxc_config_template = None
-    start_script_template = 'start_proc.sh'
 
     def __init__(self, build_name, release_name, proc, port, user, use_syslog):
         self.build_name = build_name
@@ -120,6 +119,13 @@ class Deployer(object):
                                                  "settings.yaml")
         self.proc_line = self.get_proc_line()
 
+    def run(self):
+        """
+        Do everything needed to get the proc running on the remote host.
+        """
+        self.configure_proc()
+        self.reload_supervisor()
+
     def configure_proc(self):
         """
         Wrap all the functions needed to get a proc configured on the remote
@@ -130,6 +136,7 @@ class Deployer(object):
         self.write_proc_conf()
         self.write_proc_lxc()
         self.write_start_proc_sh()
+        self.write_start_proc_inner()
         self.create_proc_tmpdir()
         self.upload_uptester()
         self.create_mount_points()
@@ -144,13 +151,6 @@ class Deployer(object):
         sudo('cp %(release_path)s/settings.yaml %(proc_path)s/' % self.__dict__)
         sudo('cp %(release_path)s/env.sh %(proc_path)s/' % self.__dict__)
 
-    def run(self):
-        """
-        Do everything needed to get the proc running on the remote host.
-        """
-        self.configure_proc()
-        self.reload_supervisor()
-
     def get_paths(self):
         """
         Return a dictionary of paths to be used when writing the proc config.
@@ -163,7 +163,7 @@ class Deployer(object):
             'envsh': self.envsh_path,
         }
 
-    def get_start_cmd(self):
+    def get_wrapper_cmd(self):
         """
         Return the command that should be run to actually start up the process.
         """
@@ -211,16 +211,25 @@ class Deployer(object):
             }, use_sudo=True)
 
     def write_start_proc_sh(self):
+        """
+        Write the outer script that sets up the container.
+        """
         sh_script = get_template('start_proc.sh')
-
         sh_remote = posixpath.join(self.proc_path, 'start_proc.sh')
+        tmpl_data = {'cmd': self.get_wrapper_cmd()}
+        files.upload_template(sh_script, sh_remote, tmpl_data, use_sudo=True)
+        sudo('chmod +x %s' % sh_remote)
 
-        # The start_proc.sh template needs to be fed some paths, as well as a
-        # port and the command to be launched
+    def write_start_proc_inner(self):
+        """
+        Write the inner script that runs inside the container, loads up env
+        vars, and actually starts the proc.
+        """
+        sh_script = get_template('start_proc_inner.sh')
+        sh_remote = posixpath.join(self.proc_path, 'start_proc_inner.sh')
         tmpl_data = self.get_paths()
-        tmpl_data['cmd'] = self.get_start_cmd()
+        tmpl_data['cmd'] = self.proc_line
         tmpl_data['port'] = self.port
-
         files.upload_template(sh_script, sh_remote, tmpl_data, use_sudo=True)
         sudo('chmod +x %s' % sh_remote)
 
@@ -268,7 +277,6 @@ class Deployer(object):
 
 
 class ContainedDeployer(Deployer):
-    start_script_template = 'start_contained.sh'
 
     def get_proc_conf_user(self):
         # Contained procs will be started by Supervisor as root, and then su to
@@ -282,36 +290,17 @@ class ContainedDeployer(Deployer):
         """
         # In a container, these paths are always the same.
         return {
-            'home': '/tmp',
+            'home': '/app',
             'tmp': '/tmp',
             'settings': '/settings.yaml',
             'envsh': '/env.sh',
         }
 
-    def get_start_cmd(self):
-        inner_cmd = self.proc_line
+    def get_wrapper_cmd(self):
         container_name = self.proc_name
         lxc_config_path = posixpath.join(self.proc_path, 'proc.lxc')
-        return build_container_cmd(inner_cmd, self.user, container_name,
-                                   lxc_config_path)
-
-
-
-class LucidDeployer(ContainedDeployer):
-    mountpoints = ('/app',
-                   '/bin',
-                   '/dev',
-                   '/etc',
-                   '/lib',
-                   '/lib64',
-                   '/opt',
-                   '/usr',
-                   '/proc',
-                   '/sys',
-                   '/dev/pts',
-                   '/dev/shm')
-
-    lxc_config_template = 'lucid.lxc'
+        return build_container_cmd('/start_proc_inner.sh', self.user,
+                                   container_name, lxc_config_path)
 
 
 class PreciseDeployer(ContainedDeployer):
@@ -327,7 +316,6 @@ class PreciseDeployer(ContainedDeployer):
                    '/run',
                    '/sys',
                    '/dev/pts',)
-                   #'/run/shm')
 
     lxc_config_template = 'precise.lxc'
 
@@ -339,9 +327,7 @@ def configure_proc(build_name, release_name, proc, port, user='nobody', use_sysl
         deployer_cls = Deployer
     else:
         issue = sudo('cat /etc/issue')
-        if '10.04' in issue:
-            deployer_cls = LucidDeployer
-        elif '12.04' in issue:
+        if '12.04' in issue:
             deployer_cls = PreciseDeployer
         else:
             raise ValueError("Could not determine deployer type for %s" %
