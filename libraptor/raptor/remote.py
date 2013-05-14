@@ -225,8 +225,8 @@ class Deployer(object):
         Write the inner script that runs inside the container, loads up env
         vars, and actually starts the proc.
         """
-        sh_script = get_template('start_proc_inner.sh')
-        sh_remote = posixpath.join(self.proc_path, 'start_proc_inner.sh')
+        sh_script = get_template('proc.sh')
+        sh_remote = posixpath.join(self.proc_path, 'proc.sh')
         tmpl_data = self.get_paths()
         tmpl_data['cmd'] = self.proc_line
         tmpl_data['port'] = self.port
@@ -299,7 +299,7 @@ class ContainedDeployer(Deployer):
     def get_wrapper_cmd(self):
         container_name = self.proc_name
         lxc_config_path = posixpath.join(self.proc_path, 'proc.lxc')
-        return build_container_cmd('/start_proc_inner.sh', self.user,
+        return build_container_cmd('/proc.sh', self.user,
                                    container_name, lxc_config_path)
 
 
