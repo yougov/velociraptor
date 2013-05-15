@@ -1,4 +1,6 @@
+import sys
 import os
+import subprocess
 import shutil
 import tempfile
 import urlparse
@@ -37,21 +39,57 @@ class chdir(object):
 
 class CommandException(Exception):
     """
-    Custom exception class for displaying nice input from failed envoy
-    commands.  Accepts an envoy command result object on init.
+    Custom exception class for displaying nice input from failed commands.
+    Accepts an CommandResult object on init.
     """
 
     def __init__(self, result):
         message = ("Command '%(command)s' failed with status code "
                    "%(status_code)s.\n"
-                   "std_out: %(std_out)s\n"
-                   "std_err: %(std_err)s\n") % {
-                       'command': ' '.join(result.command),
+                   "output: %(output)s\n") % {
+                       'command': result.command,
                        'status_code': result.status_code,
-                       'std_out': result.std_out,
-                       'std_err': result.std_err,
+                       'output': result.output,
                    }
         super(CommandException, self).__init__(message)
+
+
+class CommandResult(object):
+    def __init__(self, command, output, status_code):
+        self.command = command
+        self.output = output
+        self.status_code = status_code
+
+    def __repr__(self):
+        return '<CommandResult: %s,%s>' % (self.status_code, self.command)
+
+    def raise_for_status(self):
+        if self.status_code != 0:
+            raise CommandException(self)
+
+
+def run(command, verbose=False):
+    """
+    Run a shell command.  Capture the stdout and stderr as a single stream.
+    Capture the status code.
+
+    If verbose=True (the default), then print command and the output to the
+    terminal.
+
+    """
+    p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT)
+    output = ""
+    status_code = None
+    if verbose:
+        print "run: %s" % command
+    while status_code is None:
+        status_code = p.poll()
+        line = p.stdout.readline()
+        if verbose:
+            sys.stdout.write(line)
+        output += line
+    return CommandResult(command, output, status_code)
 
 
 def parse_redis_url(url):

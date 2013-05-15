@@ -11,7 +11,6 @@ import functools
 import hashlib
 from collections import defaultdict
 
-import envoy
 import yaml
 import fabric.network
 import redis
@@ -27,7 +26,7 @@ from vr.deployment import models
 from vr.deployment import balancer, events, utils
 from raptor import repo, remote, build as rbuild
 from raptor.models import Proc
-from raptor.utils import tmpdir
+from raptor.utils import tmpdir, run
 
 
 logger = logging.getLogger('velociraptor')
@@ -132,31 +131,6 @@ def deploy(release_id, config_name, hostname, proc, port, contain=False):
                               contain=contain)
 
 
-
-class CmdError(Exception):
-    """
-    Exception subclass for when we shell out to the cmd line with envoy and the
-    cmd fails.
-    """
-    def __init__(self, envoy_result, *args, **kwargs):
-        msg = ("'%(command)s' returned code %(status_code)s. \n"
-               "stdout: %(std_out)s\n"
-               "stderr: %(std_err)s") % envoy_result.__dict__
-        super(CmdError, self).__init__(msg, *args, **kwargs)
-
-
-def run(cmd):
-    """
-    Wrap envoy.run to raise helpful exception if a command doesn't exit with
-    status 0.
-    """
-    result = envoy.run(cmd)
-    if result.status_code == 0:
-        return result
-    else:
-        raise CmdError(result)
-
-
 @task
 @event_on_exception(['build'])
 def build_app(build_id, callback=None):
@@ -198,7 +172,8 @@ def build_app(build_id, callback=None):
                                 'time': time.strftime('%Y-%m-%dT%H-%M')}
 
             tar_params = {'filename': name, 'folder': app_repo.folder}
-            run('tar -C %(folder)s -cjf %(filename)s .' % tar_params)
+            tar_result = run('tar -C %(folder)s -cjf %(filename)s .' % tar_params)
+            tar_result.raise_for_status()
 
             # compute and remember the tarball's MD5 hash
             with open(name, 'rb') as f:

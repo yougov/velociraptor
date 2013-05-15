@@ -11,7 +11,6 @@ setup(
     install_requires=[
         'Fabric==1.4.0',
         'paramiko>=1.8.0,<2.0',
-        'envoy==0.0.2',
         'suds==0.4',
         'supervisor==3.0b2-dev-vr4',
         'redis>=2.6.2',

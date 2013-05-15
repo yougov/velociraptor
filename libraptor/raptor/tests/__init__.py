@@ -3,10 +3,8 @@ import tempfile
 import shutil
 import xmlrpclib
 
-import envoy
-
 from raptor import repo
-from raptor.utils import CommandException
+from raptor.utils import run
 
 # A fake Supervisor xmlrpc interface.
 class FakeSupervisor(object):
@@ -90,9 +88,8 @@ class tmprepo(object):
         self.temp_path = tempfile.mkdtemp()
         os.chdir(self.temp_path)
         cmd = 'tar -zxf %s --strip-components 1' % self.tarball
-        result = envoy.run(cmd)
-        if result.status_code != 0:
-            raise CommandException(result)
+        result = run(cmd)
+        result.raise_for_status()
         return self.repo_class('./', vcs_type=self.vcs_type)
 
     def __exit__(self, type, value, traceback):

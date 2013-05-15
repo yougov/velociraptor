@@ -4,9 +4,7 @@ import urlparse
 import re
 import logging
 
-import envoy
-
-from raptor.utils import CommandException, chdir
+from raptor.utils import chdir, run
 
 
 log = logging.getLogger(__name__)
@@ -41,13 +39,6 @@ def guess_folder_vcs(folder):
         return None
 
 
-class VcsError(CommandException):
-    """
-    Raise this when you fail to update/clone a repo.
-    """
-    pass
-
-
 class Repo(object):
 
     def __init__(self, folder, url=None, vcs_type=None):
@@ -76,9 +67,8 @@ class Repo(object):
         self.url = url
 
     def run(self, command):
-        r = envoy.run(command)
-        if r.status_code != 0:
-            raise VcsError(r)
+        r = run(command)
+        r.raise_for_status()
         return r
 
     def get_url(self):
@@ -92,7 +82,7 @@ class Repo(object):
         }[self.vcs_type]
         with chdir(self.folder):
             r = self.run(cmd)
-        return r.std_out.replace('\n', '')
+        return r.output.replace('\n', '')
 
     def clone(self):
         log.info('Cloning %s to %s' % (self.url, self.folder))
@@ -112,7 +102,7 @@ class Repo(object):
         with chdir(self.folder):
             if self.vcs_type == 'hg':
                 self.run('hg pull')
-                self.run('hg up %s' % rev).std_out
+                self.run('hg up %s' % rev)
             elif self.vcs_type == 'git':
                 self.run('git pull origin master')
                 self.run('git checkout %s' % rev)
@@ -125,11 +115,11 @@ class Repo(object):
     def version(self):
         if self.vcs_type == 'hg':
             r = self.run('hg identify -i %s' % self.folder)
-            return r.std_out.rstrip('+\n')
+            return r.output.rstrip('+\n')
         elif self.vcs_type == 'git':
             with chdir(self.folder):
                 r = self.run('git rev-parse HEAD')
-            return r.std_out.rstrip()
+            return r.output.rstrip()
 
     def __repr__(self):
         values = {'classname': self.__class__.__name__, 'folder':

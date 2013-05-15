@@ -3,10 +3,9 @@ import hashlib
 import logging
 
 import yaml
-import envoy
 
 from raptor import repo
-from raptor.utils import CommandException
+from raptor.utils import run
 
 
 HOME = (os.environ.get('RAPTOR_HOME') or os.path.expanduser('~/.raptor'))
@@ -19,15 +18,6 @@ CONFIG_FILE = os.path.join(HOME, 'config.yaml')
 log = logging.getLogger(__name__)
 
 
-
-class BuildError(CommandException):
-    """
-    Raise this when you fail to build a repo.  Pass in an envoy result object
-    on init.
-    """
-    pass
-
-
 class BuildPack(repo.Repo):
 
     def detect(self, app):
@@ -37,7 +27,7 @@ class BuildPack(repo.Repo):
         """
         script = os.path.join(self.folder, 'bin', 'detect')
         cmd = '%s %s' % (script, app.folder)
-        result = envoy.run(cmd)
+        result = run(cmd)
         return result.status_code == 0
 
     def compile(self, app):
@@ -48,16 +38,15 @@ class BuildPack(repo.Repo):
 
         cmd = ' '.join([script, app.folder, cache_folder])
         log.info(cmd)
-        result = envoy.run(cmd)
-        if result.status_code != 0:
-            raise BuildError(result)
+        result = run(cmd)
+        result.raise_for_status()
 
     def release(self, app):
         script = os.path.join(self.folder, 'bin', 'release')
-        result = envoy.run('%s %s' % (script, app.folder))
+        result = run('%s %s' % (script, app.folder))
         assert result.status_code == 0, ("Failed release on %s with %s "
                                          "buildpack" % (app, self.basename))
-        return yaml.safe_load(result.std_out)
+        return yaml.safe_load(result.output)
 
     def update(self, rev=None):
         """
@@ -113,7 +102,7 @@ class App(repo.Repo):
 
 def list_buildpacks(packs_dir=PACKS_HOME, preferred_order=None):
     if not os.path.exists(packs_dir):
-        envoy.run('mkdir -p %s' % packs_dir)
+        run('mkdir -p %s' % packs_dir)
 
     preferred_order = preferred_order or None
     # if we have a preferred_order, then use that first, and filesystem order
@@ -145,7 +134,7 @@ def add_buildpack(url, packs_dir=PACKS_HOME, vcs_type=None):
     # TODO: check for whether the buildpack in the folder is really the same as
     # the one we've been asked to add.
     if not os.path.exists(packs_dir):
-        envoy.run('mkdir -p %s' % packs_dir)
+        run('mkdir -p %s' % packs_dir)
     bp = BuildPack(dest, url, vcs_type=vcs_type)
     bp.update()
     return bp

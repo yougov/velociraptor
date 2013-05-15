@@ -1,17 +1,16 @@
 import os
 
 import pytest
-import envoy
 
 from raptor import repo, build
-from raptor.utils import tmpdir
+from raptor.utils import tmpdir, run
 from raptor.tests import tmprepo
 
 
 def test_hg_folder_detection():
     with tmpdir():
         folder = os.path.abspath('.hg')
-        envoy.run('mkdir -p %s' % folder)
+        run('mkdir -p %s' % folder)
 
         assert repo.guess_folder_vcs(os.getcwd()) == 'hg'
 
@@ -19,7 +18,7 @@ def test_hg_folder_detection():
 def test_git_folder_detection():
     with tmpdir():
         folder = os.path.abspath('.git')
-        envoy.run('mkdir -p %s' % folder)
+        run('mkdir -p %s' % folder)
 
         assert repo.guess_folder_vcs(os.getcwd()) == 'git'
 
@@ -27,7 +26,7 @@ def test_git_folder_detection():
 def test_svn_folder_detection():
     with tmpdir():
         folder = os.path.abspath('.svn')
-        envoy.run('mkdir -p %s' % folder)
+        run('mkdir -p %s' % folder)
 
         assert repo.guess_folder_vcs(os.getcwd()) == 'svn'
 
