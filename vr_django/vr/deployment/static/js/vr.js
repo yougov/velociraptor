@@ -379,7 +379,10 @@ VR.Models.SwarmList = Backbone.Collection.extend({
           'proc_name': procData.proc_name
       });
 
-      swarm.fetchByProcData(procData);
+      // Don't ask the API for swarm data on procs that aren't in swarms.
+      if (procData.config_name != 'UNKNOWN') {
+        swarm.fetchByProcData(procData);
+      }
       swarm.on('addproc', this.onAddProc, this);
       this.add(swarm);
       return swarm;
@@ -438,7 +441,7 @@ VR.Models.AppList = Backbone.Collection.extend({
       return app.id;
     },
 
-    getOrCreate: function(name) {
+    getOrCreate: function(name, fetchData) {
       // if app with id is in collection, return it.
       var app = _.find(this.models, function(app) {
           return app.get('name') === name;
@@ -452,7 +455,10 @@ VR.Models.AppList = Backbone.Collection.extend({
         "class": "appbox",
         resource_uri: VR.Urls.getTasty('apps', name)
       });
-      app.fetch();
+      // Don't ask the API for App data on procs that aren't part of a swarm.
+      if (fetchData) {
+        app.fetch();
+      }
       this.add(app);
 
       return app;
@@ -462,7 +468,8 @@ VR.Models.AppList = Backbone.Collection.extend({
       // handle updates differently from removals.
       var parsed = ev.split(":");
       if (parsed[0] === 'updateproc') {
-        var app = this.getOrCreate(data.app_name);
+        var fetch = data.config_name != 'UNKNOWN';
+        var app = this.getOrCreate(data.app_name, fetch);
         app.onProcData(ev, data);
       } else if (parsed[0] === 'destroyproc') {
         // TODO: here's where we should handle drilling down to remove
