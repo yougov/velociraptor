@@ -23,6 +23,11 @@ Vagrant::Config.run do |config|
     config.vm.forward_port 5007, 5007
     config.vm.forward_port 5008, 5008
     config.vm.forward_port 5009, 5009
+    config.vm.forward_port 5010, 5010
+    config.vm.forward_port 5011, 5011
+    config.vm.forward_port 5012, 5012
+    config.vm.forward_port 5013, 5013
+    config.vm.forward_port 5014, 5014
 
     # The supervisord web interface
     config.vm.forward_port 9001, 9001

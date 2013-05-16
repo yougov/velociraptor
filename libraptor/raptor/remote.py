@@ -377,6 +377,10 @@ def build_container_cmd(cmd, user, container_name, lxc_config_path):
     Build up the shell command needed to launch a program inside a container.
     This is used both in deployments and launching the uptester.
     """
+    # It's a bit redundant to source /env.sh here since it will also be done
+    # inside proc.sh.  However, sourcing it here means that the uptester also
+    # gets the same env vars without having to be launched from a proc.sh-like
+    # inner wrapper script.
     tmpl = """exec lxc-start --name %(container_name)s -f %(lxc_config_path)s -- su --preserve-environment --shell /bin/bash -c "cd /app;source /env.sh; exec %(cmd)s" %(user)s"""
     return tmpl % vars()
 

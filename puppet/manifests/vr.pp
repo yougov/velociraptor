@@ -2,6 +2,13 @@ group { "puppet":
     ensure => "present", 
 }
 
+class {'vrhost': }
+class {'pipdeps': }
+class {'pg91': }
+class {'currentmongo': }
+class {'lxc': }
+class {'ruby': }
+
 Exec { path => '/usr/bin:/bin:/usr/sbin:/sbin' }
 
 # TODO: re-organize these classes around the roles of different hosts in a
@@ -10,12 +17,12 @@ Exec { path => '/usr/bin:/bin:/usr/sbin:/sbin' }
 # We have to update first to ensure that apt can find the
 # python-software-properties package that will then let us add PPAs
 
+
 class vrhost {
     
     Package {ensure => present, require => Exec [firstupdate]}
 
     package {
-        ruby:;
         vim:;
         curl:;
         libcurl4-gnutls-dev:;
@@ -28,6 +35,7 @@ class vrhost {
         redis-server:;
         python-setuptools:;
         python-dev:;
+        python-software-properties:;
     }
 
     exec {
@@ -64,6 +72,24 @@ class vrhost {
       require => Exec[custom_supervisor],
       source  => 'puppet:///modules/supervisor/supervisord.init';
     }
+}
+
+class ruby {
+
+  package {
+      'ruby1.9.3':
+        require => Ppa["brightbox/ruby-ng"];
+  }  
+
+  exec {
+    getbundler:
+      command => "gem1.9.3 install bundler",
+      require => Package['ruby1.9.3'];
+  }
+
+  ppa {
+    "brightbox/ruby-ng":;
+  }  
 }
 
 # Use pip to install newer versions of some packages than you can get from apt.
@@ -183,11 +209,39 @@ package {
   foreman:
     ensure => present,
     provider => gem,
-    require => Package [ruby];
+    require => Package ['ruby1.9.3'];
 }
 
-class {'vrhost': }
-class {'pipdeps': }
-class {'pg91': }
-class {'currentmongo': }
-class {'lxc': }
+
+# Provide a nice way to declare PPA dependencies.
+define ppa($ppa = "$title", $ensure = present) {
+
+  case $ensure {
+    present: {
+        $stupid_escapes = '\1-\2'
+        $filename = regsubst($ppa, '(^.*)/(.*$)', "$stupid_escapes-$lsbdistcodename.list")
+
+        exec { $ppa:
+            command => "add-apt-repository ppa:$ppa;apt-get update",
+            require => Package["python-software-properties"],
+           	unless => "test -e /etc/apt/sources.list.d/$filename";
+        }
+    }
+
+    absent:  {
+        package {
+            ppa-purge: ensure => present;
+        }
+
+        exec { $ppa:
+            command => "ppa-purge ppa:$ppa;apt-get update",
+            require => Package[ppa-purge];
+        }
+    }
+
+    default: {
+      fail "Invalid 'ensure' value '$ensure' for ppa"
+    }
+  }
+}
+
