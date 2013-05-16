@@ -162,12 +162,12 @@ class Proc(object):
     @staticmethod
     def parse_name(name):
         try:
-            app_name, version, recipe_name, rel_hash, proc_name, port = name.split('-')
+            app_name, version, config_name, rel_hash, proc_name, port = name.split('-')
 
             return {
                 'app_name': app_name,
                 'version': version,
-                'recipe_name': recipe_name,
+                'config_name': config_name,
                 'hash': rel_hash,
                 'proc_name': proc_name,
                 'port': int(port)
@@ -176,7 +176,7 @@ class Proc(object):
             return {
                 'app_name': name,
                 'version': 'UNKNOWN',
-                'recipe_name': 'UNKNOWN',
+                'config_name': 'UNKNOWN',
                 'hash': 'UNKNOWN',
                 'proc_name': name,
                 'port': 0

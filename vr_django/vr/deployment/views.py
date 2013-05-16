@@ -6,7 +6,6 @@ from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
-import yaml
 
 
 from vr.deployment import forms, tasks, models, events, utils
@@ -212,54 +211,3 @@ def login(request):
 def logout(request):
     django_logout(request)
     return HttpResponseRedirect('/')
-
-
-def get_latest_tag(request, recipe_id):
-    """ Get the latest tag from the repo, we navigate from the given recipe
-    to the app.
-    """
-    recipe = get_object_or_404(models.ConfigRecipe, pk=recipe_id)
-    tags = []
-    for tag in recipe.app.tag_set.all():
-        tags.append(tag.name)
-    return utils.json_response(tags)
-
-
-def preview_recipe(request, recipe_id):
-    """ Preview a settings.yaml generated from a recipe as it is stored in
-    the db.
-    """
-    recipe = get_object_or_404(models.ConfigRecipe, pk=recipe_id)
-    return HttpResponse(recipe.to_yaml())
-
-
-def preview_recipe_addchange(request):
-    """ Preview a recipe from the add/change view which will use the currently
-    selected ingredients from the inline form (respecting the ones marked for
-    delete!)
-    """
-    # We use a new empty ConfigRecipe to build this preview since we could be
-    # adding a new one.
-    recipe = models.ConfigRecipe()
-    custom_ingredients = []
-    # TODO: Collect the custom ingredients from request.GET
-    custom_dict = recipe.assemble(custom_ingredients=custom_ingredients)
-    return HttpResponse(recipe.to_yaml(custom_dict=custom_dict))
-
-
-def preview_ingredient(request, recipe_id, ingredient_id):
-    """ Preview a recipe from an ingredient change view which will use a
-    given recipe ingredients except for the ingredient that is being edited,
-    for that it will use the current form value.
-    """
-    recipe = get_object_or_404(models.ConfigRecipe, pk=recipe_id)
-    # Get the current ingredients except for the one we are editing now
-    custom_ingredients = [i.ingredient for i in
-            models.RecipeIngredient.objects.filter(recipe=recipe).exclude(
-                ingredient__id=ingredient_id)]
-    custom_dict = recipe.assemble(custom_ingredients=custom_ingredients)
-    # Add to the custom dict the values that are being edited
-    # TODO: add the logic to get the custom value from request.GET
-    custom_value = None
-    custom_dict.update(custom_value)
-    return HttpResponse(recipe.to_yaml(custom_dict=custom_dict))

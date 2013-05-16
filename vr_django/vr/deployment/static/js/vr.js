@@ -254,7 +254,7 @@ VR.Models.HostList = Backbone.Collection.extend({
   model: VR.Models.Host,
   onProcData: function(ev, data) {
     // see if we already have a host for this proc.  If not, make one.  Pass the proc down to that host.
-    var hostId = [data.app_name, data.recipe_name, data.host].join('-');
+    var hostId = [data.app_name, data.config_name, data.host].join('-');
 
     var host = this.get(hostId);
     if (!host) {
@@ -272,13 +272,19 @@ VR.Models.Swarm = VR.Models.Tasty.extend({
       this.hosts.on('all', this.onHostsEvent, this);
     },
 
+    getName: function() {
+       return [this.get('app_name'),
+               this.get('config_name'),
+               this.get('proc_name')].join('-');
+    },
+
     procIsMine: function(fullProcName) {
       // Given a full proc name like
       // Velociraptor-1.2.3-local-a4dfd8fa-web-5001, return True if its app,
-      // recipe, and proc name (e.g. 'web') match this swarm.
+      // config name, and proc name (e.g. 'web') match this swarm.
       var split = fullProcName.split('-');
       return split[0] === this.get('app_name') &&
-             split[2] === this.get('recipe_name') &&
+             split[2] === this.get('config_name') &&
              split[4] === this.get('proc_name');
     },
 
@@ -289,8 +295,8 @@ VR.Models.Swarm = VR.Models.Tasty.extend({
 
       var url = VR.Urls.root 
           +'swarms/?'
-          +'recipe__app__name='+procData.app_name
-          +'&recipe__name='+procData.recipe_name
+          +'app__name='+procData.app_name
+          +'&config_name='+procData.config_name
           +'&proc_name='+procData.proc_name
           +'&squad__hosts__name='+procData.host;
       // query the URL, and update swarm's attributes from data in first (and
@@ -353,22 +359,25 @@ VR.Models.SwarmList = Backbone.Collection.extend({
     model: VR.Models.Swarm,
 
     comparator: function(swarm) {
-      return swarm.get('name');
+      return swarm.getName();
     },
 
     getByProcData: function(procData) {
-      var swarmname = [procData.recipe_name, procData.proc_name].join('-');
+      var swarmname = [procData.app_name, procData.config_name,
+        procData.proc_name].join('-');
       // if swarm with id is in collection, return it.
       var swarm = this.find(function(swarm) {
-          return swarm.get('name') === swarmname;
+          return swarm.getName() === swarmname;
         });
       if (swarm) {
         return swarm;
       }
       // else create, add, and return.
       swarm = new VR.Models.Swarm({
-          name: swarmname
-        });
+          'app_name': procData.app_name,
+          'config_name': procData.config_name,
+          'proc_name': procData.proc_name
+      });
 
       swarm.fetchByProcData(procData);
       swarm.on('addproc', this.onAddProc, this);
@@ -732,10 +741,12 @@ VR.Views.Swarm = Backbone.View.extend({
 
       this.procsEl = this.$el.find('.procgrid');
     },
+
     events: {
       'click .swarmtitle': 'onClick',
       'click th .expandtree': 'toggleExpanded'
     },
+
     onClick: function(ev) {
       if (!this.modal) {
         this.modal = new VR.Views.SwarmModal(this.swarm);   
@@ -743,22 +754,27 @@ VR.Views.Swarm = Backbone.View.extend({
 
       this.modal.show();
     },
+
     toggleExpanded: function() {
       this.$el.toggleClass('biggened');
       this.$el.find('i').toggleClass('icon-caret-right').toggleClass('icon-caret-down');
     },
+
     hostAdded: function(host) {
       var hv = new VR.Views.Host(host);
       this.$el.find('.hosttable').append(hv.el);
     },
+
     procAdded: function(proc) {
       var pv = new VR.Views.Proc(proc);
       pv.render();
       this.$el.children('.procgrid').append(pv.el);
     },
+
     render: function() {
       this.$el.html(this.template.goatee(this.swarm.toJSON()));
     },
+
     onRemove: function(model) {
       // filter out host removal events that have bubbled up from below
       if (model === this) {
@@ -888,7 +904,6 @@ VR.Views.App = Backbone.View.extend({
     },
 
     onRemove: function(model) {
-      console.log('vr.views.app.remove', model);
       // swarm removal events are bubbled up here as well as app removal
       // events.  Only remove self if self.app is the thing just removed
       if (model === this.app) {

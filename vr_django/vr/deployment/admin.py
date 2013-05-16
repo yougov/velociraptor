@@ -25,10 +25,10 @@ class ConfigIngredientAdmin(reversion.VersionAdmin):
     form = ConfigIngredientForm
 
     def used_in(self, obj):
-        if obj.configrecipe_set.all().count():
-            return ", ".join([recipe.__unicode__()
-                             for recipe in obj.configrecipe_set.all()])
-        return "No recipes"
+        if obj.swarm_set.all().count():
+            return ", ".join([s.__unicode__()
+                             for s in obj.swarm_set.all()])
+        return "No Swarms"
     used_in.short_description = 'Included in'
 admin.site.register(models.ConfigIngredient, ConfigIngredientAdmin)
 
@@ -82,6 +82,6 @@ admin.site.register(models.TestRun, TestRunAdmin)
 
 
 class ReleaseAdmin(admin.ModelAdmin):
-    search_fields = ['config', 'recipe__app__name']
+    search_fields = ['config', 'build__app__name']
 admin.site.register(models.Release, ReleaseAdmin)
 

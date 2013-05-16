@@ -422,7 +422,7 @@ class Swarm(models.Model):
             procs += host.get_procs(check_cache=check_cache)
 
         def is_mine(proc):
-            return p.recipe_name == self.config_name and \
+            return p.config_name == self.config_name and \
                    p.proc_name == self.proc_name and \
                    p.app_name == self.app.name
 

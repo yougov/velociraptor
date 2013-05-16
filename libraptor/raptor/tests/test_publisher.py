@@ -172,6 +172,6 @@ def test_removals_include_parsed_procname():
     assert parsed['app_name'] == 'node_example'
     assert parsed['hash'] == 'f96054b7'
     assert parsed['proc_name'] == 'web'
-    assert parsed['recipe_name'] == 'local'
+    assert parsed['config_name'] == 'local'
     assert parsed['version'] == 'v2'
     assert parsed['port'] == 5003

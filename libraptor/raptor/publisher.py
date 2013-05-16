@@ -30,10 +30,10 @@ import datetime
 import socket
 
 import redis
-from supervisor import childutils
 
 from raptor.utils import parse_redis_url
 from raptor.models import Host, Proc
+from raptor import supervisor_utils
 
 
 def main():
@@ -43,11 +43,12 @@ def main():
 
     # Use Supervisor's own RPC interface to get full proc data on each process
     # state change, since the emitted events don't have everything we want.
-    rpc = childutils.getRPCInterface(os.environ)
+    rpc = supervisor_utils.getRPCInterface(os.environ)
 
     rcon = redis.StrictRedis(**parse_redis_url(os.environ['REDIS_URL']))
     hostname = os.getenv('HOSTNAME', socket.getfqdn())
     log('proc_publisher starting with hostname %s' % hostname)
+    log('connecting to redis at %s' % os.environ['REDIS_URL'])
     host = Host(hostname, rpc_or_port=rpc, redis_or_url=rcon,)
 
     for e in EventStream(hostname):
@@ -94,7 +95,7 @@ class Event(object):
 
         # Parse out some useful bits
         self.eventname = headers['eventname']
-        self.payload_headers, self.payload_data = childutils.eventdata(payload
+        self.payload_headers, self.payload_data = supervisor_utils.eventdata(payload
                                                                        + '\n')
         if 'when' in self.payload_headers:
             utime = float(self.payload_headers['when'])
@@ -143,9 +144,9 @@ class EventStream(object):
 
     def next(self):
         if self._needs_ok:
-            childutils.listener.ok(self.stdout)
+            supervisor_utils.listener.ok(self.stdout)
 
-        headers, payload = childutils.listener.wait(self.stdin, self.stdout)
+        headers, payload = supervisor_utils.listener.wait(self.stdin, self.stdout)
         self._needs_ok = True
         return Event(headers, payload, self.hostname)
 

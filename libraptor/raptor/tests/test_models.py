@@ -98,7 +98,7 @@ class FakeProcCase(unittest.TestCase):
              'pid': 5556,
              'port': 0,
              'proc_name': 'dummyproc',
-             'recipe_name': 'UNKNOWN',
+             'config_name': 'UNKNOWN',
              'spawnerr': '',
              'start_time': '2012-12-19T06:19:46+00:00',
              'state': 20,
@@ -114,8 +114,8 @@ class FakeProcCase(unittest.TestCase):
     def test_version(self):
         assert self.nodeproc.version == 'v2'
 
-    def test_recipe_name(self):
-        assert self.nodeproc.recipe_name == 'local'
+    def test_config_name(self):
+        assert self.nodeproc.config_name == 'local'
 
     def test_hash(self):
         assert self.nodeproc.hash == 'f96054b7'

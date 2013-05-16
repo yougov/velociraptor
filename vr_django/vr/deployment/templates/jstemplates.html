@@ -5,7 +5,7 @@
 
 
 <script id="swarm-tmpl" type="text/goatee">
-<th><span class="swarmtitle clickable-text"><%name%></span><div class="expandtree"><i class="icon-caret icon-caret-right"></i></div></th><td class="procgrid"><table class="hosttable"></table></td>
+<th><span class="swarmtitle clickable-text"><%config_name%>-<%proc_name%></span><div class="expandtree"><i class="icon-caret icon-caret-right"></i></div></th><td class="procgrid"><table class="hosttable"></table></td>
 </script>
 
 <script id="proc-tmpl" type="text/goatee">
@@ -38,7 +38,7 @@
       </td></tr>
       <tr><th class="rowlabel">App</th><td><%app_name%></td></tr>
       <tr><th class="rowlabel">Version</th><td><%version%></td></tr>
-      <tr><th class="rowlabel">Config Recipe</th><td><%recipe_name%></td></tr>
+      <tr><th class="rowlabel">Config Name</th><td><%config_name%></td></tr>
       <tr><th class="rowlabel">Release Hash</th><td><%hash%></td></tr>
       <tr><th class="rowlabel">Proc Name</th><td><%proc_name%></td></tr>
       <tr><th class="rowlabel">Host</th><td><%host%></td></tr>
@@ -92,8 +92,8 @@
                 <td><%app_name%></td>
               </tr>
               <tr>            
-                <th class="rowlabel">Recipe:</th>
-                <td><%recipe_name%></td>
+                <th class="rowlabel">Config Name:</th>
+                <td><%config_name%></td>
               </tr>
               <tr>            
                 <th class="rowlabel">Proc:</th>

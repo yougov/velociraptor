@@ -38,7 +38,7 @@ v1.register(SquadResource())
 
 
 class IngredientResource(ModelResource):
-    recipes = fields.ToManyField('api.resources.RecipeResource', 'recipes')
+    swarms = fields.ToManyField('api.resources.SwarmResource', 'swarms')
 
     class Meta:
         queryset = models.ConfigIngredient.objects.all()
@@ -98,7 +98,8 @@ class SwarmResource(ModelResource):
     release = fields.ToOneField('api.resources.ReleaseResource', 'release')
 
     shortname = fields.CharField('shortname')
-
+    config_ingredients = fields.ToManyField('api.resources.IngredientResource',
+                                           'config_ingredients')
     compiled_config = fields.DictField('get_config')
     compiled_env = fields.DictField('get_env')
 
@@ -106,9 +107,11 @@ class SwarmResource(ModelResource):
         queryset = models.Swarm.objects.all()
         resource_name = 'swarms'
         filtering = {
-            'recipe': ALL_WITH_RELATIONS,
+            'ingredients': ALL_WITH_RELATIONS,
             'squad': ALL_WITH_RELATIONS,
+            'app': ALL_WITH_RELATIONS,
             'proc_name': ALL,
+            'config_name': ALL,
 
         }
         authentication = auth.MultiAuthentication(
@@ -129,13 +132,12 @@ class SwarmResource(ModelResource):
 
         # Also add in convenience data
         bundle.data.update(app_name=bundle.obj.app.name,
-                           recipe_name=bundle.obj.config_name)
+                           config_name=bundle.obj.config_name)
         return bundle
 v1.register(SwarmResource())
 
 
 class ReleaseResource(ModelResource):
-    recipe = fields.ToOneField('api.resources.RecipeResource', 'recipe')
     build = fields.ToOneField('api.resources.BuildResource', 'build')
 
     class Meta:

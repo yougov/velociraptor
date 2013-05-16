@@ -29,19 +29,6 @@ urlpatterns = patterns('',
     url(r'^proclog/(?P<hostname>[a-zA-Z0-9_.-]+)/(?P<procname>[a-zA-Z0-9_.-]+)/$',
         'vr.deployment.views.proclog', name='proclog'),
 
-    # Preview for Recipes configs
-    url(r'^preview_recipe/(?P<recipe_id>\d+)/$',
-        'vr.deployment.views.preview_recipe', name='preview_recipe'),
-    url(r'^preview_recipe_addchange/$',
-        'vr.deployment.views.preview_recipe_addchange',
-        name='preview_recipe_addchange'),
-    url(r'^preview_ingredient/(?P<recipe_id>\d+)/(?P<ingredient_id>\d+)/$',
-        'vr.deployment.views.preview_ingredient', name='preview_ingredient'),
-
-    # Latest tag helper
-    url(r'^get_latest_tag/(?P<recipe_id>\d+)/$',
-        'vr.deployment.views.get_latest_tag', name='get_latest_tag'),
-
     # Utility stuff
     url(r'^login/$', 'vr.deployment.views.login', name='login'),
     url(r'^logout/$', 'vr.deployment.views.logout', name='logout'),

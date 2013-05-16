@@ -38,7 +38,7 @@ VR.Dash.removeProc = function(procdata) {
   // called when a removal event comes in on the pubsub.  Drill down into the
   // App>Swarm>Proc structure to find the proc and remove it.  On the way out,
   // remove any empty swarms or apps.
-  var swarmName = procdata.recipe_name+'-'+procdata.proc_name;
+  var swarmName = procdata.config_name+'-'+procdata.proc_name;
 
   var app = VR.Dash.Apps.find(function(a, idx, list) {return a.get('name') === procdata.app_name;});
   if (!app) {return;}

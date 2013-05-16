@@ -529,7 +529,7 @@ def delete_release(release, releases_root=RELEASES_ROOT, procs_root=PROCS_ROOT,
                    cascade=False):
     procs = get_procs()
 
-    releases_in_use = set(['%(app_name)s-%(version)s-%(recipe_name)s-%(hash)s' %
+    releases_in_use = set(['%(app_name)s-%(version)s-%(config_name)s-%(hash)s' %
                            Proc.parse_name(p) for p in procs])
 
     # see if there are procs pointing to this release
@@ -575,7 +575,7 @@ def clean_releases_folders(releases_root=RELEASES_ROOT, procs_root=PROCS_ROOT):
         procs = get_procs()
         releases = get_releases()
         releases_in_use = set([
-            '%(app_name)s-%(version)s-%(recipe_name)s-%(hash)s' %
+            '%(app_name)s-%(version)s-%(config_name)s-%(hash)s' %
             Proc.parse_name(p) for p in procs])
         deleted = []
         for release in releases:
@@ -636,7 +636,7 @@ def get_release_procs(release, release_root=RELEASES_ROOT, procs_root=PROCS_ROOT
         """
         Given a proc name, return the name of the release that it uses.
         """
-        tmpl = '%(app_name)s-%(version)s-%(recipe_name)s-%(hash)s'
+        tmpl = '%(app_name)s-%(version)s-%(config_name)s-%(hash)s'
         return tmpl % Proc.parse_name(p)
     return [p for p in procs if proc_to_release(p)==release]
 

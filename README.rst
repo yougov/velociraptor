@@ -122,10 +122,15 @@ it whatever you like (I call my development squad 'local'.  Squad names must be
 unique.  Give the squad a single host named 'precise64', which is the hostname
 of the Vagrant VM itself.
 
-Apps and Recipes
-----------------
+Apps
+----
 
-XXX
+TODO: FILL ME IN!
+
+Swarms
+------
+
+TODO: FILL ME IN!
 
 Tests
 ~~~~~
