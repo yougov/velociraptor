@@ -114,6 +114,7 @@ with.
 
 Squads and Hosts
 ----------------
+
 In order to know where to deploy your application, you'll need to give
 Velociraptor some hostnames.  Velociraptor does load balanced deployments
 across a group of hosts, which it calls a "Squad".  Go to
@@ -125,12 +126,61 @@ of the Vagrant VM itself.
 Apps
 ----
 
-TODO: FILL ME IN!
+Now tell Velociraptor about your code!  Go to http://localhost:8000/admin/deployment/app/add/
+and give the name, repo url, and repo type (git or hg) of your application.  If
+you don't have one around, try the vr_node_example_ app.  The name you give to
+your app should have only letters, numbers, and underscores (no dashes or
+spaces).
+
+You can leave the 'buildpack' field blank.  Velociraptor will use the
+buildpacks' built-in 'detect' feature to determine which buildpack to use on
+your app.
 
 Swarms
 ------
 
-TODO: FILL ME IN!
+Swarms are where Velociraptor all comes together.  A swarm is a group of
+processes all running the same code and config, and load balanced across one or
+more hosts.  Go to http://localhost:8000/swarm/ to create yours.  Here's what
+all the form fields mean:
+
+- App: Select your app from this drop down.
+- Tag: This is where you set the version of the code that Velociraptor should
+  check out and build.  You can use any tag, branch name, bookmark, or revision
+  hash from your version control system (basically anything you can 'git
+  checkout' or 'hg up').
+- Proc name: The name of the proc that you want to run in this swarm (from the
+  Procfile).  Type in 'web' for our example app.
+- Config Name: This is a short name like 'prod' or 'europe' to distinguish
+  between deployments of the same app. Must be filesystem-safe, with no dashes
+  or spaces.  You could put 'test' or 'demo' here for our sample app.
+- Squad: Here you declare which group of hosts this swarm should run on.  If
+  you set up the squad as indicated earlier in this walkthrough, you should be
+  able to select 'local' here.
+- Size: The number of procs to put in the swarm.  Try 2 for now.
+- Config YAML: Here you can enter optional YAML text that will be written to
+  the remote host when your app is deployed.  Your app can find the location of
+  this YAML from the APP_SETTINGS_YAML environment variable.
+- Env YAML: Here you can enter YAML text to specify additional environment
+  variables to be passed in to your app.
+- Pool: If your app accepts requests over a network you can use this "pool"
+  field to tell your load balancer what name to use for the routing pool.  By
+  default Velociraptor talks only to an in memory stub balancer called "Dummy".
+  If you're following this document with the sample app, leave this field
+  blank.
+  To configure a real load balancer, see docs/balancers.rst in the Velociraptor
+  repo.  Velociraptor supports nginx_, Varnish_, and Stingray_ load balancers.
+  This interface is pluggable, so you can also create your own.
+- Balancer: Here you select which balancer should be told to route traffic to
+  your swarm.  You can leave this blank if you're following this walkthrough
+  with the sample app.
+
+Now click Swarm.  Velociraptor will start a series of worker tasks to check out
+the buildpack, check out your code, compile your code, save the resulting
+build, and push it out to the hosts in the squad along with any config you've
+specified.  You can see everything that happens when you swarm
+by looking at the Swarm Flow diagram in the docs folder.
+
 
 Tests
 ~~~~~
@@ -139,13 +189,11 @@ Run the tests with py.test from the root of the repo.  You can install
 any test dependencies using the test_requirements.txt::
 
     cd /vagrant
-    pip install -r test_requirements.txt
-
-It will automatically set up and use separate databases from the
-default development ones::
-
-    cd /vagrant
+    pip install -r dev_requirements.txt
     py.test
+
+The tests will automatically set up and use separate databases from the default
+development ones.
 
 While developing, you might want to speed up tests by skipping the database
 creation (and just re-using the database from the last run).  You can do so
@@ -186,6 +234,14 @@ mustache.js_). They are defined as HTML script blocks with type "text/goatee".
 
 Velociraptor makes liberal use of jQuery_, Backbone_, and Underscore_.
 
+
+See Also
+~~~~~~~~
+
+The tools are getting so good these days that custom PaaS systems are springing
+up all over.  If Velociraptor isn't to your liking, you might take a look at
+Gilliam_, Tsuru_, or openruko_.
+
 Contact
 ~~~~~~~
 
@@ -207,3 +263,10 @@ Google Group: https://groups.google.com/forum/?fromgroups#!forum/velociraptor-de
 .. _Backbone: http://backbonejs.org/
 .. _Underscore: http://underscorejs.org/
 .. _Google Group: https://groups.google.com/forum/?fromgroups#!forum/velociraptor-dev
+.. _Gilliam: http://gilliam.github.io/
+.. _Tsuru: http://docs.tsuru.io/en/latest/
+.. _openruko: https://github.com/openruko
+.. _vr_node_example: https://bitbucket.org/btubbs/vr_node_example
+.. _nginx: http://wiki.nginx.org/Main
+.. _Varnish: https://www.varnish-cache.org/
+.. _Stingray: http://www.riverbed.com/products-solutions/products/application-delivery-stingray/
