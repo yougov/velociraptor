@@ -6,6 +6,12 @@ deploying software services.  It is *very* opinionated about how this should be
 done, adhering (with one or two exceptions) to the `Twelve Factor App`_
 methodology.
 
+Velociraptor is language agnostic.  It can deploy apps in Python, PHP, Ruby,
+Node.js, Java, Scala, Go, or any other language that runs on Linux.
+
+Velociraptor supports zero downtime deployment for apps that include uptests.
+(See docs/uptests.rst for how this works.)
+
 Development
 ===========
 

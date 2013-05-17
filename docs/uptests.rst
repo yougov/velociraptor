@@ -44,9 +44,10 @@ stdout or stderr.
 Organization
 ============
 
-Each proc in an app has different uptests, organized by subfolders of an
-'uptests' folder in the project root.  In the example below, the web proc has
-3 uptests, which will be executed in the order listed by the OS. ::
+Uptests live in your app's source code repo.  Each proc in an app has different
+uptests, organized by subfolders of an 'uptests' folder in the project root.
+In the example below, the web proc has 3 uptests, which will be executed in the
+order listed by the OS. ::
 
   |
   +-- Procfile
@@ -63,3 +64,32 @@ Each proc in an app has different uptests, organized by subfolders of an
 	|
         +-- 03_check_rss.py
 
+
+What to Test
+============
+
+Uptests do not replace the unit or functional tests that you write in the
+course of normal development.  You still need those!
+
+Uptests should test what those other tests can't:
+- They can let you know if the production version pulled in a different (and
+  buggy) dependency than staging.
+- They can tell you if there's some system level dependency that's not met in
+  production.
+- They can catch fat finger errors you made when typing in config values like
+  the location of your production database.
+
+At minimum you should have an uptest that pings your app to check whether it's
+running.  More robust uptests will check things like whether all the app's
+backing services are also up.
+
+It is not recommended that uptests make any persistent changes.  They shouldn't
+create or delete records.
+
+You Will Love Uptests
+=====================
+
+Uptests make it safe(r) to deploy your code a dozen times a day if you need
+to.  If you take the time to write some now, your future self will thank you
+when you save him or her from bringing the whole site down because of some
+stupid slip.
