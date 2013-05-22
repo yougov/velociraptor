@@ -101,7 +101,7 @@ def deploy(release_id, config_name, hostname, proc, port, contain=False):
             # write the env.sh locally
             with open('env.sh', 'wb') as f:
                 def format_var(key, val):
-                    return '%s="%s"' % (key, val)
+                    return 'export %s="%s"' % (key, val)
                 e = release.env_yaml or {}
                 env_str = '\n'.join(format_var(k, e[k]) for k in e)
                 f.write(env_str)
