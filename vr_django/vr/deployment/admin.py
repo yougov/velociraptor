@@ -19,8 +19,8 @@ admin.site.unregister(Group)
 
 
 class ConfigIngredientAdmin(reversion.VersionAdmin):
-    search_fields = ['name', 'value']
-    ordering = ['name', ]
+    search_fields = ['name', 'env_yaml', 'config_yaml']
+    ordering = ['name']
     list_display = ('name', 'used_in')
     form = ConfigIngredientForm
 
@@ -31,28 +31,6 @@ class ConfigIngredientAdmin(reversion.VersionAdmin):
         return "No Swarms"
     used_in.short_description = 'Included in'
 admin.site.register(models.ConfigIngredient, ConfigIngredientAdmin)
-
-# Recipes are dead, but the admin showed some nice stuff for them that should
-# be moved to swarms.
-#class ConfigRecipeAdmin(reversion.VersionAdmin):
-    #inlines = [RecipeIngredientInline, ]
-    #search_fields = ['name', 'ingredients__label', 'ingredients__value']
-    #ordering = ['app__name', 'name']
-    #list_display = ('__unicode__', 'show_ingredients', 'used_in')
-
-    #def show_ingredients(self, obj):
-        #if obj.ingredients.all().count():
-            #return ", ".join([ing.label
-                             #for ing in obj.ingredients.all()])
-        #return "No Ingredients"
-    #show_ingredients.short_description = "Ingredients"
-
-    #def used_in(self, obj):
-        #swarms = obj.swarm_set.all()
-        #if swarms.count():
-            #return ", ".join([swarm.shortname() for swarm in swarms])
-        #return "No Swarms"
-    #used_in.short_description = "Used in"
 
 
 class HostInline(admin.TabularInline):
