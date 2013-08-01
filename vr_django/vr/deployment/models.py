@@ -389,7 +389,7 @@ class Swarm(models.Model):
         super(Swarm, self).save()
 
     class Meta:
-        unique_together = ('app', 'squad', 'proc_name')
+        unique_together = ('app', 'config_name', 'squad', 'proc_name')
         ordering = ['app__name', 'config_name', 'proc_name']
 
     def __unicode__(self):
