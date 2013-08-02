@@ -26,7 +26,7 @@
           <li class="active"><a href="#general" data-toggle="tab">General</a></li>
           <li><a href="#config" data-toggle="tab">Config</a></li>
           <li><a href="#routing" data-toggle="tab">Routing</a></li>
-        </ul>    
+        </ul>
       </div>
   </div>
   <div class="span4">
@@ -42,6 +42,7 @@
       <div class="tab-pane form-horizontal" id="config">
           {% formfield form.config_yaml %}
           {% formfield form.env_yaml %}
+          {% formfield form.config_ingredients %}
       </div>
       <div class="tab-pane form-horizontal" id="routing">
           {% formfield form.pool %}
