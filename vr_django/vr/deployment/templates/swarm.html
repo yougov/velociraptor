@@ -26,12 +26,12 @@
           <li class="active"><a href="#general" data-toggle="tab">General</a></li>
           <li><a href="#config" data-toggle="tab">Config</a></li>
           <li><a href="#routing" data-toggle="tab">Routing</a></li>
-        </ul>    
+        </ul>
       </div>
   </div>
-  <div class="span4">
-    <div class="tab-content">
-      <div class="tab-pane active form-horizontal" id="general">
+  <div class="span8">
+    <div class="tab-content row">
+      <div class="tab-pane active form-horizontal span4" id="general">
           {% formfield form.app_id %}
           {% formfield form.tag %}
           {% formfield form.proc_name %}
@@ -39,17 +39,26 @@
           {% formfield form.squad_id %}
           {% formfield form.size %}
       </div>
-      <div class="tab-pane form-horizontal" id="config">
+      <div class="tab-pane form-horizontal span8" id="config">
+        <div class="row">
+          <div class="span4">
           {% formfield form.config_yaml %}
           {% formfield form.env_yaml %}
+          {% formfield form.config_ingredients %}
+          </div>
+          <div class="span4">
+            <h2>Compiled Config</h2>
+            <pre id="compiled_config"></pre>
+          </div>
+        </div>          
       </div>
-      <div class="tab-pane form-horizontal" id="routing">
+      <div class="tab-pane form-horizontal span4" id="routing">
           {% formfield form.pool %}
           {% formfield form.balancer %}
       </div>
     </div>
 
-    <div class="control-row">
+    <div class="control-row" style="padding-left:80px">
       <button type="submit" class="btn btn-primary">Swarm</button>
     </div>
   </div>

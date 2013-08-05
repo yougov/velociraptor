@@ -121,6 +121,8 @@ def edit_swarm(request, swarm_id=None):
             'size': swarm.size,
             'pool': swarm.pool or '',
             'balancer': swarm.balancer,
+            'config_ingredients': [
+                ing.pk for ing in swarm.config_ingredients.all()]
         }
     else:
         initial = None
@@ -140,6 +142,9 @@ def edit_swarm(request, swarm_id=None):
         swarm.balancer = data['balancer'] or None
         swarm.release = swarm.get_current_release(data['tag'])
         swarm.save()
+        swarm.config_ingredients.clear()
+        for ingredient in data['config_ingredients']:
+            swarm.config_ingredients.add(ingredient)
         tasks.swarm_start.delay(swarm.id)
         import textwrap
         ev_data = dict(data)
