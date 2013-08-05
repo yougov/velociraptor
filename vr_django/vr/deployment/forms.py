@@ -112,6 +112,15 @@ class SwarmForm(forms.Form):
         queryset=models.ConfigIngredient.objects.all())
 
     def __init__(self, data, *args, **kwargs):
+        if 'instance' in kwargs:
+            # We get the 'initial' keyword argument or initialize it
+            # as a dict if it didn't exist.
+            initial = kwargs.setdefault('initial', {})
+            # The widget for a ModelMultipleChoiceField expects
+            # a list of primary key for the selected data.
+            initial['config_ingredients'] = [
+                c.pk for c in kwargs['instance'].configingredient_set.all()]
+
         super(SwarmForm, self).__init__(data, *args, **kwargs)
         self.fields['squad_id'].choices = [(s.id, s) for s in
                                             models.Squad.objects.all()]
@@ -127,8 +136,14 @@ class SwarmForm(forms.Form):
                                         'specify a balancer')
         return data
 
+    def save(self):
+        instance = super(SwarmForm, self).save()
+        instance.configingredient_set.clear()
+        for topping in self.cleaned_data['config_ingredients']:
+            instance.configingredient_set.add(topping)
+        return instance
+
     class Media:
         js = (
             'js/jquery.textarea.min.js',
         )
-
