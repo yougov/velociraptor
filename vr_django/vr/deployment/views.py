@@ -30,13 +30,21 @@ def build_app(request):
         app = models.App.objects.get(id=form.cleaned_data['app_id'])
         build = models.Build(app=app, tag=form.cleaned_data['tag'])
         build.save()
-        tasks.build_app.delay(build_id=build.id)
-        events.eventify(request.user, 'build', build)
+        do_build(build, request.user)
         return redirect('dash')
     return render(request, 'basic_form.html', {
         'form': form,
         'btn_text': 'Build',
     })
+
+
+def do_build(build, user):
+    """
+    Put a build job on the worker queue, and a notification about it on the
+    pubsub.
+    """
+    tasks.build_app.delay(build_id=build.id)
+    events.eventify(user, 'build', build)
 
 
 @login_required

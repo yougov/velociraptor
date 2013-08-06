@@ -11,7 +11,7 @@ from tastypie.constants import ALL_WITH_RELATIONS, ALL
 from tastypie.utils import trailing_slash
 
 from vr.deployment import models
-from vr.deployment.views import do_swarm
+from vr.deployment.views import do_swarm, do_build
 from vr.api.views import auth_required
 
 
@@ -96,6 +96,29 @@ class BuildResource(ModelResource):
             auth.SessionAuthentication(),
         )
         authorization = Authorization()
+
+    def prepend_urls(self):
+        return [
+            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/go%s$" %
+                (self._meta.resource_name, trailing_slash()),
+                auth_required(self.wrap_view('do_build')), name="api_do_build"),
+        ]
+
+    def do_build(self, request, **kwargs):
+
+        if request.method == 'POST':
+            try:
+                build = models.Build.objects.get(id=int(kwargs['pk']))
+            except models.Build.DoesNotExist:
+                return HttpResponseNotFound()
+
+            do_build(build, request.user)
+
+            # Status 202 means "The request has been accepted for processing, but
+            # the processing has not been completed."
+            return HttpResponse(status=202)
+
+        return HttpResponseNotAllowed(["POST"])
 v1.register(BuildResource())
 
 
