@@ -4,8 +4,8 @@
 {% block content %}
 <div class="row">
 <div class="span12">
-    {% if squad.id %}
-    <h1>Squad: {{ squad }}</h1>
+    {% if object %}
+    <h1>Editing {{ object }}</h1>
     {% else %}
     <h1>New Squad</h1>
     {% endif %}
@@ -31,19 +31,19 @@
     </form>
     {% if docstring %}<p class="docstring"> {{ docstring }}{% endif %}
     {# only show add host button if the squad is saved #}
-    {% if squad.id %}
-    <div>
-      {# TODO: Use a dialog on this page for adding hosts instead of linking to admin #}
-        <!--<button id="btn-add-host" type="button" class="btn btn-inverse btn-mini">Add Host</button>-->
-        <a href="/admin/deployment/squad/{{ squad.id }}/">Add Host</a>
-    </div>
+    {% if object %}
+        <p><a href="{% url squad_delete object.id %}">Delete Squad</a></p>
     {% endif %}
 </div>
 
 {# Only show host list if it's not a new squad #}
-{% if squad.id %}
+{% if object %}
 <div class="span9 hostgrid">
-    <h2>Hosts</h2>
+    <h2>Hosts <small>
+    {% if object %}
+        <a href="{% url host_add %}">Add Host</a>
+    {% endif %}
+    </small></h2>
     <table id="squad-container"></table>
 </div>
 {% endif %}
@@ -68,28 +68,10 @@
     </div>
 </script>
 
-{# the Add Host dialog #}
-<script id="add-host-tmpl" type="text/goatee">
-<div class="modal task-details">
-    <div class="modal-header">
-        <a class="close" data-dismiss="modal">×</a>
-        <h3>Add Host</h3>
-    </div>
-    <div class="modal-body">
-        <form id="frm-add-host">
-        <table class="attrs">
-            <tr><th class="rowlabel">Hostname</th><td><input type="text"
-                    name="hostname" id="input-hostname"></td></tr>
-        </table>
-        </form>
-    </div>
-</div>
-</script>
-
 <script>
 
 $(function() {
-  var squad = "{{ squad }}";
+  var squad = "{{ object }}";
   VR.Squad.init(squad, $('#squad-container'));
 });
 </script>

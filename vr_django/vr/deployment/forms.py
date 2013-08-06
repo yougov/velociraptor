@@ -11,14 +11,29 @@ class ConfigIngredientForm(forms.ModelForm):
     class Meta:
         model = models.ConfigIngredient
 
-    def clean_value(self):
-        value = self.cleaned_data.get('value', None)
-        if value:
+    class Media:
+        js = (
+            'js/jquery.textarea.min.js',
+        )
+
+
+    def clean_config_yaml(self):
+        config_yaml = self.cleaned_data.get('config_yaml', None)
+        if config_yaml:
             try:
-                yaml.safe_load(value)
+                yaml.safe_load(config_yaml)
             except:
                 raise forms.ValidationError("Invalid YAML")
-        return value
+        return config_yaml
+
+    def clean_env_yaml(self):
+        env_yaml = self.cleaned_data.get('env_yaml', None)
+        if env_yaml:
+            try:
+                yaml.safe_load(env_yaml)
+            except:
+                raise forms.ValidationError("Invalid YAML")
+        return env_yaml
 
 
 class BuildForm(forms.Form):
@@ -108,8 +123,10 @@ class SwarmForm(forms.Form):
     balancer = forms.ChoiceField(choices=[], label='Balancer', required=False,
                                  help_text=balancer_help)
 
+    ci_help = "Ctrl-click to select multiple, and unselect."
     config_ingredients = forms.ModelMultipleChoiceField(
-        queryset=models.ConfigIngredient.objects.all())
+        queryset=models.ConfigIngredient.objects.all(), required=False,
+        help_text=ci_help)
 
     def __init__(self, data, *args, **kwargs):
         if 'instance' in kwargs:
@@ -139,11 +156,12 @@ class SwarmForm(forms.Form):
     def save(self):
         instance = super(SwarmForm, self).save()
         instance.configingredient_set.clear()
-        for topping in self.cleaned_data['config_ingredients']:
-            instance.configingredient_set.add(topping)
+        for ing in self.cleaned_data['config_ingredients']:
+            instance.configingredient_set.add(ing)
         return instance
 
     class Media:
         js = (
             'js/jquery.textarea.min.js',
         )
+

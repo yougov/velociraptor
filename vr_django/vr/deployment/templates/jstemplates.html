@@ -1,6 +1,6 @@
 
 <script id="app-tmpl" type="text/goatee">
-<th class="titlecell"><div class="apptitle clickable-text"><%name%></div><div class="expandtree"><i class="icon-caret icon-caret-right"></i></div></th><td class="appcell"><table class="swarmtable"></table></td>
+<th class="titlecell"><div class="apptitle"><%name%></div><div class="expandtree"><i class="icon-caret icon-caret-right clickable-text"></i></div></th><td class="appcell"><table class="swarmtable"></table></td>
 </script>
 
 
@@ -43,13 +43,13 @@
       <tr><th class="rowlabel">Proc Name</th><td><%proc_name%></td></tr>
       <tr><th class="rowlabel">Host</th><td><%host%></td></tr>
       <tr><th class="rowlabel">Port</th><td><%port%></td></tr>
-      <tr><th class="rowlabel">Tail</th><td><a href="<%logs_view_uri%>" target=_blank>Full</a></td></tr>
+      <tr><th class="rowlabel">Tail</th><td><a href="<%logs_view_uri%>" target=_blank>Fullscreen</a></td></tr>
 </script>
 
 
 <script id="proc-details-buttons" type="text/goatee">
 <div class="buttonwrap procmodal-<%statename%>">
-  <button class="proc-destroy btn btn-danger">Destroy</button>
+  <button class="proc-destroy btn btn-danger btn-destructive">Destroy</button>
   <button class="proc-stop btn btn-warning ifrunning">Stop</button>
   <button class="proc-restart btn btn-warning ifrunning">Restart</button>
   <button class="proc-start btn btn-success ifstopped">Start</button>

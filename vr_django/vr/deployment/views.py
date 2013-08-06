@@ -1,14 +1,16 @@
 import logging
+import textwrap
 
 from django.conf import settings
 from django.contrib.auth import login as django_login, logout as django_logout
 from django.contrib.auth.decorators import login_required
-from django.core.urlresolvers import reverse
-from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render, redirect, get_object_or_404
+from django.core.urlresolvers import reverse, reverse_lazy
+from django.http import HttpResponseRedirect
+from django.shortcuts import render, redirect
+from django.views.generic import edit
+from django.views.generic import ListView
 
-
-from vr.deployment import forms, tasks, models, events, utils
+from vr.deployment import forms, tasks, models, events
 from vr.deployment.utils import yamlize
 
 
@@ -146,7 +148,6 @@ def edit_swarm(request, swarm_id=None):
         for ingredient in data['config_ingredients']:
             swarm.config_ingredients.add(ingredient)
         tasks.swarm_start.delay(swarm.id)
-        import textwrap
         ev_data = dict(data)
         ev_data.update(user=request.user.username, app=swarm.app.name,
                        shortname=swarm.shortname(),
@@ -174,30 +175,132 @@ def edit_swarm(request, swarm_id=None):
     })
 
 
-@login_required
-def edit_squad(request, squad_id=None):
-    if squad_id:
-        squad = models.Squad.objects.get(id=squad_id)
-        # Look up all hosts in the squad
-        initial = {
-            'name': squad.name,
-        }
-    else:
-        squad = models.Squad()
-        initial = {}
-    form = forms.SquadForm(request.POST or None, initial=initial)
-    if form.is_valid():
-        # Save the squad
-        form.save()
-        squad = form.instance
-        events.eventify(request.user, 'save', squad)
-        redirect('edit_squad', squad_id=squad.id)
-    return render(request, 'squad.html', {
-        'squad': squad,
-        'form': form,
-        'btn_text': 'Save',
-        'docstring': models.Squad.__doc__
-    })
+class ListLogEntry(ListView):
+    template_name = 'log.html'
+    model = models.DeploymentLogEntry
+    paginate_by = 50
+
+
+class UpdateConfigIngredient(edit.UpdateView):
+    template_name = 'ingredient_form.html'
+    model = models.ConfigIngredient
+    success_url = reverse_lazy('ingredient_list')
+    form_class = forms.ConfigIngredientForm
+
+
+class AddConfigIngredient(edit.CreateView):
+    template_name = 'ingredient_form.html'
+    model = models.ConfigIngredient
+    success_url = reverse_lazy('ingredient_list')
+    form_class = forms.ConfigIngredientForm
+
+
+class ListConfigIngredient(ListView):
+    template_name = 'ingredient_list.html'
+    model = models.ConfigIngredient
+    paginate_by = 30
+
+
+class DeleteConfigIngredient(edit.DeleteView):
+    model = models.ConfigIngredient
+    template_name = 'confirm_delete.html'
+    success_url = reverse_lazy('ingredient_list')
+
+
+class ListHost(ListView):
+    model = models.Host
+    template_name = 'host_list.html'
+
+
+class AddHost(edit.CreateView):
+    template_name = 'host_form.html'
+    model = models.Host
+    success_url = reverse_lazy('host_list')
+    form_class = forms.HostForm
+
+
+class UpdateHost(edit.UpdateView):
+    template_name = 'host_form.html'
+    model = models.Host
+    success_url = reverse_lazy('host_list')
+    form_class = forms.HostForm
+
+
+class DeleteHost(edit.DeleteView):
+    model = models.Host
+    template_name = 'confirm_delete.html'
+    success_url = reverse_lazy('host_list')
+
+
+class ListSquad(ListView):
+    model = models.Squad
+    template_name = 'squad_list.html'
+
+
+class AddSquad(edit.CreateView):
+    template_name = 'squad_form.html'
+    model = models.Squad
+    success_url = reverse_lazy('squad_list')
+    form_class = forms.SquadForm
+
+
+class UpdateSquad(edit.UpdateView):
+    template_name = 'squad_form.html'
+    model = models.Squad
+    success_url = reverse_lazy('squad_list')
+    form_class = forms.SquadForm
+
+
+class DeleteSquad(edit.DeleteView):
+    model = models.Squad
+    template_name = 'confirm_delete.html'
+    success_url = reverse_lazy('squad_list')
+
+
+class ListApp(ListView):
+    model = models.App
+    template_name = 'app_list.html'
+
+
+class AddApp(edit.CreateView):
+    template_name = 'app_form.html'
+    model = models.App
+    success_url = reverse_lazy('app_list')
+
+
+class UpdateApp(edit.UpdateView):
+    template_name = 'app_form.html'
+    model = models.App
+    success_url = reverse_lazy('app_list')
+
+
+class DeleteApp(edit.DeleteView):
+    model = models.App
+    template_name = 'confirm_delete.html'
+    success_url = reverse_lazy('app_list')
+
+
+class ListBuildPack(ListView):
+    model = models.BuildPack
+    template_name = 'buildpack_list.html'
+
+
+class AddBuildPack(edit.CreateView):
+    template_name = 'buildpack_form.html'
+    model = models.BuildPack
+    success_url = reverse_lazy('buildpack_list')
+
+
+class UpdateBuildPack(edit.UpdateView):
+    template_name = 'buildpack_form.html'
+    model = models.BuildPack
+    success_url = reverse_lazy('buildpack_list')
+
+
+class DeleteBuildPack(edit.DeleteView):
+    model = models.BuildPack
+    template_name = 'confirm_delete.html'
+    success_url = reverse_lazy('buildpack_list')
 
 
 def login(request):

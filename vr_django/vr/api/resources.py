@@ -1,11 +1,16 @@
+from django.conf.urls.defaults import url
+from django.http import HttpResponse, HttpResponseNotAllowed
+
 from tastypie.resources import ModelResource
 from tastypie import fields
 from tastypie import authentication as auth
 from tastypie.authorization import Authorization
 from tastypie.api import Api
 from tastypie.constants import ALL_WITH_RELATIONS, ALL
+from tastypie.utils import trailing_slash
 
 from vr.deployment import models
+from vr.api.views import auth_required
 
 
 # XXX Note that procs don't have a resource in this file.  It turns out that
@@ -134,6 +139,21 @@ class SwarmResource(ModelResource):
         bundle.data.update(app_name=bundle.obj.app.name,
                            config_name=bundle.obj.config_name)
         return bundle
+
+    def prepend_urls(self):
+        return [
+            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/go%s$" %
+                (self._meta.resource_name, trailing_slash()),
+                auth_required(self.wrap_view('do_swarm')), name="api_do_swarm"),
+        ]
+
+    def do_swarm(self, request, **kwargs):
+
+        if request.method == 'POST':
+            # Status 202 means "The request has been accepted for processing, but
+            # the processing has not been completed."
+            return HttpResponse(status=202)
+        return HttpResponseNotAllowed(["POST"])
 v1.register(SwarmResource())
 
 

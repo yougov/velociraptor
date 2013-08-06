@@ -42,7 +42,10 @@ class YAMLDictField(models.TextField):
         # Seems like sometimes Django will pass a string into this function,
         # and other times a dict.  Pass out a dict either way.
         if isinstance(value, basestring):
-            value = yaml.safe_load(value)
+            try:
+                value = yaml.safe_load(value)
+            except yaml.error.YAMLError as e:
+                raise ValidationError(str(e))
 
         return value
 

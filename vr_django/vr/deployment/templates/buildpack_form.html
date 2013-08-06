@@ -6,19 +6,24 @@
 {% endblock script %}
 
 {% block content %}
+
+{% if object %}
+  <h1>Editing {{ object }}</h1>
+{% else %}
+  <h1>New Buildpack</h1>
+{% endif %}
+
 <div class="row">
   <div class="span6">
 <form method='post' class='well raptorform'{% if enctype %}enctype="{{ enctype }}"{% endif %}>{% csrf_token %}
-    {% if instructions %}
-      {# No, we dont' have to close that <p> tag.  This is HTML5 baby! #}
-      <p>{{ instructions }}
-    {% endif %}
 <table class="formrows">
   {{ form }}
   <tr>
-    <td class="buttoncell" colspan="2">
-<button type="submit" class="btn btn-primary">{% if btn_text %}
-    {{ btn_text }}{% else %}Submit{% endif %}</button>
+    <td class="buttoncell" colspan=2>
+    {% if object %}
+        <a class="btn btn-danger btn-destructive" href="{% url buildpack_delete object.id %}">Delete</a>
+    {% endif %}
+        <button type="submit" class="btn btn-primary">Save</button>
     </td>
   </tr>
 </form>

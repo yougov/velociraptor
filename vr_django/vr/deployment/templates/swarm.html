@@ -24,14 +24,15 @@
       <div class="tabbable">
         <ul class="nav nav-list">
           <li class="active"><a href="#general" data-toggle="tab">General</a></li>
-          <li><a href="#config" data-toggle="tab">Config</a></li>
+          <li><a href="#config" data-toggle="tab">Swarm Config</a></li>
+          <li><a href="#preview" data-toggle="tab">Config Preview</a></li>
           <li><a href="#routing" data-toggle="tab">Routing</a></li>
         </ul>
       </div>
   </div>
   <div class="span8">
     <div class="tab-content row">
-      <div class="tab-pane active form-horizontal span4" id="general">
+      <div class="tab-pane active form-horizontal span8" id="general">
           {% formfield form.app_id %}
           {% formfield form.tag %}
           {% formfield form.proc_name %}
@@ -41,13 +42,16 @@
       </div>
       <div class="tab-pane form-horizontal span8" id="config">
         <div class="row">
-          <div class="span4">
+          <div class="span8">
           {% formfield form.config_yaml %}
           {% formfield form.env_yaml %}
           {% formfield form.config_ingredients %}
           </div>
-          <div class="span4">
-            <h2>Compiled Config</h2>
+        </div>          
+      </div>
+      <div class="tab-pane form-horizontal span8" id="preview">
+        <div class="row">
+          <div class="span8">
             <pre id="compiled_config"></pre>
           </div>
         </div>          

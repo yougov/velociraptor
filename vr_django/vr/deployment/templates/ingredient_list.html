@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+<h1>Config Ingredients</h1>
+<p>If you have config values that are shared across more than one swarm, 
+you can create/edit them here and link to them from the swarm form.</p>
+
+<p><a href="{% url ingredient_add %}">Create new ingredient.</a></p>
+
+<h2>All Ingredients</h2>
+<ul>
+{% for o in object_list %}
+<li> <a href="{% url ingredient_update o.id %}">{{ o }}</a>
+{% endfor %}
+</ul>
+
+
+{% if is_paginated %}
+    <ul class="pager">
+      {% if page_obj.has_previous %}
+        <li><a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+        <li><a href="?page={{ page_obj.next_page_number }}">Next</a>
+      {% endif %}
+    </ul>
+{% endif %}
+{% endblock content %}

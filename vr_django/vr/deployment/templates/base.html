@@ -33,33 +33,18 @@
             {% url release as release_url %}
             {% url deploy as deploy_url %}
             {% url log as log_url %}
+            {% url ingredient_list as ingredient_url %}
+            {% url app_list as app_url %}
+            {% url buildpack_list as buildpack_url %}
+            {% url host_list as host_url %}
+            {% url squad_list as squad_url %}
             <ul class="nav">
               <li class="{% current_nav dash_url %}"><a href="{{ dash_url }}">Dash</a></li>
-              <li class="{% current_nav log_url %}"><a href="{{ log_url }}">Log</a></li>
-              <li class="dropdown">
-
-                  <a class="dropdown-toggle" data-toggle="dropdown" href="#">
-                      Actions
-                      <b class="caret"></b>
-                  </a>
-                  <ul class="dropdown-menu">
-                      <li class="{% current_nav build_url %}"><a href="{{ build_url }}">Build</a></li>
-                      <li class="{% current_nav release_url %}"><a href="{{ release_url }}">Release</a></li>
-                      <li class="{% current_nav deploy_url %}"><a href="{{ deploy_url }}">Deploy</a></li>
-                  </ul>
-              </li>
-
-              <li class="dropdown">
-                  <a class="dropdown-toggle" data-toggle="dropdown" href="#">
-                    Squads
-                      <b class="caret"></b>
-                  </a>
-                  <ul class="dropdown-menu">
-                      {% for squad in squads %}
-                      <li><a href="{% url edit_squad squad.id %}">{{ squad.name }}</a></li>
-                      {% endfor %}
-                  </ul>
-              </li>
+              <li class="{% current_nav app_url %}"><a href="{{ app_url }}">Apps</a></li>
+              <li class="{% current_nav buildpack_url %}"><a href="{{ buildpack_url }}">BuildPacks</a></li>
+              <li class="{% current_nav squad_url %}"><a href="{{ squad_url }}">Squads</a></li>
+              <li class="{% current_nav host_url %}"><a href="{{ host_url }}">Hosts</a></li>
+              <li class="{% current_nav ingredient_url %}"><a href="{{ ingredient_url }}">Ingredients</a></li>
 
               <li class="dropdown">
                   <a id="swarm-dropdown" class="dropdown-toggle" href="#">
@@ -78,6 +63,19 @@
                       <ul>
                   </div>
               </li>
+              <li class="dropdown">
+
+                  <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                      Actions
+                      <b class="caret"></b>
+                  </a>
+                  <ul class="dropdown-menu">
+                      <li class="{% current_nav build_url %}"><a href="{{ build_url }}">Build</a></li>
+                      <li class="{% current_nav release_url %}"><a href="{{ release_url }}">Release</a></li>
+                      <li class="{% current_nav deploy_url %}"><a href="{{ deploy_url }}">Deploy</a></li>
+                  </ul>
+              </li>
+              <li class="{% current_nav log_url %}"><a href="{{ log_url }}">Log</a></li>
 
             </ul>
             <p class="navbar-text pull-right">

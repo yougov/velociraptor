@@ -3,7 +3,7 @@
 {% block content %}
 <div class="row-fluid">
 
-<h1 class="float">Deployment Log <small>who can I blame?</small></h1>
+<h1 class="float">Deployment Log</h1>
 
 <div class="header-labels">
 <span class="label label-swarm">Swarms</span>
@@ -20,4 +20,14 @@
 {% endfor %}
 </ul>
 </div> 
+{% if is_paginated %}
+    <ul class="pager">
+      {% if page_obj.has_previous %}
+        <li><a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+        <li><a href="?page={{ page_obj.next_page_number }}">Next</a>
+      {% endif %}
+    </ul>
+{% endif %}
 {% endblock content %}

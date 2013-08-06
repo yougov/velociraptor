@@ -233,11 +233,6 @@ th.rowlabel {
   display: table-row;
 }
 
-.clickable-text:hover {
-  color: #08C;
-  cursor: pointer;
-}
-
 .titlecell {
   vertical-align: top;
   text-align: right;
@@ -257,6 +252,11 @@ th.rowlabel {
 
 .swarmbox .expandtree {
   top: 0;
+}
+
+.expandtree i:hover {
+  color: #08C;
+  cursor: pointer;
 }
 
 .biggened .swarmbox {
@@ -364,7 +364,7 @@ th.rowlabel {
   display: inline-block;
 }
 
-.proc-destroy {
+.btn-destructive {
   float: left;
 }
 
@@ -511,6 +511,10 @@ th.rowlabel {
 
 }
 
+.formrows {
+  width: 100%;
+}
+
 .formrows .helptext {
   color: #999;
   font-size: 10px;
@@ -522,6 +526,10 @@ th.rowlabel {
 .formrows td {
   padding: 2px;
   min-width: 50px;
+}
+
+.formrows textarea {
+  font-family: monospace;
 }
 
 .checkcell {

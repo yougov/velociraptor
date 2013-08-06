@@ -36,14 +36,15 @@ LOG_ENTRY_TYPES = (
 )
 
 
-def no_spaces(value):
-    if ' ' in value:
-        raise ValidationError(u'spaces not allowed')
 
-
-def no_dashes(value):
+def validate_app_name(value):
     if '-' in value:
-        raise ValidationError(u'dashes not allowed')
+        raise ValidationError(u'Dashes are not allowed')
+    if ' ' in value:
+        raise ValidationError(u'Spaces are not allowed')
+    if '/' in value:
+        raise ValidationError(u'Slashes are not allowed')
+
 
 
 class DeploymentLogEntry(models.Model):
@@ -89,7 +90,7 @@ class BuildPack(models.Model):
     order = models.IntegerField()
 
     def __unicode__(self):
-        return self.repo_url
+        return self.basename
 
     class Meta:
         ordering = ['order']
@@ -105,12 +106,16 @@ class BuildPack(models.Model):
     def get_repo(self):
         return build.add_buildpack(self.repo_url, vcs_type=self.repo_type)
 
+    @property
+    def basename(self):
+        return repo.basename(self.repo_url)
+
 
 class App(models.Model):
     namehelp = ("Used in release name.  Good app names are short and use "
                 "no spaces or dashes (underscores are OK).")
     name = models.CharField(max_length=50, help_text=namehelp,
-        validators=[no_spaces, no_dashes], unique=True)
+        validators=[validate_app_name], unique=True)
     repo_url = models.CharField(max_length=200)
     repo_type = models.CharField(max_length=10, choices=repo_choices)
 
