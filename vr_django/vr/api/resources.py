@@ -79,6 +79,10 @@ class BuildPackResource(ModelResource):
     class Meta:
         queryset = models.BuildPack.objects.all()
         resource_name = 'buildpacks'
+        filtering = {
+            'repo_url': ALL,
+            'repo_type': ALL,
+        }
         authentication = auth.MultiAuthentication(
             auth.BasicAuthentication(),
             auth.SessionAuthentication(),
@@ -88,6 +92,7 @@ v1.register(BuildPackResource())
 
 
 class BuildResource(ModelResource):
+    app = fields.ToOneField('api.resources.AppResource', 'app')
     class Meta:
         queryset = models.Build.objects.all()
         resource_name = 'builds'

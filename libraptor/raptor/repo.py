@@ -67,7 +67,8 @@ class Repo(object):
         self.url = url
 
     def run(self, command):
-        r = run(command)
+
+        r = run(command, verbose=True)
         r.raise_for_status()
         return r
 
