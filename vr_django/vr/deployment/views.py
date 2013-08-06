@@ -147,25 +147,9 @@ def edit_swarm(request, swarm_id=None):
         swarm.config_ingredients.clear()
         for ingredient in data['config_ingredients']:
             swarm.config_ingredients.add(ingredient)
-        tasks.swarm_start.delay(swarm.id)
-        ev_data = dict(data)
-        ev_data.update(user=request.user.username, app=swarm.app.name,
-                       shortname=swarm.shortname(),
-                       squad=swarm.squad.name)
-        ev_detail = textwrap.dedent(
-            """%(user)s swarmed %(shortname)s
 
-            App: %(app)s
-            Version: %(tag)s
-            Config Name: %(config_name)s
-            Proc Name: %(proc_name)s
-            Squad: %(squad)s
-            Size: %(size)s
-            Balancer: %(balancer)s
-            Pool: %(pool)s
-            """) % ev_data
-        events.eventify(request.user, 'swarm', swarm.shortname(),
-                        detail=ev_detail)
+        do_swarm(swarm, request.user)
+
         return redirect('dash')
 
     return render(request, 'swarm.html', {
@@ -173,6 +157,39 @@ def edit_swarm(request, swarm_id=None):
         'form': form,
         'btn_text': 'Swarm',
     })
+
+
+def do_swarm(swarm, user):
+    """
+    Put a swarming job on the queue, and a notification about it on the pubsub.
+    """
+    tasks.swarm_start.delay(swarm.id)
+    ev_detail = textwrap.dedent(
+        """%(user)s swarmed %(shortname)s
+
+        App: %(app)s
+        Version: %(tag)s
+        Config Name: %(config_name)s
+        Proc Name: %(proc_name)s
+        Squad: %(squad)s
+        Size: %(size)s
+        Balancer: %(balancer)s
+        Pool: %(pool)s
+        """) % {
+            'user': user.username,
+            'shortname': swarm.shortname(),
+            'app': swarm.app,
+            'tag': swarm.release.build.tag,
+            'config_name': swarm.config_name,
+            'proc_name': swarm.proc_name,
+            'squad': swarm.squad,
+            'size': swarm.size,
+            'balancer': swarm.balancer,
+            'pool': swarm.pool,
+        }
+    events.eventify(user, 'swarm', swarm.shortname(),
+                    detail=ev_detail)
+
 
 
 class ListLogEntry(ListView):

@@ -1,5 +1,6 @@
 from django.conf.urls.defaults import url
-from django.http import HttpResponse, HttpResponseNotAllowed
+from django.http import (HttpResponse, HttpResponseNotAllowed,
+                         HttpResponseNotFound)
 
 from tastypie.resources import ModelResource
 from tastypie import fields
@@ -10,6 +11,7 @@ from tastypie.constants import ALL_WITH_RELATIONS, ALL
 from tastypie.utils import trailing_slash
 
 from vr.deployment import models
+from vr.deployment.views import do_swarm
 from vr.api.views import auth_required
 
 
@@ -150,9 +152,17 @@ class SwarmResource(ModelResource):
     def do_swarm(self, request, **kwargs):
 
         if request.method == 'POST':
+            try:
+                swarm = models.Swarm.objects.get(id=int(kwargs['pk']))
+            except models.Swarm.DoesNotExist:
+                return HttpResponseNotFound()
+
+            do_swarm(swarm, request.user)
+
             # Status 202 means "The request has been accepted for processing, but
             # the processing has not been completed."
             return HttpResponse(status=202)
+
         return HttpResponseNotAllowed(["POST"])
 v1.register(SwarmResource())
 
