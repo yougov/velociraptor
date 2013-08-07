@@ -69,7 +69,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     float: left;
     width: 22px;
     height: 50px;
-    background: url(../img/chooser-bg.gif) top center no-repeat;
     margin: 8em 3px 0 3px;
     padding: 0;
 }
@@ -154,7 +153,6 @@ a.selector-clearall {
     height: 22px;
     width: 50px;
     margin: 0 0 3px 40%;
-    background: url(../img/chooser_stacked-bg.gif) top center no-repeat;
 }
 
 .stacked .selector-chooser li {
@@ -164,12 +162,4 @@ a.selector-clearall {
 
 .stacked .selector-chooseall, .stacked .selector-clearall {
     display: none;
-}
-
-.stacked .selector-add {
-    background-image: url(../img/selector_stacked-add.gif);
-}
-
-.stacked .selector-remove {
-    background-image: url(../img/selector_stacked-remove.gif);
 }

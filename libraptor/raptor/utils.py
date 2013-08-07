@@ -57,7 +57,7 @@ class CommandException(Exception):
 class CommandResult(object):
     def __init__(self, command, output, status_code):
         self.command = command
-        self.output = output
+        self.output = unicode(output, 'ascii', 'replace')
         self.status_code = status_code
 
     def __repr__(self):
