@@ -102,9 +102,11 @@ class Repo(object):
 
         with chdir(self.folder):
             if self.vcs_type == 'hg':
-                self.run('hg pull')
+                self.run('hg pull %s' % self.url)
                 self.run('hg up %s' % rev)
             elif self.vcs_type == 'git':
+                # NOTE: We don't need the url for git b/c the pull
+                #       didn't prompt for a password.
                 self.run('git pull origin master')
                 self.run('git checkout %s' % rev)
 
