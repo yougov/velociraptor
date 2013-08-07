@@ -1,6 +1,7 @@
 from django import forms
 from django.conf import settings
 from django.contrib.auth import authenticate
+from django.contrib.admin.widgets import FilteredSelectMultiple
 
 import yaml
 
@@ -123,10 +124,8 @@ class SwarmForm(forms.Form):
     balancer = forms.ChoiceField(choices=[], label='Balancer', required=False,
                                  help_text=balancer_help)
 
-    ci_help = "Ctrl-click to select multiple, and unselect."
     config_ingredients = forms.ModelMultipleChoiceField(
-        queryset=models.ConfigIngredient.objects.all(), required=False,
-        help_text=ci_help)
+        queryset=models.ConfigIngredient.objects.all(), required=False)
 
     def __init__(self, data, *args, **kwargs):
         if 'instance' in kwargs:
@@ -163,5 +162,9 @@ class SwarmForm(forms.Form):
     class Media:
         js = (
             'js/jquery.textarea.min.js',
+            'js/multiselect.js',
         )
 
+        css = {
+            'all': ('css/multiselect.css',),
+        }

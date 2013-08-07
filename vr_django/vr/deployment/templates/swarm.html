@@ -84,7 +84,14 @@ $(function() {
   VR.Swarm.init('{{ swarm.id }}', $('#swarm-container'));
   // enable using tabs in the textareas
   $('.codearea').tabby({tabString:'  '});
+
+
+  jQuery.each($("select[multiple]"), function () {  
+    // "Locations" can be any label you want  
+  SelectFilter.init(this.id, "Ingredients", 0, "/static/");  
+}); 
 });
+
 </script>
 {% endif %}
 {% endblock script %}

@@ -561,3 +561,11 @@ th.rowlabel {
 .dropdown-menu li {
   margin: 0;
 }
+
+/* MULTISELECT */
+
+.selector-available h2, .selector-chosen h2 {
+  font-size: 11px;
+  line-height: 15px;
+}
+
