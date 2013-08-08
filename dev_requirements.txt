@@ -1,3 +1,9 @@
-# -i http://cheese.yougov.net
 pytest
 mock
+
+-e ./libraptor
+-e ./vr_django
+-e ./cli
+
+# We can't use dateutil 2.0 til we're on Python 3.  Make pip enforce that.
+python-dateutil>=1.5,<2.0

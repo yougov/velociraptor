@@ -62,7 +62,7 @@ build_url = r.headers['location']
 
 
 # Tell VR to build it
-r = sess.post(build_url + 'go/')
+r = sess.post(build_url + 'build/')
 
 # Watch the output
 stream_url = 'http://localhost:8000/api/streams/events/'

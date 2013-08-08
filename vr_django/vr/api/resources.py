@@ -104,7 +104,7 @@ class BuildResource(ModelResource):
 
     def prepend_urls(self):
         return [
-            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/go%s$" %
+            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/build%s$" %
                 (self._meta.resource_name, trailing_slash()),
                 auth_required(self.wrap_view('do_build')), name="api_do_build"),
         ]
@@ -172,7 +172,7 @@ class SwarmResource(ModelResource):
 
     def prepend_urls(self):
         return [
-            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/go%s$" %
+            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/swarm%s$" %
                 (self._meta.resource_name, trailing_slash()),
                 auth_required(self.wrap_view('do_swarm')), name="api_do_swarm"),
         ]
