@@ -39,5 +39,5 @@ setup(
             'vr_beat = vr.server.commands:start_celerybeat',
         ],
     },
-    description=('Velociraptor Django project.'),
+    description=("Velociraptor's Django and Celery components."),
 )
