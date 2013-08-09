@@ -1,0 +1,4 @@
+[console_scripts]
+vr_beat = vr.server.commands:start_celerybeat
+vr_worker = vr.server.commands:start_celery
+

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Deployment Log{% endblock title %}
+{% block content %}
+<div class="row-fluid">
+
+<h1 class="float">Deployment Log</h1>
+
+<div class="header-labels">
+<span class="label label-swarm">Swarms</span>
+<span class="label label-build">Builds</span>
+<span class="label label-release">Releases</span>
+<span class="label label-deployment">Deployments</span>
+</div>
+
+<ul class="deployment-log">
+{% for entry in object_list %}
+<li><span class="label label-{{entry.type}}">
+        {{ entry.time|date:"D M j, g:i A T"}}</span> 
+        {{ entry.user.username }}: {{ entry.message }}</li>
+{% endfor %}
+</ul>
+</div> 
+{% if is_paginated %}
+    <ul class="pager">
+      {% if page_obj.has_previous %}
+        <li><a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+        <li><a href="?page={{ page_obj.next_page_number }}">Next</a>
+      {% endif %}
+    </ul>
+{% endif %}
+{% endblock content %}

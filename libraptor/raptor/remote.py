@@ -156,18 +156,20 @@ class Deployer(object):
         Return a dictionary of paths to be used when writing the proc config.
         Must include keys for 'home', 'tmp', 'settings', and 'envsh'.
         """
+        # In a container, these paths are always the same.
         return {
-            'home': self.proc_tmp_path,
-            'tmp': self.proc_tmp_path,
-            'settings': self.yaml_settings_path,
-            'envsh': self.envsh_path,
+            'home': '/app',
+            'tmp': '/tmp',
+            'settings': '/settings.yaml',
+            'envsh': '/env.sh',
         }
 
     def get_wrapper_cmd(self):
-        """
-        Return the command that should be run to actually start up the process.
-        """
-        return 'exec %s' % self.proc_line
+        container_name = self.proc_name
+        lxc_config_path = posixpath.join(self.proc_path, 'proc.lxc')
+        return build_container_cmd('/proc.sh', self.user,
+                                   container_name, lxc_config_path)
+
 
     def reload_supervisor(self):
         # For this to work, the host must have PROCS_ROOT/*/proc.conf in
@@ -192,7 +194,7 @@ class Deployer(object):
             'port': self.port,
             'proc_path': self.proc_path,
             'stdout_log': stdout_log,
-            'user': self.get_proc_conf_user(),
+            'user': 'root',
             'release_path': self.release_path,
         }
         proc_conf_tmpl = get_template('proc.conf')
@@ -233,12 +235,6 @@ class Deployer(object):
         files.upload_template(sh_script, sh_remote, tmpl_data, use_sudo=True)
         sudo('chmod +x %s' % sh_remote)
 
-    def get_proc_conf_user(self):
-        # Uncontained procs are just executed by Supervisor directly, so
-        # proc.conf needs to be configured with the real username that we want
-        # to run as
-        return self.user
-
     def create_proc_tmpdir(self):
         # Create a place for the proc to stick temporary files if it needs to.
         sudo('mkdir -p ' + self.proc_tmp_path)
@@ -276,34 +272,7 @@ class Deployer(object):
         sudo('chmod +x %s' % remote_path)
 
 
-class ContainedDeployer(Deployer):
-
-    def get_proc_conf_user(self):
-        # Contained procs will be started by Supervisor as root, and then su to
-        # be the configured user once inside the container.
-        return 'root'
-
-    def get_paths(self):
-        """
-        Return a dictionary of paths to be used when writing the proc config.
-        Must include keys for 'home', 'tmp', 'settings', and 'envsh'.
-        """
-        # In a container, these paths are always the same.
-        return {
-            'home': '/app',
-            'tmp': '/tmp',
-            'settings': '/settings.yaml',
-            'envsh': '/env.sh',
-        }
-
-    def get_wrapper_cmd(self):
-        container_name = self.proc_name
-        lxc_config_path = posixpath.join(self.proc_path, 'proc.lxc')
-        return build_container_cmd('/proc.sh', self.user,
-                                   container_name, lxc_config_path)
-
-
-class PreciseDeployer(ContainedDeployer):
+class PreciseDeployer(Deployer):
     mountpoints = ('/app',
                    '/bin',
                    '/dev',
@@ -321,23 +290,20 @@ class PreciseDeployer(ContainedDeployer):
 
 
 @task
-def configure_proc(build_name, release_name, proc, port, user='nobody', use_syslog=False,
-                   contain=False):
-    if not contain:
-        deployer_cls = Deployer
+def configure_proc(build_name, release_name, proc, port, user='nobody',
+                   use_syslog=False):
+    issue = sudo('cat /etc/issue')
+    if issue.startswith('Ubuntu 12.04 LTS'):
+        deployer_cls = PreciseDeployer
     else:
-        issue = sudo('cat /etc/issue')
-        if '12.04' in issue:
-            deployer_cls = PreciseDeployer
-        else:
-            raise ValueError("Could not determine deployer type for %s" %
-                             issue)
+        raise ValueError("Could not determine deployer type for %s" %
+                         issue)
     deployer_cls(build_name, release_name, proc, port, user, use_syslog).run()
 
 
 @task
 def deploy_parcel(build_path, config_path, envsh_path, swarm,
-                  proc, port, user='nobody', use_syslog=False, contain=False,
+                  proc, port, user='nobody', use_syslog=False,
                   release_hash=None):
     # Builds have timstamps, but releases really don't care about them.  Two
     # releases created at different times with the same build and settings
@@ -369,7 +335,7 @@ def deploy_parcel(build_path, config_path, envsh_path, swarm,
                    envsh_path, user=user)
 
     configure_proc(build_name, release_name, proc, port, user,
-                   use_syslog=use_syslog, contain=contain)
+                   use_syslog=use_syslog)
 
 
 def build_container_cmd(cmd, user, container_name, lxc_config_path):
@@ -385,7 +351,7 @@ def build_container_cmd(cmd, user, container_name, lxc_config_path):
     return tmpl % vars()
 
 
-def build_contained_uptests_command(proc_path, proc, host, port, user):
+def build_uptests_command(proc_path, proc, host, port, user):
     """
     Build the command string for uptesting the given proc inside its lxc
     container.
@@ -398,37 +364,6 @@ def build_contained_uptests_command(proc_path, proc, host, port, user):
     container_name = posixpath.basename(proc_path) + '-uptest'
     lxc_config_path = posixpath.join(proc_path, 'proc.lxc')
     return build_container_cmd(cmd, user, container_name, lxc_config_path)
-
-
-def build_uncontained_uptests_command(build_path, proc_path, proc, host,
-                                      port, user):
-    """
-    Build the command string for uptesting a proc that's not inside an lxc
-    container.
-    """
-    tmpl = """su -c "cd %(build_path)s;source %(envsh_path)s;%(uptester)s %(folder)s %(host)s %(port)s" %(user)s"""
-    return tmpl % {
-        'release_path': build_path,
-        'folder': posixpath.join(build_path, 'uptests', proc),
-        'host': host,
-        'port': port,
-        'user': user,
-        'uptester': posixpath.join(proc_path, 'uptester'),
-    }
-
-
-def build_uptests_command(build_path, proc_path, proc, host, port, user):
-    """
-    Pick from the available uptest command builders based on what's present in
-    the proc and build dirs.  Run that builder and return its result.
-    """
-    lxc_conf_path = posixpath.join(proc_path, 'proc.lxc')
-    if files.exists(lxc_conf_path):
-        return build_contained_uptests_command(proc_path, proc,
-                                               env.host_string, port, user)
-    else:
-        return build_uncontained_uptests_command(build_path, proc_path, proc,
-                                                 env.host_string, port, user)
 
 
 @task
@@ -453,10 +388,8 @@ def run_uptests(proc, user='nobody'):
     try:
         ensure_uptester(proc_path)
         if files.exists(tests_path):
-            # determine whether we're running contained or uncontained
-            cmd = build_uptests_command(build_path, proc_path, procname,
-                                        env.host_string, procdata['port'],
-                                        user)
+            cmd = build_uptests_command(proc_path, procname, env.host_string,
+                                        procdata['port'], user)
 
             result = sudo(cmd)
             # Though the uptester emits JSON to stdout, it's possible for the

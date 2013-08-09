@@ -12,6 +12,11 @@ Node.js, Java, Scala, Go, or any other language that runs on Linux.
 Velociraptor supports zero downtime deployment for apps that include uptests.
 (See docs/uptests.rst for how this works.)
 
+Testimonials
+~~~~~~~~~~~~
+
+Gustavo Picon: velociraptor is BLISS
+
 Development
 ===========
 
@@ -56,11 +61,11 @@ by default.  Virtualenvwrapper_ is pre-installed to make this extra easy::
 Python Dependencies
 ~~~~~~~~~~~~~~~~~~~
 
-Velociraptor contains a requirements.txt file listing its Python dependencies.
-You can install the dependencies with this::
+Velociraptor contains a dev_requirements.txt file listing its dev-time Python
+dependencies.  You can install the dependencies with this::
 
     cd /vagrant
-    pip install -r requirements.txt
+    pip install -r dev_requirements.txt
 
 Database
 ~~~~~~~~

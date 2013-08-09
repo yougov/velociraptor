@@ -1,0 +1,17 @@
+MANIFEST.in
+setup.py
+bin/vr
+vr/__init__.py
+vr.cli.egg-info/PKG-INFO
+vr.cli.egg-info/SOURCES.txt
+vr.cli.egg-info/dependency_links.txt
+vr.cli.egg-info/namespace_packages.txt
+vr.cli.egg-info/not-zip-safe
+vr.cli.egg-info/requires.txt
+vr.cli.egg-info/top_level.txt
+vr/cli/__init__.py
+vr/cli/main.py
+vr/cli/actions/__init__.py
+vr/cli/actions/build.py
+vr/cli/actions/deploy.py
+vr/cli/actions/release.py

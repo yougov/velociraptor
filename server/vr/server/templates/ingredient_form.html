@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block script %}
+{{ block.super }}
+{% if form.media %}{{ form.media }}{% endif %}
+<script>
+$(function() {
+  // enable using tabs in the textareas
+  $('textarea').tabby({tabString:'  '});
+});
+</script>
+{% endblock script %}
+
+{% block content %}
+
+{% if object %}
+  <h1>Editing {{ object }}</h1>
+{% else %}
+  <h1>New Config Ingredient</h1>
+{% endif %}
+
+<div class="row">
+  <div class="span12">
+<form method='post' class='well raptorform'{% if enctype %}enctype="{{ enctype }}"{% endif %}>{% csrf_token %}
+<table class="formrows">
+  {{ form }}
+  <tr>
+    <td class="buttoncell" colspan=2>
+
+    {% if object %}
+        <a class="btn btn-danger btn-destructive" href="{% url ingredient_delete object.id %}">Delete</a>
+    {% endif %}
+
+    <button type="submit" class="btn btn-primary">Save</button>
+
+    </td>
+  </tr>
+</form>
+</table>
+  </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load static from staticfiles %}
+
+{% block content %}
+<div class="row">
+<div class="span12">
+    {% if object %}
+    <h1>Editing {{ object }}</h1>
+    {% else %}
+    <h1>New Squad</h1>
+    {% endif %}
+</div>
+</div>
+
+<div class="row">
+<div class="span3">
+
+    <form method='post' class='well raptorform'{% if enctype %} enctype="{{ enctype }}"{% endif %}>{% csrf_token %}
+        {{ form.non_field_errors }}
+        {% if instructions %}
+          {# No, we dont' have to close that <p> tag.  This is HTML5 baby! #}
+          <p>{{ instructions }}
+        {% endif %}
+    <table class="formrows">
+      {{ form.as_table }}
+      <tr><td colspan=2 class="buttoncell">
+    <button type="submit" class="btn btn-primary">{% if btn_text %}
+        {{ btn_text }}{% else %}Submit{% endif %}</button>
+    </td></tr>
+    </table>
+    </form>
+    {% if docstring %}<p class="docstring"> {{ docstring }}{% endif %}
+    {# only show add host button if the squad is saved #}
+    {% if object %}
+        <p><a href="{% url squad_delete object.id %}">Delete Squad</a></p>
+    {% endif %}
+</div>
+
+{# Only show host list if it's not a new squad #}
+{% if object %}
+<div class="span9 hostgrid">
+    <h2>Hosts <small>
+    {% if object %}
+        <a href="{% url host_add %}">Add Host</a>
+    {% endif %}
+    </small></h2>
+    <table id="squad-container"></table>
+</div>
+{% endif %}
+</div>{# endrow #}
+{% endblock content %}
+
+{% block script %}
+<script src="{% static 'js/vrsquad.js' %}"></script>
+
+{# the box for each host #}
+<script id="proc-block-tmpl" type="text/goatee">
+    <div class="span4"><h4><%host%></h4>
+    </div>
+</script>
+
+{# the inner grid of proc data for each host #}
+<script id="procgrid-tmpl" type="text/goatee">
+    <div class="procgrid">
+        <%#procs%>
+        <div class="procbox <%statename%>" id="proc-<%jsname%>"></div>
+        <%/procs%>
+    </div>
+</script>
+
+<script>
+
+$(function() {
+  var squad = "{{ object }}";
+  VR.Squad.init(squad, $('#squad-container'));
+});
+</script>
+{% endblock script %}

@@ -1,0 +1,575 @@
+/* Some headers want to float left so we can stick some other UI on the
+ * same line to the right */
+
+/* Use Roboto font */
+body {
+  font-family: "RobotoRegular", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "RobotoThin", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+
+th {
+  font-family: "RobotoMedium", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: normal;
+}
+
+
+
+@media (min-width: 979px) {
+  body {
+    padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+  }
+}
+
+
+.clickable-text {
+  cursor: pointer;
+}
+
+/* CUSTOMIZE BOOTSTRAP */
+/* customize bootstrap buttons */
+/* courtesy of http://charliepark.org/bootstrap_buttons/ */
+
+.btn {
+  border-radius: 2px;
+  color: #fff !important;
+  -webkit-font-smoothing: antialiased;
+  font-family: "RobotoMedium", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background-repeat: repeat-x;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.06);
+  font-size: 15px;
+}
+
+.btn-primary {
+  background-color: hsl(201, 100%, 47%) !important;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#05a7ff", endColorstr="#009bef");
+  background-image: -khtml-gradient(linear, left top, left bottom, from(#05a7ff), to(#009bef));
+  background-image: -moz-linear-gradient(top, #05a7ff, #009bef);
+  background-image: -ms-linear-gradient(top, #05a7ff, #009bef);
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #05a7ff), color-stop(100%, #009bef));
+  background-image: -webkit-linear-gradient(top, #05a7ff, #009bef);
+  background-image: -o-linear-gradient(top, #05a7ff, #009bef);
+  background-image: linear-gradient(#05a7ff, #009bef);
+  border-color: #009bef #009bef hsl(201, 100%, 46%);
+}
+
+.btn-success {
+  background-color: hsl(120, 58%, 47%) !important;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#39ca39", endColorstr="#32bd32");
+  background-image: -khtml-gradient(linear, left top, left bottom, from(#39ca39), to(#32bd32));
+  background-image: -moz-linear-gradient(top, #39ca39, #32bd32);
+  background-image: -ms-linear-gradient(top, #39ca39, #32bd32);
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #39ca39), color-stop(100%, #32bd32));
+  background-image: -webkit-linear-gradient(top, #39ca39, #32bd32);
+  background-image: -o-linear-gradient(top, #39ca39, #32bd32);
+  background-image: linear-gradient(#39ca39, #32bd32);
+  border-color: #32bd32 #32bd32 hsl(120, 58%, 46%);
+}
+
+.btn-danger {
+  background-color: hsl(2, 80%, 54%) !important;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#e9433e", endColorstr="#e7322b");
+  background-image: -khtml-gradient(linear, left top, left bottom, from(#e9433e), to(#e7322b));
+  background-image: -moz-linear-gradient(top, #e9433e, #e7322b);
+  background-image: -ms-linear-gradient(top, #e9433e, #e7322b);
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #e9433e), color-stop(100%, #e7322b));
+  background-image: -webkit-linear-gradient(top, #e9433e, #e7322b);
+  background-image: -o-linear-gradient(top, #e9433e, #e7322b);
+  background-image: linear-gradient(#e9433e, #e7322b);
+  border-color: #e7322b #e7322b hsl(2, 80%, 53%);
+}
+
+.btn-warning {
+  background-color: hsl(35, 96%, 57%) !important;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#fbab3c", endColorstr="#faa228");
+  background-image: -khtml-gradient(linear, left top, left bottom, from(#fbab3c), to(#faa228));
+  background-image: -moz-linear-gradient(top, #fbab3c, #faa228);
+  background-image: -ms-linear-gradient(top, #fbab3c, #faa228);
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #fbab3c), color-stop(100%, #faa228));
+  background-image: -webkit-linear-gradient(top, #fbab3c, #faa228);
+  background-image: -o-linear-gradient(top, #fbab3c, #faa228);
+  background-image: linear-gradient(#fbab3c, #faa228);
+  border-color: #faa228 #faa228 hsl(35, 96%, 56%);
+}
+
+.modal, .well {
+  border-radius: 0px;
+}
+
+
+.proc-details-modal {
+  width: 700px;
+}
+
+.proc-log {
+  overflow: auto;
+  font-family: Monaco, Menlo, Consolas, 'Courier New', monospace;
+  font-size: 10px;
+  white-space: pre;
+}
+
+.modal .proc-log {
+  /* the tallest we can go before there's a scroll box in the main modal */
+  height: 98px;
+}
+
+/* END CUSTOMIZE BOOTSTRAP */
+
+.float {
+  float: left;
+}
+
+.header-labels {
+  float: right;
+}
+
+/* deployment log styles */
+ul.deployment-log {
+  list-style: none;
+  margin: 10px 0 0 0;
+  float: left;
+  clear: both;
+}
+
+.deployment-log li {
+  margin: 7px 0;
+}
+
+div.label {
+  cursor: pointer;
+}
+
+/* yellow for deployments in log */
+.label-deployment {
+  background-color: #f89406;
+}
+.label-deployment:hover {
+  background-color: #c67605;
+}
+/* blue for releases in log */
+.label-release {
+  background-color: #3a87ad;
+}
+.label-release:hover {
+  background-color: #2d6987;
+}
+.label-swarm {
+  background-color: #333
+}
+
+/* APPS, SWARMS, PROCS */
+
+th.rowlabel {
+  font-weight: normal;
+  color: #888;
+  text-align: right;
+  padding-right: 10px;
+}
+
+.appbox {
+  margin-bottom: 25px;
+  float: left;
+  width: 50%;
+}
+
+.apptitle {
+  display: inline-block;
+  font-size: 17px;
+  line-height: 32px;
+  text-align: right;
+}
+
+.expandtree {
+  top: 7px;
+  position: relative;
+  left: 8px;
+  float: right;
+  text-align: center;
+  width: 15px;
+  height: 15px;
+  overflow: hidden;
+  padding: 0 1px 2px;
+  margin-right: 17px;
+}
+
+.expandtree .icon-caret {
+  color: #d0d0d0;
+  font-size: 17px;
+}
+
+.approw:first .apptitle {
+  margin-top: 0px;
+}
+
+/*.appcell > .procboxes {*/
+  /*position: relative;*/
+  /*top: 2px;*/
+/*}*/
+
+.approw.biggened > .appcell > .procboxes {
+  display: none;
+}
+
+.approw > .appcell > .swarmtable {
+  display: none;
+}
+
+.approw.biggened > .appcell > .swarmtable {
+  display: block;
+}
+
+.swarmbox.biggened > .procgrid > .procview {
+  display: none;
+}
+
+.swarmbox {
+  vertical-align: top;
+}
+
+.swarmbox .hostview {
+  display: none;
+}
+
+.swarmbox.biggened .hostview {
+  display: table-row;
+}
+
+.titlecell {
+  vertical-align: top;
+  text-align: right;
+}
+
+.dash-apps tr {
+  vertical-align: top;
+}
+
+.appcell {
+  padding-top: 6px;
+}
+
+.swarmbox th {
+  text-align: right;
+}
+
+.swarmbox .expandtree {
+  top: 0;
+}
+
+.expandtree i:hover {
+  color: #08C;
+  cursor: pointer;
+}
+
+.biggened .swarmbox {
+  margin-right: 20px;
+}
+
+.swarmtitle {
+  color: #08C;
+  line-height: 22px;
+  text-decoration: underline;
+}
+
+.hostblock {
+  width: 22%;
+  float: left;
+  margin-right: 2%;
+  margin-bottom: 10px;
+}
+
+.hostblock h4 {
+  /* prevent weird wrapping on small screen */
+  clear: both;
+}
+
+.procgrid h4 {
+  margin-bottom: 5px;
+}
+
+.procview {
+  float: left;
+}
+
+.procbox {
+  height: 15px;
+  width: 15px;
+  float: left;
+  margin: 0 4px 4px 0;
+  cursor: pointer;
+  background-color: #999;
+}
+
+.hostview th {
+  font-family: "Roboto";
+  font-size: 12px;
+  padding-right: 12px;
+  line-height: 18px;
+  color: #666;
+}
+
+
+#swarmlist li a {
+  display: block;
+  padding: 3px 20px;
+  clear: both;
+  font-weight: normal;
+  line-height: 20px;
+  color: #333333;
+  white-space: nowrap;
+}
+
+#swarmlist li a:hover, #swarmlist li.active a {
+  background-color: #009cf0;
+  color: white;
+}
+
+/* use a flat blue for highlighting selected items in dropdown instead of bootstrap gradient */
+.dropdown-menu > li > a:hover, .dropdown-menu > li.active > a {
+  background-color: #009cf0;
+  color: white;
+  background-image: none;
+}
+
+
+/* SUPERVISORD PROCESS STATES */
+.RUNNING { background-color: #00CC00; }
+
+.STARTING { background-color: #0FF; }
+
+.STOPPED { background-color: #FFCC00; }
+
+.STOPPING { background-color: #F0F; }
+
+.FATAL, .BACKOFF { background-color: #F00; }
+
+.EXITED { background-color: #F60; }
+
+.UNKNOWN { background-color: #909; }
+/* END SUPERVISORD PROCESS STATES */
+
+
+/* Only show 'Stop' button if running, and vice versa */
+.ifrunning {
+  display: none;
+}
+
+[class*="-RUNNING"] .ifrunning, .somerunning .ifrunning {
+  display: inline-block;
+}
+
+.ifstopped {
+  display: none;
+}
+
+[class*="-STOPPED"] .ifstopped, [class*="-FATAL"] .ifstopped, .somestopped .ifstopped {
+  display: inline-block;
+}
+
+.btn-destructive {
+  float: left;
+}
+
+.swarm-details-modal .modal-footer {
+  min-height: 30px;
+}
+
+/* EVENTS */
+
+.event-wrapper {
+  /*display: none;*/
+  /*border: 1px solid #eee;*/
+  margin-bottom: 5px;
+}
+
+.event-icon {
+  font-family: FontAwesome;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 18px;
+  display: inline-block;
+  text-decoration: inherit;
+}  
+
+.event-icon.large {
+  font-size: 26px;
+}
+
+.event-icon::before {
+  content: "\f085"; /* default cogs icon */ 
+}
+
+.build .event-icon::before {
+  content: "\f0ad"; /* wrench icon */
+}
+
+.deploy .event-icon::before {
+  content: "\f093"; /* upload icon */
+}
+
+.route .event-icon::before {
+  content: "\f0e8"; /* sitemap icon */
+}
+
+.deleted .event-icon::before {
+  content: "\f014"; /* trash icon */
+}
+
+.uptest.success .event-icon::before {
+  content: "\f00c"; /* checkmark icon */
+}
+
+.uptest.failed .event-icon::before {
+  content: "\f00d"; /* X icon */
+}
+
+.user .event-icon::before {
+  content: "\f007"; /* user icon */
+}
+
+.scheduled .event-icon::before {
+  content: "\f017"; /* clock icon */
+}
+
+.wait .event-icon::before {
+  content: "\f017"; /* clock icon */
+}
+
+.warning .event-icon::before {
+  content: "\f071"; /* warning icon */
+  color: #fc0;
+}
+
+.failed .event-icon {
+  color: red;
+}
+
+.success .event-icon {
+  color: #0c0;
+}
+
+#events-list {
+  margin-top: 18px;
+}
+
+#events-list .event-title {
+  font-size: 12px;
+  margin-top: 20px;
+}
+
+
+/* FORMS */
+
+.raptorform {
+  margin-top: 10px;
+}
+
+.raptorform .helptext {
+  display: block;
+}
+
+.raptorform .control-label {
+  width:  70px;
+}
+
+.raptorform .controls select {
+  width: calc(100% - 5px);
+}
+
+.raptorform .controls {
+  margin-left: 80px;
+}
+
+.raptorform .codearea {
+  font-family: Monaco, Menlo, Consolas, 'Courier New', monospace;
+}
+
+/* y u make my form fields so ugly bootstrap? */
+.raptorform input, .raptorform textarea, .raptorform .uneditable-input {
+  width: calc(100% - 19px);
+}
+
+.raptorform .errorlist {
+  list-style-type: none;
+  margin: 0;
+  color: red;
+}
+
+@media (max-width: 979px) {
+  .raptorform .control-label {
+    clear: both;
+    float: none;
+    text-align: left;
+  }
+  .raptorform .controls {
+    margin-left: 0px;
+    clear: both;
+    float: none;
+  }
+
+  .raptorform .control-group {
+    margin-bottom: 10px;
+  }
+
+}
+
+.formrows {
+  width: 100%;
+}
+
+.formrows .helptext {
+  color: #999;
+  font-size: 10px;
+  margin-left: 3px;
+  position: relative;
+  bottom: 3px;
+}
+
+.formrows td {
+  padding: 2px;
+  min-width: 50px;
+}
+
+.formrows textarea {
+  font-family: monospace;
+}
+
+.checkcell {
+  text-align: center;
+}
+
+.buttoncell {
+  text-align: right;
+}
+
+.formrows br {
+  display: none;
+}
+
+/* NAV */
+#swarm-filter {
+  display: block;
+  margin-left: 4px;
+  width: -webkit-calc(100% - 22px);
+  width: -moz-calc(100% - 22px);
+  width: calc(100% - 22px);
+}
+
+.dropdown-menu ul {
+  margin: 0;
+  list-style: none;
+}
+
+.dropdown-menu li {
+  margin: 0;
+}
+
+/* MULTISELECT */
+
+.selector-available h2, .selector-chosen h2 {
+  font-size: 11px;
+  line-height: 15px;
+}
+

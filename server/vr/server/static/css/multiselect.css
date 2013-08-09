@@ -1,0 +1,165 @@
+/*
+Copyright (c) Django Software Foundation and individual contributors.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+    1. Redistributions of source code must retain the above copyright notice, 
+       this list of conditions and the following disclaimer.
+    
+    2. Redistributions in binary form must reproduce the above copyright 
+       notice, this list of conditions and the following disclaimer in the
+       documentation and/or other materials provided with the distribution.
+
+    3. Neither the name of Django nor the names of its contributors may be used
+       to endorse or promote products derived from this software without
+       specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+/* SELECTOR (FILTER INTERFACE) */
+
+.selector {
+    width: 580px;
+    float: left;
+}
+
+.selector select {
+    width: 270px;
+    height: 17.2em;
+}
+
+.selector-available, .selector-chosen {
+    float: left;
+    width: 270px;
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.selector .selector-filter {
+    background: white;
+    /*border: 1px solid #ccc;*/
+    border-width: 0 1px;
+    padding: 3px;
+    color: #999;
+    font-size: 10px;
+    margin: 0;
+    text-align: left;
+}
+
+.selector .selector-chosen .selector-filter {
+    padding: 8px 5px;
+}
+
+.selector .selector-available input {
+    width: 250px;
+}
+
+.selector ul.selector-chooser {
+    float: left;
+    width: 22px;
+    height: 50px;
+    margin: 8em 3px 0 3px;
+    padding: 0;
+}
+
+.selector-chooser li {
+    margin: 0;
+    padding: 3px;
+    list-style-type: none;
+}
+
+.selector select {
+    margin-bottom: 5px;
+    margin-top: 0;
+}
+
+.selector-add, .selector-remove {
+    width: 16px;
+    height: 16px;
+    display: block;
+    text-indent: -3000px;
+}
+
+.selector-add {
+    background: url(../img/selector-add.gif) top center no-repeat;
+    margin-bottom: 2px;
+}
+
+.selector-remove {
+    background: url(../img/selector-remove.gif) top center no-repeat;
+}
+
+a.selector-chooseall, a.selector-clearall {
+    display: block;
+    width: 6em;
+    text-align: left;
+    margin-left: auto;
+    margin-right: auto;
+    font-weight: bold;
+    color: #666;
+    padding: 3px 0 3px 18px;
+}
+
+a.selector-chooseall:hover, a.selector-clearall:hover {
+    color: #036;
+}
+
+a.selector-chooseall {
+    width: 7em;
+    background: url(../img/selector-addall.gif) left center no-repeat;
+}
+
+a.selector-clearall {
+    background: url(../img/selector-removeall.gif) left center no-repeat;
+}
+
+
+/* STACKED SELECTORS */
+
+.stacked {
+    float: left;
+    width: 500px;
+}
+
+.stacked select {
+    width: 480px;
+    height: 10.1em;
+}
+
+.stacked .selector-available, .stacked .selector-chosen {
+    width: 480px;
+}
+
+.stacked .selector-available {
+    margin-bottom: 0;
+}
+
+.stacked .selector-available input {
+    width: 442px;
+}
+
+.stacked ul.selector-chooser {
+    height: 22px;
+    width: 50px;
+    margin: 0 0 3px 40%;
+}
+
+.stacked .selector-chooser li {
+    float: left;
+    padding: 3px 3px 3px 5px;
+}
+
+.stacked .selector-chooseall, .stacked .selector-clearall {
+    display: none;
+}

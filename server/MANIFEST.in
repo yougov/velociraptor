@@ -1,0 +1,3 @@
+recursive-include vr/templates *
+recursive-include vr/deployment/templates *
+recursive-include vr/deployment/static *

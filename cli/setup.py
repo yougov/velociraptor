@@ -1,7 +1,8 @@
 from setuptools import setup, find_packages
 
 setup(
-    name = 'velociraptor-cli',
+    name = 'vr.cli',
+    namespace_packages=['vr'],
     description = 'Command Line Interface for Velociraptor',
     packages = find_packages(),
     author = 'Alfredo Deza',

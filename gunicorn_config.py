@@ -1,1 +1,1 @@
-from vr.gunicorn_config import *
+from vr.server.gunicorn_config import *

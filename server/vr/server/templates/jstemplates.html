@@ -1,0 +1,184 @@
+
+<script id="app-tmpl" type="text/goatee">
+<th class="titlecell"><div class="apptitle"><%name%></div><div class="expandtree"><i class="icon-caret icon-caret-right clickable-text"></i></div></th><td class="appcell"><table class="swarmtable"></table></td>
+</script>
+
+
+<script id="swarm-tmpl" type="text/goatee">
+<th><span class="swarmtitle clickable-text"><%config_name%>-<%proc_name%></span><div class="expandtree"><i class="icon-caret icon-caret-right"></i></div></th><td class="procgrid"><table class="hosttable"></table></td>
+</script>
+
+<script id="proc-tmpl" type="text/goatee">
+<div class="procbox <%statename%>" id="proc-<%jsname%>"></div>
+</script>
+
+<script id="proc-details-tmpl" type="text/goatee">
+    <div class="modal proc-details-modal" data-host="<%host%>" data-name="<%name%>">
+      <div class="modal-header">
+          <a class="close" data-dismiss="modal">×</a>
+          <h3><a href="http://<%host%>:<%port%>"><%app_name%>-<%proc_name%>@<%host%>:<%port%></a></h3>
+      </div>
+      <div class="modal-body">
+        <table class="attrs proc-details-table">
+        </table>
+        <div class="proc-log well"></div>
+      </div>
+      <div class="modal-footer"></div>
+    </div>
+</script>
+
+
+{# partial template for just the details table in a proc modal #}
+<script id="proc-details-rows" type="text/goatee">
+      <tr><th class="rowlabel">Name</th><td><%name%></td></tr>
+      <tr><th class="rowlabel">Description</th><td><%description%></td></tr>
+      <tr><th class="rowlabel">State</th><td>
+          <div class="procbox <%statename%>"></div>
+          <%statename%>
+      </td></tr>
+      <tr><th class="rowlabel">App</th><td><%app_name%></td></tr>
+      <tr><th class="rowlabel">Version</th><td><%version%></td></tr>
+      <tr><th class="rowlabel">Config Name</th><td><%config_name%></td></tr>
+      <tr><th class="rowlabel">Release Hash</th><td><%hash%></td></tr>
+      <tr><th class="rowlabel">Proc Name</th><td><%proc_name%></td></tr>
+      <tr><th class="rowlabel">Host</th><td><%host%></td></tr>
+      <tr><th class="rowlabel">Port</th><td><%port%></td></tr>
+      <tr><th class="rowlabel">Tail</th><td><a href="<%logs_view_uri%>" target=_blank>Fullscreen</a></td></tr>
+</script>
+
+
+<script id="proc-details-buttons" type="text/goatee">
+<div class="buttonwrap procmodal-<%statename%>">
+  <button class="proc-destroy btn btn-danger btn-destructive">Destroy</button>
+  <button class="proc-stop btn btn-warning ifrunning">Stop</button>
+  <button class="proc-restart btn btn-warning ifrunning">Restart</button>
+  <button class="proc-start btn btn-success ifstopped">Start</button>
+</div>
+</script>
+
+
+<script id="app-details-tmpl" type="text/goatee">
+  <div class="modal app-details-modal">
+        <div class="modal-header">
+            <a class="close" data-dismiss="modal">×</a>
+            <h3><%name%></h3>
+        </div>
+        <div class="modal-body">
+            <table class="attrs">
+              <tr>            
+                <th class="rowlabel">Repo Type:</th>
+                <td><%repo_type%></td>
+              </tr>
+              <tr>
+                <th class="rowlabel">Repo Url:</th>
+                <td><a href="<%repo_url%>"><%repo_url%></a></td>
+              </tr>
+            </table>
+        </div>
+  </div>
+</script>
+
+
+<script id="swarm-details-tmpl" type="text/goatee">
+  <div class="modal swarm-details-modal">
+        <div class="modal-header">
+            <a class="close" data-dismiss="modal">×</a>
+            <h3>Swarm: <%shortname%></h3>
+        </div>
+        <div class="modal-body">
+            <table class="attrs">
+              <tr>            
+                <th class="rowlabel">App:</th>
+                <td><%app_name%></td>
+              </tr>
+              <tr>            
+                <th class="rowlabel">Config Name:</th>
+                <td><%config_name%></td>
+              </tr>
+              <tr>            
+                <th class="rowlabel">Proc:</th>
+                <td><%proc_name%></td>
+              </tr>
+              <tr>            
+                <th class="rowlabel">Version:</th>
+                <td><%version%></td>
+              </tr>
+              <tr>            
+                <th class="rowlabel">Squad:</th>
+                <td><%squad_name%></td>
+              </tr>
+              <tr>            
+                <th class="rowlabel">Size:</th>
+                <td><%size%></td>
+              </tr>
+              <tr>
+                <th class="rowlabel">Procs:</th>
+                <td class="procboxes"></td>
+              </tr>
+              <tr>            
+                <th class="rowlabel">Pool:</th>
+                <td><%pool%></td>
+              </tr>
+              <tr>            
+                <th class="rowlabel">Balancer:</th>
+                <td><%balancer%></td>
+              </tr>
+            </table>
+        </div>
+      <div class="modal-footer">
+          <button class="swarm-stop btn btn-warning ifrunning">Stop All</button>
+          <button class="swarm-restart btn btn-warning ifrunning">Restart All</button>
+          <button class="swarm-start btn btn-success ifstopped">Start All</button>
+      </div>
+  </div>
+</script>
+
+<script id="host-tmpl" type="text/goatee">
+  <th data-hostname="<%name%>"><%name%></th>
+  <td class="procgrid"></td>
+</script>
+
+<script id="event-tmpl" type="text/goatee">
+  <div id="event-<%id%>" class="event-wrapper clickable-text">
+    
+    <span class="event-title <%classtags%>"><i class="event-icon"></i> <%title%></span>
+    <div style="clear: both;"></div>
+</div>
+</script>
+
+<script id="event-detail-tmpl" type="text/goatee">
+  <div class="modal event-details-modal">
+      <div class="modal-header">
+          <a class="close" data-dismiss="modal">×</a>
+          <h3 class="event-title <%classtags%>">
+              <i class="event-icon large"></i>
+              <%title%> 
+          </h3>
+          <div class="event-time-short"><%time%></div>
+      </div>
+      <div class="modal-body">
+          <h4>Message</h4>
+          <pre><%message%></pre>
+          Tags: <%tags%><br>
+      </div>
+    </div>
+</script>
+
+<script>
+// on DOM READY, make a library of all our templates
+$(function() {
+VR.Templates = {
+  Proc: $('#proc-tmpl'),
+  ProcModal: $('#proc-details-tmpl'),
+  ProcModalRows: $('#proc-details-rows'),
+  ProcModalButtons: $('#proc-details-buttons'),
+  Host: $('#host-tmpl'),
+  Swarm: $('#swarm-tmpl'),
+  SwarmModal: $('#swarm-details-tmpl'),
+  App: $('#app-tmpl'),
+  AppModal: $('#app-details-tmpl'),
+  Event: $('#event-tmpl'),
+  EventModal: $('#event-detail-tmpl')
+};
+});
+</script>

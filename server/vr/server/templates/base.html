@@ -1,0 +1,130 @@
+{% load current_nav %}
+{% load static from staticfiles %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>{% block title %}{% if site_title %}{{ site_title }}{% else %}Velociraptor{% endif %}{% endblock title %}</title>
+  <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.css' %}" type="text/css" media="screen">
+  <link rel="stylesheet" href="{% static 'css/font-awesome.css' %}" type="text/css" media="screen">
+  <link rel="stylesheet" href="{% static 'font/roboto/stylesheet.css' %}" type="text/css" media="screen">
+  <link rel="stylesheet" href="{% static 'css/vr.css' %}" type="text/css" media="screen">
+  {% block style %}{% endblock style %}
+  {% if custom_css %}
+    <link rel="stylesheet" href="{{ custom_css }}" type="text/css" media="screen">
+  {% endif %}
+</head>
+<body>
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <a class="brand" href="/">{% if site_title %}{{ site_title }}{% else %}Velociraptor{% endif %}</a>
+          <div class="nav-collapse">
+          {% block nav %}
+          {% if not hide_nav %}
+            {% url dash as dash_url %}
+            {% url build_app as build_url %}
+            {% url release as release_url %}
+            {% url deploy as deploy_url %}
+            {% url log as log_url %}
+            {% url ingredient_list as ingredient_url %}
+            {% url app_list as app_url %}
+            {% url buildpack_list as buildpack_url %}
+            {% url host_list as host_url %}
+            {% url squad_list as squad_url %}
+            <ul class="nav">
+              <li class="{% current_nav dash_url %}"><a href="{{ dash_url }}">Dash</a></li>
+              <li class="{% current_nav app_url %}"><a href="{{ app_url }}">Apps</a></li>
+              <li class="{% current_nav buildpack_url %}"><a href="{{ buildpack_url }}">BuildPacks</a></li>
+              <li class="{% current_nav squad_url %}"><a href="{{ squad_url }}">Squads</a></li>
+              <li class="{% current_nav host_url %}"><a href="{{ host_url }}">Hosts</a></li>
+              <li class="{% current_nav ingredient_url %}"><a href="{{ ingredient_url }}">Ingredients</a></li>
+
+              <li class="dropdown">
+                  <a id="swarm-dropdown" class="dropdown-toggle" href="#">
+                   Swarms 
+                      <b class="caret"></b>
+                  </a>
+                  <div class="dropdown-menu">
+                      <input id="swarm-filter" type="text">
+                      <ul id="swarmlist">
+                          <li rel="new_swarm"><a href="{% url new_swarm %}">New</a></li>
+                          {% for swarm in swarms %}
+                          <li rel="{{ swarm.shortname.lower }}">
+                            <a href="{% url edit_swarm swarm.id %}">{{ swarm.shortname }}</a>
+                          </li>
+                          {% endfor %}
+                      <ul>
+                  </div>
+              </li>
+              <li class="dropdown">
+
+                  <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                      Actions
+                      <b class="caret"></b>
+                  </a>
+                  <ul class="dropdown-menu">
+                      <li class="{% current_nav build_url %}"><a href="{{ build_url }}">Build</a></li>
+                      <li class="{% current_nav release_url %}"><a href="{{ release_url }}">Release</a></li>
+                      <li class="{% current_nav deploy_url %}"><a href="{{ deploy_url }}">Deploy</a></li>
+                  </ul>
+              </li>
+              <li class="{% current_nav log_url %}"><a href="{{ log_url }}">Log</a></li>
+
+            </ul>
+            <p class="navbar-text pull-right">
+            {% if request.user.is_authenticated %}
+            Logged in as {{ request.user.username }}.  <a href="{% url logout %}">Log out</a>
+            {% else %}
+
+            {% endif %}
+            </p>
+          {% endif %}
+          {% endblock nav %}
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+    {% if messages %}
+        <div class="container">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+             <a class="close" data-dismiss="alert">×</a>
+            {{ message }}
+        </div>
+        {% endfor %}
+        </div>
+    {% endif %}
+    <div class="container-fluid">
+        {% block content %}
+        {% endblock content %}
+    </div>
+    <script src="{% static 'js/jquery.min.js' %}"></script>
+    <script src="{% static 'js/misc.js' %}"></script>
+    <script src="{% static 'js/underscore-min.js' %}"></script>
+    <script src="{% static 'js/backbone-min.js' %}"></script>
+    <script src="{% static 'js/goatee.js' %}"></script>
+    <script src="{% static 'bootstrap/js/bootstrap.js' %}"></script>
+    <script src="{% static 'js/vr.js' %}"></script>
+
+{# GOATEE TEMPLATES #}
+{% include "jstemplates.html" %}
+
+<script>
+{# build some URLs from Django.  vrdash.js and other scripts rely on these #}
+(function () {
+    VR.Urls.events = '{% url api_events %}';
+    VR.Urls.procEvents = '{% url api_proc_events %}';
+})(this);
+</script>
+
+{% block script %}{% endblock script %}
+
+</body>
+</html>
