@@ -4,8 +4,8 @@ from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from django.core.files import File
 
-from vr.deployment import models
-from vr.tests import randchars, randurl
+from vr.server import models
+from vr.server.tests import randchars, randurl
 
 
 def test_builds_get_current():
