@@ -10,7 +10,7 @@ list of available balancers is configured in the Django settings::
 
   BALANCERS = {
       'default': {
-          'BACKEND': 'deployment.balancer.dummy.DummyBalancer',
+          'BACKEND': 'vr.common.balancer.dummy.DummyBalancer',
       }
   }
 
@@ -29,7 +29,7 @@ The nginx_ balancer backend can be configured like so::
 
   BALANCERS:
     my_nginx_balancer:
-      BACKEND: deployment.balancer.nginx.NginxBalancer 
+      BACKEND: vr.common.balancer.nginx.NginxBalancer 
       user: some_user_with_sudo
       password: some_password
       include_dir: /etc/nginx/sites-enabled/
@@ -66,7 +66,7 @@ the nginx balancer, so its config is very similar::
 
   BALANCERS:
     my_varnish_balancer:
-      BACKEND: deployment.balancer.varnish.VarnishBalancer 
+      BACKEND: vr.common.balancer.varnish.VarnishBalancer 
       user: some_user_with_sudo
       password: some_password
       include_dir: /etc/varnish/
@@ -86,7 +86,7 @@ using SSH, so its config looks different::
 
     BALANCERS:
       my_stingray_balancer:
-        BACKEND: deployment.balancer.zxtm.ZXTMBalancer
+        BACKEND: vr.common.balancer.zxtm.ZXTMBalancer
         URL: https://traffic.yougov.local:9090/soap
         USER: api_user
         PASSWORD: api_user_password
@@ -109,13 +109,13 @@ setting::
 
   BALANCERS:
     my_varnish_balancer:
-      BACKEND: deployment.balancer.varnish.VarnishBalancer 
+      BACKEND: vr.common.balancer.varnish.VarnishBalancer 
       user: some_user_with_sudo
       password: some_password
       hosts:
       - varnish.mydomain.com
     my_nginx_balancer:
-      BACKEND: deployment.balancer.nginx.NginxBalancer 
+      BACKEND: vr.common.balancer.nginx.NginxBalancer 
       user: some_user_with_sudo
       password: some_password
       hosts:
@@ -181,7 +181,7 @@ Here's a hand-wavy hypothetical example. ::
     # the abstract base class in the raptor lib doesn't actually provide any
     # behavior but does help ensure you've implemented the right methods.
     
-    from raptor.balancer import Balancer
+    from vr.common.balancer import Balancer
     from mythical.tightrope.api imort go_get_a_pool
     
     

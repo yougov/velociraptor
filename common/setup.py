@@ -2,7 +2,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='raptor',
+    name='vr.common',
     version='2.15.2',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
@@ -18,7 +18,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'proc_publisher = raptor.publisher:main',
+            'proc_publisher = vr.common.publisher:main',
         ]
     },
     description=('Libraries and command line tools for deploying with '

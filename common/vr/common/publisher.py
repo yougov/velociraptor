@@ -31,9 +31,9 @@ import socket
 
 import redis
 
-from raptor.utils import parse_redis_url
-from raptor.models import Host, Proc
-from raptor import supervisor_utils
+from vr.common.utils import parse_redis_url
+from vr.common.models import Host, Proc
+from vr.common import supervisor_utils
 
 
 def main():

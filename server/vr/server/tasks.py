@@ -23,9 +23,9 @@ from django.utils import timezone
 from vr.server import events, utils, balancer, models
 from vr.server.models import (Release, Build, Swarm, Host, PortLock, App,
                                TestRun, TestResult)
-from raptor import repo, remote, build as rbuild
-from raptor.models import Proc
-from raptor.utils import tmpdir, run
+from vr.common import repo, remote, build as rbuild
+from vr.common.models import Proc
+from vr.common.utils import tmpdir, run
 
 
 logger = logging.getLogger('velociraptor')

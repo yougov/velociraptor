@@ -5,9 +5,9 @@ import json
 import redis
 import pytest
 
-from raptor.models import Host, Proc, ProcError
-from raptor.utils import parse_redis_url, utc
-from raptor.tests import FakeRPC
+from vr.common.models import Host, Proc, ProcError
+from vr.common.utils import parse_redis_url, utc
+from vr.common.tests import FakeRPC
 
 
 def test_host_init_rpc():

@@ -1,5 +1,5 @@
-from raptor.build import add_buildpack, App
-from raptor.utils import tmpdir
+from vr.common.build import add_buildpack, App
+from vr.common.utils import tmpdir
 
 
 def test_buildpack_detected():

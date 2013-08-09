@@ -1,6 +1,6 @@
 import redis
 
-from raptor.utils import parse_redis_url
+from vr.common.utils import parse_redis_url
 
 def test_parse_redis_url():
     r = redis.StrictRedis(**parse_redis_url('redis://localhost:6379/0'))

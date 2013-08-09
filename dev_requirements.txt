@@ -1,7 +1,7 @@
 pytest
 mock
 
--e ./libraptor
+-e ./common
 -e ./server
 -e ./cli
 

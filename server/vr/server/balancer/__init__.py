@@ -10,12 +10,13 @@ def import_class(path):
         raise ImportError(e)
 
 # Only instantiate the balancer on first import
-if not 'balancers' in globals():
-    # loop over settings.BALANCERS, instantiate a balancer for each, and put it
-    # in the 'balancers' dict in this module.
-    balancers = {}
-    for name, config in settings.BALANCERS.items():
-        balancers[name] = import_class(config['BACKEND'])(config)
+#if not 'balancers' in globals():
+    ## loop over settings.BALANCERS, instantiate a balancer for each, and put it
+    ## in the 'balancers' dict in this module.
+    #balancers = {}
+    #for name, config in settings.BALANCERS.items():
+        #print "BALANCERS", name, config
+        #balancers[name] = import_class(config['BACKEND'])(config)
 
 
 def add_nodes(balancer, pool_name, nodes):

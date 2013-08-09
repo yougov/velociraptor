@@ -20,7 +20,7 @@ from fabric.api import sudo, get, put, task, env
 from fabric.contrib import files
 from fabric import colors
 
-from raptor.models import Proc
+from vr.common.models import Proc
 
 BUILDS_ROOT = '/apps/builds'
 PROCS_ROOT = '/apps/procs'
@@ -265,7 +265,7 @@ class Deployer(object):
         """
         Upload libraptor's "uptester" program to the proc root.
         """
-        uptester = pkg_resources.resource_filename('raptor',
+        uptester = pkg_resources.resource_filename('vr.common',
                                                    'uptester/uptester')
         remote_path = posixpath.join(self.proc_path, 'uptester')
         put(uptester, remote_path, use_sudo=True)
@@ -370,7 +370,7 @@ def build_uptests_command(proc_path, proc, host, port, user):
 def ensure_uptester(proc_path):
     # If there's no uptester in the proc folder, put one there.
     uptester_path = posixpath.join(proc_path, 'uptester')
-    uptester = pkg_resources.resource_filename('raptor', 'uptester/uptester')
+    uptester = pkg_resources.resource_filename('vr.common', 'uptester/uptester')
     if files.exists(proc_path) and not files.exists(uptester_path):
         put(uptester, uptester_path, use_sudo=True)
         sudo('chmod +x %s' % uptester_path)

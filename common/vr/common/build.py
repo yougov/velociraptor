@@ -4,8 +4,8 @@ import logging
 
 import yaml
 
-from raptor import repo
-from raptor.utils import run
+from vr.common import repo
+from vr.common.utils import run
 
 
 HOME = (os.environ.get('RAPTOR_HOME') or os.path.expanduser('~/.raptor'))

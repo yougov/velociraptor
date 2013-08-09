@@ -5,7 +5,7 @@ from datetime import datetime
 import isodate
 import redis
 
-from raptor.utils import utcfromtimestamp, parse_redis_url
+from vr.common.utils import utcfromtimestamp, parse_redis_url
 
 
 class Host(object):

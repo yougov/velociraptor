@@ -2,9 +2,9 @@ import os
 
 import pytest
 
-from raptor import repo, build
-from raptor.utils import tmpdir, run
-from raptor.tests import tmprepo
+from vr.common import repo, build
+from vr.common.utils import tmpdir, run
+from vr.common.tests import tmprepo
 
 
 def test_hg_folder_detection():

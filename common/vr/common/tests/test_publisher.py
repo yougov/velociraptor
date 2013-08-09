@@ -2,9 +2,9 @@ import json
 
 from mock import Mock, call
 
-from raptor import publisher
-from raptor.tests import FakeRPC
-from raptor.models import Host, Proc
+from vr.common import publisher
+from vr.common.tests import FakeRPC
+from vr.common.models import Host, Proc
 
 def get_tick():
     """

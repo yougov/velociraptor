@@ -18,8 +18,8 @@ import redis
 
 from vr.server.fields import YAMLDictField
 from vr.server import events
-from raptor import repo, build, models as raptor_models
-from raptor.utils import parse_redis_url
+from vr.common import repo, build, models as raptor_models
+from vr.common.utils import parse_redis_url
 
 
 # If we're actually running (not just collecting static files), and there's not

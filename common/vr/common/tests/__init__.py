@@ -3,8 +3,8 @@ import tempfile
 import shutil
 import xmlrpclib
 
-from raptor import repo
-from raptor.utils import run
+from vr.common import repo
+from vr.common.utils import run
 
 # A fake Supervisor xmlrpc interface.
 class FakeSupervisor(object):

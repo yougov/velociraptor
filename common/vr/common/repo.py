@@ -4,7 +4,7 @@ import urlparse
 import re
 import logging
 
-from raptor.utils import chdir, run
+from vr.common.utils import chdir, run
 
 
 log = logging.getLogger(__name__)

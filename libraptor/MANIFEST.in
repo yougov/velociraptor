@@ -1,4 +1,0 @@
-recursive-include raptor/templates *
-recursive-include raptor/uptester *
-include LICENSE
-include raptor/balancer/stingray_pool.wsdl
