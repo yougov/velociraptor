@@ -1,2 +1,2 @@
-recursive-include server/vr/server/templates *
-recursive-include server/vr/server/static *
+recursive-include vr/server/templates *
+recursive-include vr/server/static *
