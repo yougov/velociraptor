@@ -276,7 +276,7 @@ BUILD_EXPIRATION_COUNT = 10
 if os.environ.get('APP_SETTINGS_YAML'):
     import yaml
     try:
-        globals().update(yaml.safe_load(open(os.environ['APP_SETTINGS_YAML'])))
+        globals().update(yaml.safe_load(open(os.environ['APP_SETTINGS_YAML'])) or {})
     except IOError:
         # Allow settings to be imported during build so we can compilestatic
         pass
