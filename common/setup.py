@@ -3,7 +3,8 @@ from setuptools import setup, find_packages
 
 setup(
     name='vr.common',
-    version='3.0.0',
+    namespace_packages=['vr'],
+    version='3.0.1',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
     packages=find_packages(),
