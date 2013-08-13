@@ -78,7 +78,7 @@ class pipdeps {
       # the repo checkout itself.
       '/vagrant/common':;
       '/vagrant/agent':
-        require => [Service[supervisor], Package['/vagrant/common']],
+        require => [Package['/vagrant/common']],
         notify => Service[supervisor]; 
     }
 
@@ -129,25 +129,22 @@ class pipdeps {
 
 class pg91 {
     package {
-      "postgresql-9.1":
-        ensure => present,
-        ;
-      "postgresql-server-dev-9.1":
-        ensure => present,
-        ;
+      "postgresql-9.1": ensure => present;
+      "postgresql-server-dev-9.1": ensure => present;
     }
 
     file { 'pg_hba.conf':
       path    => '/etc/postgresql/9.1/main/pg_hba.conf',
       ensure  => file,
       require => Package['postgresql-9.1'],
-      source  => 'puppet:///modules/postgres/pg_hba.conf';
+      source  => 'puppet:///modules/postgres/pg_hba.conf',
+      notify => Service[postgresql];
     }
 
-    exec {
-      pgrestart:
-        command => "/etc/init.d/postgresql restart",
-        require => File['pg_hba.conf'];
+    service { "postgresql":
+      ensure => "running",
+      enable => "true",
+      require => Package['postgresql-9.1'];
     }
 }
 
