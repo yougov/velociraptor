@@ -13,14 +13,8 @@ setup(
         'isodate>=0.4.4',
         'mercurial>=2.6.1',
         'paramiko>=1.8.0,<2.0',
-        'redis>=2.6.2',
         'suds==0.4',
     ],
-    entry_points={
-        'console_scripts': [
-            'proc_publisher = vr.common.publisher:main',
-        ]
-    },
     description=('Libraries and command line tools for deploying with '
                  'Velociraptor'),
 )

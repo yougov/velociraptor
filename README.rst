@@ -75,9 +75,11 @@ Postgres database used by Velociraptor::
 
     psql -U postgres -f dbsetup.sql
 
-Once your database is created, you'll need to create the tables::
+Once your database is created, you'll need to create the tables.  (Please
+forgive the deeply nested folders; I know it's tedious, but it's the cost of
+using several namespaced Python packages in the same repo)::
 
-    cd /vagrant/vr_django/vr
+    cd /vagrant/server/vr/server
     ./manage.py syncdb
     ./manage.py migrate
 
@@ -87,19 +89,22 @@ As Velociraptor is developed and the DB schema changes, you can run
 Dev Server
 ~~~~~~~~~~
 
-Velociraptor is composed of two main processes:
+The Velociraptor server is composed of three processes:
 
 1. The main Django web service.
 2. A Celery_ daemon that starts and controls one or more workers.
+3. A 'celerybeat' process that puts maintenance jobs on the Celery queue at
+   preconfigured times.
 
 There is a Procfile included with Velociraptor that can be used to run a
-development environment with both of these processes. You can use Foreman_ to
+development environment with these processes. You can use Foreman_ to
 read the Procfile and start the processes it lists::
 
     cd /vagrant
     foreman start -f Procfile.dev
 
-That will start the Django dev server on port 8000 and the Celery daemon. 
+That will start the Django dev server on port 8000, the Celery workers, and the
+celerybeat process.
 
 Now open your web browser and type in http://localhost:8000.  You should see
 Velociraptor.  (The Vagrantfile is configured to forward ports 8000, 9001, and

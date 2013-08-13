@@ -1,5 +1,5 @@
 """
-vr: A CLI to interact with Velociraptor, the deployment tool.
+vr: A command line tool to interact with the Velociraptor API.
 
 Global Options:
 --log, --logging    Set the level of logging. Acceptable values:
@@ -12,8 +12,8 @@ import sys
 
 from tambo import Transport
 
-import velociraptor_cli
-from velociraptor_cli import actions
+import vr.cli
+from vr.cli import actions
 
 
 class Velociraptor(object):
@@ -36,7 +36,7 @@ class Velociraptor(object):
                            options=options, check_help=False,
                            check_version=False)
         parser.parse_args()
-        velociraptor_cli.config['verbosity'] = parser.get('--log', 'info')
+        vr.cli.config['verbosity'] = parser.get('--log', 'info')
         parser.catch_help = "%s%s" % (__doc__, parser.subhelp())
         parser.catch_version = '0.0.1'
         parser.mapper = self.mapper

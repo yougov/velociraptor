@@ -10,4 +10,4 @@ class Build(object):
         self.parser = Transport(self.argv)
 
     def parse_args(self):
-        print "Argument parsing done in the Build class"
+        print "Argument parsing done in the Build class", self.parser.parse_args()

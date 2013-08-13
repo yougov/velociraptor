@@ -42,36 +42,8 @@ class vrhost {
       firstupdate:
         command => "apt-get update",
         timeout => "300";
-      supervisor_logdir:
-        command => "mkdir -p /var/log/supervisor";
-
-      custom_supervisor:
-        command => "/usr/local/bin/pip-2.7 install https://bitbucket.org/yougov/velociraptor/downloads/supervisor-3.0b2-dev-vr4.tar.gz",
-        require => Exec[pip27];
-
-      start_supervisor:
-        command => "start supervisor",
-        require => [File["supervisord.conf"], File["supervisord.init"],
-                                              Exec[supervisor_logdir]],
-        # Don't try starting if we're already started.
-        unless => 'ps aux | grep supervisor | grep -v "grep"' ;
     }
 
-    # ensure that supervisord's config has the line to include
-    # /apps/procs/*/proc.conf
-    file { 'supervisord.conf':
-      path    => '/etc/supervisord.conf',
-      ensure  => file,
-      require => Exec[custom_supervisor],
-      source  => 'puppet:///modules/supervisor/supervisord.conf';
-    }
-
-    file { 'supervisord.init':
-      path    => '/etc/init/supervisor.conf',
-      ensure  => file,
-      require => Exec[custom_supervisor],
-      source  => 'puppet:///modules/supervisor/supervisord.init';
-    }
 }
 
 class ruby {
@@ -101,8 +73,13 @@ class pipdeps {
       mercurial:;
       virtualenv:;
       virtualenvwrapper:;
-      '/vagrant/libraptor':
-        require => Exec[custom_supervisor];
+
+      # The host needs to have the proc_publisher available.  Install that from
+      # the repo checkout itself.
+      '/vagrant/common':;
+      '/vagrant/agent':
+        require => [Service[supervisor], Package['/vagrant/common']],
+        notify => Service[supervisor]; 
     }
 
     file { '.bashrc':
@@ -115,8 +92,39 @@ class pipdeps {
       pip27:
         command => "easy_install-2.7 pip",
         require => Package['python-setuptools'];
+      custom_supervisor:
+        command => "/usr/local/bin/pip-2.7 install https://bitbucket.org/yougov/velociraptor/downloads/supervisor-3.0b2-dev-vr4.tar.gz",
+        require => Exec[pip27];  
     }
 
+    file { 'supervisord.conf':
+      path    => '/etc/supervisord.conf',
+      ensure  => file,
+      source  => 'puppet:///modules/supervisor/supervisord.conf';
+    }
+
+    file { 'supervisord.init':
+      path    => '/etc/init/supervisor.conf',
+      ensure  => file,
+      require => Exec[custom_supervisor],
+      source  => 'puppet:///modules/supervisor/supervisord.init';
+    }
+
+    file { 'supervisor_logdir':
+      path    => '/var/log/supervisor',
+      ensure  => directory;
+    }
+
+    service { "supervisor":
+       ensure  => "running",
+       enable  => "true",
+       require => [
+         Exec[custom_supervisor], 
+         File[supervisor_logdir], 
+         File['supervisord.init'],
+         File['supervisord.conf'],
+       ],
+    }
 }
 
 class pg91 {

@@ -33,7 +33,7 @@ import redis
 
 from vr.common.utils import parse_redis_url
 from vr.common.models import Host, Proc
-from vr.common import supervisor_utils
+from vr.agent import supervisor_utils
 
 
 def main():
