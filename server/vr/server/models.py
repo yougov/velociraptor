@@ -420,8 +420,9 @@ class Swarm(models.Model):
         ])
 
     def shortname(self):
-        return u'%(app)s-%(version)s-%(proc)s' % {
+        return u'%(app)s-%(version)s-%(configname)s-%(proc)s' % {
             'app': self.app.name,
+            'configname': self.config_name,
             'version': self.release.build.tag,
             'proc': self.proc_name
         }
