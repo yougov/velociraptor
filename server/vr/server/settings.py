@@ -1,5 +1,4 @@
 import sys
-import os
 
 if 'runserver' in sys.argv:
     from gevent import monkey
@@ -8,12 +7,12 @@ if 'runserver' in sys.argv:
     gevent_psycopg2.monkey_patch()
 
 from socket import getfqdn
-
-from datetime import timedelta
 import os
 import warnings
 import logging
 import pkg_resources
+
+from datetime import timedelta
 
 import djcelery
 from celery.schedules import crontab
