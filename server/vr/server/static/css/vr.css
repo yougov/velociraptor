@@ -24,8 +24,7 @@ th {
   }
 }
 
-
-.clickable-text {
+clickable-text {
   cursor: pointer;
 }
 
@@ -101,7 +100,7 @@ th {
 
 
 .proc-details-modal {
-  width: 700px;
+  /*width: 700px;*/
 }
 
 .proc-log {

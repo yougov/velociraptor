@@ -565,7 +565,7 @@ VR.Views.Proc = Backbone.View.extend({
 VR.Views.BaseModal = Backbone.View.extend({
     // base class for bootstrap modal views, which need to have tabindex set in
     // order for them to be dismissable with the Escape key.
-    el: '<div class="modalwrap" tabindex="-1"></div>'
+    el: '<div class="modal fade" tabindex="-1"></div>'
 });
 
 
