@@ -1,3 +1,0 @@
-[console_scripts]
-proc_publisher = vr.common.publisher:main
-

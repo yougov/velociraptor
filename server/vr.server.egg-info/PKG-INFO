@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: vr.server
-Version: 2.1.2
+Version: 3.0.1
 Summary: Velociraptor's Django and Celery components.
 Home-page: UNKNOWN
 Author: Brent Tubbs

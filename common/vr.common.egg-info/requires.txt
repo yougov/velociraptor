@@ -1,5 +1,0 @@
-Fabric==1.4.0
-isodate>=0.4.4
-mercurial>=2.6.1
-paramiko>=1.8.0,<2.0
-suds==0.4

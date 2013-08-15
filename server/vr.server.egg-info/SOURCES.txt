@@ -1,4 +1,5 @@
 MANIFEST.in
+setup.py
 vr/__init__.py
 vr.server.egg-info/PKG-INFO
 vr.server.egg-info/SOURCES.txt
