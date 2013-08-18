@@ -169,7 +169,7 @@ MEDIA_ROOT = os.path.join(here, 'uploads/')
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash.
 # Examples: "http://media.lawrence.com/media/", "http://example.com/media/"
-MEDIA_URL = '/uploads/'
+MEDIA_URL = 'http://localhost:8001/'
 
 # Store files using mongodb gridfs by default.
 DEFAULT_FILE_STORAGE = 'vr.server.storages.GridFSStorage'
