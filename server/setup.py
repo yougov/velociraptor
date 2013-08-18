@@ -23,7 +23,7 @@ setup(
         'gevent-psycopg2==0.0.3',
         'gunicorn==0.17.2',
         'psycopg2>=2.4.4,<2.5',
-        'pymongo>=2.1.1,<2.2',
+        'pymongo>=2.5.2,<3',
         'redis>=2.6.2,<3',
         'requests==1.0.4',
         'South==0.7.6',
