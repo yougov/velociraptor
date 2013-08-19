@@ -98,9 +98,8 @@ clickable-text {
   border-radius: 0px;
 }
 
-
-.proc-details-modal {
-  /*width: 700px;*/
+.modal, .proc-details-modal {
+  width: 700px;
 }
 
 .proc-log {
