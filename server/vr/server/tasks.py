@@ -105,18 +105,8 @@ def deploy(release_id, config_name, hostname, proc, port):
                 env_str = '\n'.join(format_var(k, e[k]) for k in e)
                 f.write(env_str)
 
-            # pull the build out of gridfs, write it to a temporary location,
-            # and deploy it.
-            build_filename = posixpath.basename(release.build.file.name)
-            local_build = open(build_filename, 'wb')
-            build = default_storage.open(release.build.file.name)
-            local_build.write(release.build.file.read())
-
-            local_build.close()
-            build.close()
-
             with always_disconnect():
-                remote.deploy_parcel(build_path=build_filename,
+                remote.deploy_parcel(build_url=release.build.file.url,
                                      config_path='settings.yaml',
                                      envsh_path='env.sh',
                                      swarm=config_name,

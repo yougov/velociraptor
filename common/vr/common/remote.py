@@ -28,7 +28,7 @@ RELEASES_ROOT = '/apps/releases'
 
 
 @task
-def upload_build(local_path, build_name, user='nobody'):
+def download_build(build_url, build_name, user='nobody'):
 
     remote_path = posixpath.join(BUILDS_ROOT, build_name)
     if not files.exists(remote_path):
@@ -47,7 +47,7 @@ def upload_build(local_path, build_name, user='nobody'):
     tmp_path = posixpath.join('/tmp',
                               ''.join(random.choice(string.ascii_letters) for x
                                       in xrange(20)))
-    put(local_path, tmp_path, use_sudo=True)
+    sudo('wget %(build_url)s -O %(tmp_path)s' % vars())
 
     colors.green('Unpacking build')
 
@@ -64,13 +64,13 @@ def upload_build(local_path, build_name, user='nobody'):
 
 
 @task
-def upload_release(build_path, build_name, config_path, release_path, envsh_path, user='nobody'):
+def upload_release(build_url, build_name, config_path, release_path, envsh_path, user='nobody'):
     # See if /apps/releases/<name> exists.  If not, make it.
     if not files.exists(release_path):
         colors.green('Creating remote directory')
         sudo('mkdir -p ' + release_path)
 
-    upload_build(build_path, build_name)
+    download_build(build_url, build_name)
 
     colors.green('Uploading config')
     # If we let Fabric upload settings.yaml, it might step on its own toes when
@@ -302,26 +302,23 @@ def configure_proc(build_name, release_name, proc, port, user='nobody',
 
 
 @task
-def deploy_parcel(build_path, config_path, envsh_path, swarm,
+def deploy_parcel(build_url, config_path, envsh_path, swarm,
                   proc, port, user='nobody', use_syslog=False,
                   release_hash=None):
     # Builds have timstamps, but releases really don't care about them.  Two
     # releases created at different times with the same build and settings
     # should be treated the same.  So throw away the timestamp portion of the
     # build name when creating the release name.
-    build_file = os.path.basename(build_path)
+    build_file = os.path.basename(build_url)
     nameparts = build_file.split('-')
     app_name = nameparts[0]
     version = nameparts[1]
 
     build_name = '-'.join([app_name, version])
 
-    # A release name should look like gryphon-2.2.3-ldc-d5338b8a07, where the
-    # random looking chars at the end come from a hash of the build tarball and
-    # settings.yaml used for the release.
-    if release_hash is None:
-        chars = open(build_path, 'rb').read() + open(config_path, 'rb').read()
-        release_hash = hashlib.md5(chars).hexdigest()[:8]
+    # TODO: Require that a release_hash always be passed in.  Don't provide the
+    # None default.
+    release_hash = release_hash or 'UNHASHED'
     release_name = '-'.join([app_name, version, swarm, release_hash])
     release_path = posixpath.join(RELEASES_ROOT, release_name)
 
@@ -331,7 +328,7 @@ def deploy_parcel(build_path, config_path, envsh_path, swarm,
     proc_path = posixpath.join(PROCS_ROOT, proc_name)
     sudo('mkdir -p ' + proc_path)
 
-    upload_release(build_path, build_name, config_path, release_path,
+    upload_release(build_url, build_name, config_path, release_path,
                    envsh_path, user=user)
 
     configure_proc(build_name, release_name, proc, port, user,
