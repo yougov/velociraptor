@@ -100,7 +100,7 @@ clickable-text {
 
 .modal, .proc-details-modal {
   width: 700px;
-  margin-left: 360px;
+  margin-left: -360px;
 }
 
 .proc-log {
