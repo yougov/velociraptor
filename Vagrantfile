@@ -12,6 +12,10 @@ Vagrant::Config.run do |config|
     # Port for the main dashboard
     config.vm.forward_port 8000, 8000
 
+
+    # Port for the khartoum fileserver
+    config.vm.forward_port 8001, 8001
+
     # Ports for auto-deployed procs
     config.vm.forward_port 5000, 5000
     config.vm.forward_port 5001, 5001
