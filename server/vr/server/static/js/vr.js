@@ -844,16 +844,16 @@ VR.Views.SwarmModal = VR.Views.BaseModal.extend({
       // button.
       var procs = this.swarm.getProcs();
       if (_.some(procs, function(proc) {return proc.isStopped();})) {
-        this.$el.find('.modal').addClass('somestopped');
+        this.$el.addClass('somestopped');
       } else {
-        this.$el.find('.modal').removeClass('somestopped');
+        this.$el.removeClass('somestopped');
       }
 
       // if there are any running procs, add the class to show the stop button
       if (_.some(procs, function(proc) {return proc.isRunning();})) {
-        this.$el.find('.modal').addClass('somerunning');
+        this.$el.addClass('somerunning');
       } else {
-        this.$el.find('.modal').removeClass('somerunning');
+        this.$el.removeClass('somerunning');
       }
     },
 
