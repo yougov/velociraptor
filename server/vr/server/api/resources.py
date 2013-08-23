@@ -1,6 +1,7 @@
 from django.conf.urls.defaults import url
 from django.http import (HttpResponse, HttpResponseNotAllowed,
-                         HttpResponseNotFound)
+                         HttpResponseNotFound, HttpResponseRedirect)
+from django.core.urlresolvers import reverse
 
 from tastypie.resources import ModelResource
 from tastypie import fields
@@ -250,7 +251,7 @@ v1.register(TestResultResource())
 
 class TestRunResource(ModelResource):
     testresults = fields.ToManyField('api.resources.TestResultResource',
-                                     'tests')
+                                     'tests', full=True)
 
     class Meta:
 

@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 from django import http
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
+from django.core.urlresolvers import reverse
 import sseclient
 import requests
 
@@ -123,21 +124,21 @@ def host_proc(request, hostname, procname):
 
 
 @auth_required
-def uptest_run(request, run_id):
-    run = get_object_or_404(models.TestRun, id=run_id)
-    return utils.json_response(run.results)
-
-
-@auth_required
 def uptest_latest(request):
     """
-    Look up most recent test run and return its results.
+    Look up most recent test run and redirect to its record in the API.
     """
     runs = models.TestRun.objects.filter(end__isnull=False).order_by('-start')
-    if len(runs):
-        return utils.json_response(runs[0].results)
-    else:
-        raise http.Http404
+    if not runs:
+        return http.HttpResponseNotFound()
+    url = reverse('api_dispatch_detail',
+                  kwargs={'resource_name': 'testruns',
+                          'api_name': 'v1',
+                          'pk': runs[0].id})
+
+    # Tack on the query string
+    url = "?".join([url, request.META['QUERY_STRING']])
+    return http.HttpResponseRedirect(url)
 
 
 @auth_required
@@ -159,7 +160,6 @@ def proc_event_stream(request):
         settings.EVENTS_PUBSUB_URL,
         channel=settings.PROC_EVENTS_CHANNEL,
     ), mimetype='text/event-stream')
-
 
 
 class ProcTailer(object):

@@ -18,6 +18,11 @@ urlpatterns = patterns('api.views',
     url(r'^v1/swarms/(?P<swarm_id>[a-zA-Z0-9_.-]+)/procs/$', 'swarm_procs',
         name='api_swarm_procs'),
 
+    # Redirector for latest uptest run
+    url(r'^v1/testruns/latest/$', 'uptest_latest',
+        name='api_testruns_latest'),
+
+
     # TASTYPIE DRIVEN API
     (r'^', include(v1.urls)),
 )
