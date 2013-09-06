@@ -45,6 +45,7 @@ def download_build(build_url, build_name, user='nobody'):
 
     sudo('chown -R {user} {remote_path}'.format(**vars()))
     sudo('chgrp -R admin {remote_path}'.format(**vars()))
+    sudo('chmod -R ug+r {remote_path}'.format(**vars()))
     sudo('chmod -R g+w {remote_path}'.format(**vars()))
     # todo: mark directories as g+s
 
