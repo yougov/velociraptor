@@ -35,32 +35,18 @@ def download_build(build_url, build_name, user='nobody'):
         sudo('mkdir -p ' + remote_path)
     remote_procfile = posixpath.join(remote_path, 'Procfile')
 
+    # check if the build is needed.  upload if so.
     if files.exists(remote_procfile):
         colors.green('%s already on server.  No need to upload.' % remote_procfile)
         return
 
+    colors.green('Pulling and unpacking build')
+    sudo('wget %(build_url)s -q -O - | tar xj -C %(remote_path)s' % vars())
 
-    # check if the build is needed.  upload if so.
-
-    colors.green('Uploading build')
-    # Make a random filename for the remote tmp file.
-    tmp_path = posixpath.join('/tmp',
-                              ''.join(random.choice(string.ascii_letters) for x
-                                      in xrange(20)))
-    sudo('wget %(build_url)s -O %(tmp_path)s' % vars())
-
-    colors.green('Unpacking build')
-
-    tar_cmd = 'tar xjf {tmp_path} -C {remote_path} --strip-components 1'
-    tar_cmd = tar_cmd.format(**vars())
-    sudo(tar_cmd)
     sudo('chown -R {user} {remote_path}'.format(**vars()))
     sudo('chgrp -R admin {remote_path}'.format(**vars()))
     sudo('chmod -R g+w {remote_path}'.format(**vars()))
     # todo: mark directories as g+s
-
-    colors.green('Deleting build tarball')
-    sudo('rm ' + tmp_path)
 
 
 @task
