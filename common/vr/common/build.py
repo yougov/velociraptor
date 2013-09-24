@@ -31,7 +31,10 @@ class BuildPack(repo.Repo):
         return result.status_code == 0
 
     def compile(self, app):
-        log.info('Compiling %s with %s' % (app.basename, self.basename))
+        log.info(
+            'Compiling {app.basename} with {self.basename}'
+            .format(**vars())
+        )
         script = os.path.join(self.folder, 'bin', 'compile')
 
         cache_folder = os.path.join(CACHE_HOME, get_unique_repo_folder(app.url))
