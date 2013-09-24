@@ -157,7 +157,6 @@ class Deployer(object):
         return build_container_cmd('/proc.sh', self.user,
                                    container_name, lxc_config_path)
 
-
     def reload_supervisor(self):
         # For this to work, the host must have PROCS_ROOT/*/proc.conf in
         # the files include line in the main supervisord.conf
@@ -491,19 +490,24 @@ def clean_releases_folders(releases_root=RELEASES_ROOT, procs_root=PROCS_ROOT):
     if you choose to be verbose it will print out the releases it will delete.
     """
 
-    if files.exists(procs_root, use_sudo=True) and \
-        files.exists(releases_root, use_sudo=True):
-        procs = get_procs()
-        releases = get_releases()
-        releases_in_use = set([
-            '%(app_name)s-%(version)s-%(config_name)s-%(hash)s' %
-            Proc.parse_name(p) for p in procs])
-        deleted = []
-        for release in releases:
-            if release not in releases_in_use:
-                deleted.append(release)
-                delete_release(release, releases_root, procs_root, False)
-        colors.green("Cleaned up %i releases." % len(deleted))
+    dirs_exist = (
+        files.exists(procs_root, use_sudo=True)
+        and files.exists(releases_root, use_sudo=True)
+    )
+    if not dirs_exist:
+        return
+
+    procs = get_procs()
+    releases = get_releases()
+    releases_in_use = set([
+        '%(app_name)s-%(version)s-%(config_name)s-%(hash)s' %
+        Proc.parse_name(p) for p in procs])
+    deleted = []
+    for release in releases:
+        if release not in releases_in_use:
+            deleted.append(release)
+            delete_release(release, releases_root, procs_root, False)
+    colors.green("Cleaned up %i releases." % len(deleted))
 
 
 def clean_builds_folders(builds_root=BUILDS_ROOT, releases_root=RELEASES_ROOT):
@@ -627,7 +631,7 @@ class SSHConnection(object):
         stdin.flush()
         return stdout.read(), stderr.read()
 
-    def write_file(self, path, contents, mode=0644, owner=None,
+    def write_file(self, path, contents, mode=0o644, owner=None,
                    group=None):
         sftp = self.ssh.open_sftp()
 
@@ -635,7 +639,7 @@ class SSHConnection(object):
         # location and then mv the file into place.
         tmppath = posixpath.join(self.tmpdir,
                                  ''.join(random.choice(string.ascii_letters) for x
-                                         in xrange(10)))
+                                         in range(10)))
         f = sftp.open(tmppath, 'wb')
         f.write(contents)
         f.close()

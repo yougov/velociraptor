@@ -168,7 +168,7 @@ class use_buildfolder(object):
     def __enter__(self):
         self.temp_path = get_build_folder(self.app_url)
         if not os.path.isdir(self.temp_path):
-            os.makedirs(self.temp_path, 0770)
+            os.makedirs(self.temp_path, 0o770)
         os.chdir(self.temp_path)
         return self.temp_path
 
