@@ -35,32 +35,19 @@ def download_build(build_url, build_name, user='nobody'):
         sudo('mkdir -p ' + remote_path)
     remote_procfile = posixpath.join(remote_path, 'Procfile')
 
+    # check if the build is needed.  upload if so.
     if files.exists(remote_procfile):
         colors.green('%s already on server.  No need to upload.' % remote_procfile)
         return
 
+    colors.green('Pulling and unpacking build')
+    sudo('wget %(build_url)s -q -O - | tar xj -C %(remote_path)s' % vars())
 
-    # check if the build is needed.  upload if so.
-
-    colors.green('Uploading build')
-    # Make a random filename for the remote tmp file.
-    tmp_path = posixpath.join('/tmp',
-                              ''.join(random.choice(string.ascii_letters) for x
-                                      in xrange(20)))
-    sudo('wget %(build_url)s -O %(tmp_path)s' % vars())
-
-    colors.green('Unpacking build')
-
-    tar_cmd = 'tar xjf {tmp_path} -C {remote_path} --strip-components 1'
-    tar_cmd = tar_cmd.format(**vars())
-    sudo(tar_cmd)
     sudo('chown -R {user} {remote_path}'.format(**vars()))
     sudo('chgrp -R admin {remote_path}'.format(**vars()))
+    sudo('chmod -R ug+r {remote_path}'.format(**vars()))
     sudo('chmod -R g+w {remote_path}'.format(**vars()))
     # todo: mark directories as g+s
-
-    colors.green('Deleting build tarball')
-    sudo('rm ' + tmp_path)
 
 
 @task
@@ -169,7 +156,6 @@ class Deployer(object):
         lxc_config_path = posixpath.join(self.proc_path, 'proc.lxc')
         return build_container_cmd('/proc.sh', self.user,
                                    container_name, lxc_config_path)
-
 
     def reload_supervisor(self):
         # For this to work, the host must have PROCS_ROOT/*/proc.conf in
@@ -504,19 +490,24 @@ def clean_releases_folders(releases_root=RELEASES_ROOT, procs_root=PROCS_ROOT):
     if you choose to be verbose it will print out the releases it will delete.
     """
 
-    if files.exists(procs_root, use_sudo=True) and \
-        files.exists(releases_root, use_sudo=True):
-        procs = get_procs()
-        releases = get_releases()
-        releases_in_use = set([
-            '%(app_name)s-%(version)s-%(config_name)s-%(hash)s' %
-            Proc.parse_name(p) for p in procs])
-        deleted = []
-        for release in releases:
-            if release not in releases_in_use:
-                deleted.append(release)
-                delete_release(release, releases_root, procs_root, False)
-        colors.green("Cleaned up %i releases." % len(deleted))
+    dirs_exist = (
+        files.exists(procs_root, use_sudo=True)
+        and files.exists(releases_root, use_sudo=True)
+    )
+    if not dirs_exist:
+        return
+
+    procs = get_procs()
+    releases = get_releases()
+    releases_in_use = set([
+        '%(app_name)s-%(version)s-%(config_name)s-%(hash)s' %
+        Proc.parse_name(p) for p in procs])
+    deleted = []
+    for release in releases:
+        if release not in releases_in_use:
+            deleted.append(release)
+            delete_release(release, releases_root, procs_root, False)
+    colors.green("Cleaned up %i releases." % len(deleted))
 
 
 def clean_builds_folders(builds_root=BUILDS_ROOT, releases_root=RELEASES_ROOT):
@@ -640,7 +631,7 @@ class SSHConnection(object):
         stdin.flush()
         return stdout.read(), stderr.read()
 
-    def write_file(self, path, contents, mode=0644, owner=None,
+    def write_file(self, path, contents, mode=0o644, owner=None,
                    group=None):
         sftp = self.ssh.open_sftp()
 
@@ -648,7 +639,7 @@ class SSHConnection(object):
         # location and then mv the file into place.
         tmppath = posixpath.join(self.tmpdir,
                                  ''.join(random.choice(string.ascii_letters) for x
-                                         in xrange(10)))
+                                         in range(10)))
         f = sftp.open(tmppath, 'wb')
         f.write(contents)
         f.close()

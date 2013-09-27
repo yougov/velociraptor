@@ -69,7 +69,7 @@ class ReleaseForm(forms.ModelForm):
 
 class DeploymentForm(forms.Form):
 
-    release_id = forms.ChoiceField(choices=[], label='Release')
+    release_id = forms.CharField(max_length=100, label='Release')
     # TODO: proc should be a drop down of the procs available for a given
     # release.  But I guess we can't narrow that down until a release is
     # picked.
@@ -82,8 +82,6 @@ class DeploymentForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(DeploymentForm, self).__init__(*args, **kwargs)
-        self.fields['release_id'].choices = [(r.id, r) for r in
-            models.Release.objects.all()]
         self.fields['hostname'].choices = [(h.name, h.name) for h in
                                        models.Host.objects.filter(active=True)]
 

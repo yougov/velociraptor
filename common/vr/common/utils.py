@@ -1,11 +1,15 @@
+from __future__ import print_function
+
 import sys
 import os
 import subprocess
 import shutil
 import tempfile
 import urlparse
-import isodate
 from datetime import datetime
+
+import isodate
+import six
 
 
 class tmpdir(object):
@@ -57,7 +61,7 @@ class CommandException(Exception):
 class CommandResult(object):
     def __init__(self, command, output, status_code):
         self.command = command
-        self.output = unicode(output, 'ascii', 'replace')
+        self.output = six.text_type(output, 'ascii', 'replace')
         self.status_code = status_code
 
     def __repr__(self):
@@ -82,7 +86,7 @@ def run(command, verbose=False):
     output = ""
     status_code = None
     if verbose:
-        print "run: %s" % command
+        print("run:", command)
     while status_code is None:
         status_code = p.poll()
         line = p.stdout.readline()

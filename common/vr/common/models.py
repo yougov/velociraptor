@@ -2,7 +2,7 @@ import xmlrpclib
 import json
 from datetime import datetime
 
-import isodate
+import six
 import redis
 
 from vr.common.utils import utcfromtimestamp, parse_redis_url
@@ -50,7 +50,7 @@ class Host(object):
 
         if isinstance(redis_or_url, redis.StrictRedis):
             self.redis = redis_or_url
-        elif isinstance(redis_or_url, basestring):
+        elif isinstance(redis_or_url, six.string_types):
             self.redis = redis.StrictRedis(**parse_redis_url(redis_or_url))
         else:
             self.redis = None
@@ -73,7 +73,6 @@ class Host(object):
             return Proc(self, procs_dict[name])
         else:
             raise ProcError('host %s has no proc named %s' % (self.name, name))
-
 
     def _get_and_cache_procs(self):
         proc_list = self.supervisor.getAllProcessInfo()
@@ -191,7 +190,6 @@ class Proc(object):
         """
         return '%(app_name)s-%(version)s-%(proc_name)s' % Proc.parse_name(name)
 
-
     def __repr__(self):
         return "<Proc %s>" % self.name
 
@@ -207,7 +205,7 @@ class Proc(object):
     def as_dict(self):
         data = {}
         for k, v in self.__dict__.items():
-            if isinstance(v, (basestring, int)):
+            if isinstance(v, six.string_types + (int,)):
                 data[k] = v
             elif isinstance(v, datetime):
                 data[k] = v.isoformat()

@@ -31,7 +31,10 @@ class BuildPack(repo.Repo):
         return result.status_code == 0
 
     def compile(self, app):
-        log.info('Compiling %s with %s' % (app.basename, self.basename))
+        log.info(
+            'Compiling {app.basename} with {self.basename}'
+            .format(**vars())
+        )
         script = os.path.join(self.folder, 'bin', 'compile')
 
         cache_folder = os.path.join(CACHE_HOME, get_unique_repo_folder(app.url))
@@ -168,7 +171,7 @@ class use_buildfolder(object):
     def __enter__(self):
         self.temp_path = get_build_folder(self.app_url)
         if not os.path.isdir(self.temp_path):
-            os.makedirs(self.temp_path, 0770)
+            os.makedirs(self.temp_path, 0o770)
         os.chdir(self.temp_path)
         return self.temp_path
 
