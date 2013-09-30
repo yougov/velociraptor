@@ -14,10 +14,6 @@ Exec { path => '/usr/bin:/bin:/usr/sbin:/sbin' }
 # TODO: re-organize these classes around the roles of different hosts in a
 # Velociraptor setup: generic, build host, DB/Redis host.
 
-# We have to update first to ensure that apt can find the
-# python-software-properties package that will then let us add PPAs
-
-
 class vrhost {
     
     Package {ensure => present, require => Exec [firstupdate]}
@@ -31,6 +27,7 @@ class vrhost {
         libsasl2-dev:;
         libpcre3-dev:;
         libjpeg62-dev:;
+        libltdl7:;
         git-core:;
         redis-server:;
         python-setuptools:;
@@ -38,6 +35,8 @@ class vrhost {
         python-software-properties:;
     }
 
+    # We have to update first to ensure that apt can find the
+    # python-software-properties package that will then let us add PPAs
     exec {
       firstupdate:
         command => "apt-get update",

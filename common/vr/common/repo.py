@@ -3,6 +3,7 @@ import os
 import urlparse
 import re
 import logging
+import shutil
 
 from vr.common.utils import chdir, run
 
@@ -125,8 +126,8 @@ class Repo(object):
             return r.output.rstrip()
 
     def __repr__(self):
-        values = {'classname': self.__class__.__name__, 'folder':
-                  os.path.basename(self.folder)}
+        values = {'classname': self.__class__.__name__, 
+                  'folder': os.path.basename(self.folder)}
         return "%(classname)s <%(folder)s>" % values
 
 

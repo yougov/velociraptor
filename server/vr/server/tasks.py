@@ -21,6 +21,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from vr.server import events, utils, balancer, models
+from vr.common.slugignore import clean_slug_dir
 from vr.server.models import (Release, Build, Swarm, Host, PortLock, App,
                                TestRun, TestResult)
 from vr.common import repo, remote, build as rbuild
@@ -130,51 +131,56 @@ def build_app(build_id, callback=None):
     build.start_time = timezone.now()
     build.save()
     try:
+        # Clone the repo.
+        checkout_path = rbuild.get_repo_folder(app.repo_url)
+        app_path = os.path.join(checkout_path, repo.basename(app.repo_url))
+        repo_kwargs = {
+            'folder': app_path,
+            'url': app.repo_url,
+            'vcs_type': app.repo_type,
+        }
+
+        # If the app specifies a buildpack, just use that.  Else make sure
+        # all buildpacks are cloned and specify the order in which they
+        # should be checked against the repo.
+        if app.buildpack:
+            repo_kwargs['buildpack'] = app.buildpack.get_repo()
+        else:
+            for bp in models.BuildPack.objects.all():
+                bp.get_repo()
+            repo_kwargs['buildpack_order'] = models.BuildPack.get_order()
+
+        app_repo = rbuild.App(**repo_kwargs)
+
+        # Check out project and update to specified version
+        app_repo.update(build.tag)
+
+        # copy the repo to temporary build folder
+        build_folder = rbuild.get_build_folder(app.repo_url)
+        if os.path.exists(build_folder):
+            shutil.rmtree(build_folder)
+        app_repo = app_repo.copy(build_folder)
+
+        # Enter temporary build folder to do compile.  Clean up when done.
         with rbuild.use_buildfolder(app.repo_url) as here:
-            # Check out project and update to specified version
-            app_path = os.path.join(here, repo.basename(app.repo_url))
-            repo_kwargs = {
-                'folder': app_path,
-                'url': app.repo_url,
-                'vcs_type': app.repo_type,
-            }
-
-            # If the app specifies a buildpack, just use that.  Else make sure
-            # all buildpacks are cloned and specify the order in which they
-            # should be checked against the repo.
-            if app.buildpack:
-                repo_kwargs['buildpack'] = app.buildpack.get_repo()
-            else:
-                for bp in models.BuildPack.objects.all():
-                    bp.get_repo()
-                repo_kwargs['buildpack_order'] = models.BuildPack.get_order()
-
-            app_repo = rbuild.App(**repo_kwargs)
-            app_repo.update(build.tag)
+            # Build!
             app_repo.compile()
-            # tar the build
-            name_tmpl = '%(app)s-%(version)s-%(time)s.tar.bz2'
-            time = timezone.now()
-            name = name_tmpl % {'app': build.app,
-                                'version': build.tag,
-                                'time': time.strftime('%Y-%m-%dT%H-%M')}
 
-            tar_params = {'filename': name, 'folder': app_repo.folder}
-            tar_result = run('tar -C %(folder)s -cjf %(filename)s .' % tar_params)
-            tar_result.raise_for_status()
+            # Clean out anything listed in .slugignore.
+            app_repo.slugignore()
+
+            # tar the build
+            build_data = app_repo.tar(build.app, build.tag)                    
 
             # compute and remember the tarball's MD5 hash
-            with open(name, 'rb') as f:
+            with open(build_data.path, 'rb') as f:
                 build.hash = hashlib.md5(f.read()).hexdigest()
-            filepath = 'builds/' + name
-            with open(name, 'rb') as localfile:
+            filepath = 'builds/' + os.path.basename(build_data.path)
+            with open(build_data.path, 'rb') as localfile:
                 default_storage.save(filepath, localfile)
 
-            # Delete the local file
-            os.remove(name)
-
             build.file = filepath
-            build.end_time = time
+            build.end_time = build_data.time
             build.status = 'success'
 
             # Ask the buildpack for any necessary env vars.  Store them with

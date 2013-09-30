@@ -15,6 +15,7 @@ setup(
         'mercurial>=2.6.1',
         'paramiko>=1.8.0,<2.0',
         'suds==0.4',
+        'utc',
     ],
     description=('Libraries and command line tools for deploying with '
                  'Velociraptor'),

@@ -1,10 +1,13 @@
 import os
 import hashlib
 import logging
+import shutil
 
 import yaml
+import utc
 
 from vr.common import repo
+from vr.common.slugignore import clean_slug_dir
 from vr.common.utils import run
 
 
@@ -12,6 +15,8 @@ HOME = (os.environ.get('RAPTOR_HOME') or os.path.expanduser('~/.raptor'))
 PACKS_HOME = os.path.join(HOME, 'buildpacks')
 CACHE_HOME = os.path.join(HOME, 'cache')
 BUILD_HOME = os.path.join(HOME, 'build')
+REPO_HOME = os.path.join(HOME, 'repo')
+TARBALL_HOME = os.path.join(HOME, 'tarballs')
 CONFIG_FILE = os.path.join(HOME, 'config.yaml')
 
 
@@ -41,7 +46,7 @@ class BuildPack(repo.Repo):
 
         cmd = ' '.join([script, app.folder, cache_folder])
         log.info(cmd)
-        result = run(cmd)
+        result = run(cmd, verbose=True)
         result.raise_for_status()
 
     def release(self, app):
@@ -69,9 +74,11 @@ class App(repo.Repo):
     A Repo that contains a buildpack-compatible project.
     """
 
-    def __init__(self, folder, url=None, buildpack=None, buildpack_order=None, *args,
+    def __init__(self, folder, url=None, buildpack=None, buildpack_order=None,
                  **kwargs):
-        super(App, self).__init__(folder, url, *args, **kwargs)
+        # remember kwargs for copying self later.
+        self._kwargs = kwargs
+        super(App, self).__init__(folder, url, **kwargs)
         # If buildpack is None here, we'll try self.detect_buildpack later.
         self._buildpack = buildpack
         self.buildpack_order = (buildpack_order or
@@ -101,6 +108,56 @@ class App(repo.Repo):
 
     def release(self):
         return self.buildpack.release(self)
+
+    def copy(self, dest):
+        """
+        Given a destination folder, copy this repo's files into it, 
+        then return an App instance pointed at that folder.
+        """
+        shutil.copytree(self.folder, dest)
+        return App(
+            folder=dest, 
+            url=self.url, 
+            buildpack=self._buildpack,
+            buildpack_order=self.buildpack_order,
+            **self._kwargs
+        )
+
+    def slugignore(self):
+        clean_slug_dir(self.folder)
+
+    def tar(self, appname, appversion):
+        """
+        Given an app name and version to be used in the tarball name, 
+        create a tar.bz2 file with all of this folder's contents inside.
+
+        Return a Build object with attributes for appname, appversion, 
+        time, and path.
+        """
+        name_tmpl = '%(app)s-%(version)s-%(time)s.tar.bz2'
+        time = utc.now()
+        name = name_tmpl % {'app': appname,
+                            'version': appversion,
+                            'time': time.strftime('%Y-%m-%dT%H-%M')}
+
+        if not os.path.exists(TARBALL_HOME):
+            os.mkdir(TARBALL_HOME)
+        tarball = os.path.join(TARBALL_HOME, name)
+        tar_params = {'filename': tarball, 'folder': self.folder}
+        tar_result = run('tar -C %(folder)s -cjf %(filename)s .' % tar_params)
+        tar_result.raise_for_status()
+        return Build(appname, appversion, time, tarball)
+
+
+class Build(object):
+    """
+    A bundle of data about a completed build tarball.
+    """
+    def __init__(self, appname, appversion, time, path):
+        self.appname = appname
+        self.appversion = appversion
+        self.time = time
+        self.path = path
 
 
 def list_buildpacks(packs_dir=PACKS_HOME, preferred_order=None):
@@ -151,14 +208,12 @@ def get_unique_repo_folder(repo_url):
     return '%s-%s' % (repo.basename(repo_url), hashlib.md5(repo_url).hexdigest())
 
 
-# Some buildpacks assume that an app will always be built in the same folder.
-# The Python buildpack does this by virtue of relying on virtualenv+pip which
-# leave some symlinks (inside <cache_folder>/.heroku/venv/local/) that point to
-# paths inside the build folder.  If we don't provide a consistent build folder
-# to this buildpack, then we can't use the buildpack's caching feature.
 def get_build_folder(app_url):
     return os.path.join(BUILD_HOME, get_unique_repo_folder(app_url))
 
+
+def get_repo_folder(repo_url):
+    return os.path.join(REPO_HOME, get_unique_repo_folder(repo_url))
 
 class use_buildfolder(object):
     """Context manager for putting you into an app-specific build directory on
@@ -167,9 +222,9 @@ class use_buildfolder(object):
     def __init__(self, app_url):
         self.app_url = app_url
         self.orig_path = os.getcwd()
+        self.temp_path = get_build_folder(self.app_url)
 
     def __enter__(self):
-        self.temp_path = get_build_folder(self.app_url)
         if not os.path.isdir(self.temp_path):
             os.makedirs(self.temp_path, 0o770)
         os.chdir(self.temp_path)
@@ -177,6 +232,8 @@ class use_buildfolder(object):
 
     def __exit__(self, type, value, traceback):
         os.chdir(self.orig_path)
+        # Delete build folder when we're done.
+        shutil.rmtree(self.temp_path)
 
 
 def get_config(file_path=CONFIG_FILE):
