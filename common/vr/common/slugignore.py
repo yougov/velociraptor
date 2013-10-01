@@ -58,7 +58,7 @@ def remove_pattern(root, pat, verbose=True):
         if is_inside(root, item):
             remove(item)
         elif verbose:
-            print("%s is not inside %s! Skipping.")
+            print("{item} is not inside {root}! Skipping.".format(**vars()))
 
 
 def get_slugignores(root, fname='.slugignore'):
