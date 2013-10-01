@@ -10,6 +10,8 @@ There are two notable differences from the Heroku implementation:
 
 """
 
+from __future__ import print_function
+
 import os
 import shutil
 import glob
@@ -46,17 +48,17 @@ def remove_pattern(root, pat, verbose=True):
 
     Try not to delete the whole OS while you're at it.
     """
-    print "removing pattern", root, pat
+    print("removing pattern", root, pat)
     combined = root + pat
-    print 'combined', combined
+    print('combined', combined)
     items = glob.glob(combined)
-    print 'items', items
+    print('items', items)
     for item in items:
-        print 'item', item
+        print('item', item)
         if is_inside(root, item):
             remove(item)
         elif verbose:
-            print "%s is not inside %s! Skipping."
+            print("%s is not inside %s! Skipping.")
 
 
 def get_slugignores(root, fname='.slugignore'):
@@ -80,5 +82,5 @@ def clean_slug_dir(root):
     if not root.endswith('/'):
         root += '/'
     for pattern in get_slugignores(root):
-        print "pattern", pattern
+        print("pattern", pattern)
         remove_pattern(root, pattern)
