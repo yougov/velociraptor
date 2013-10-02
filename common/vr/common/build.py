@@ -111,13 +111,13 @@ class App(repo.Repo):
 
     def copy(self, dest):
         """
-        Given a destination folder, copy this repo's files into it, 
+        Given a destination folder, copy this repo's files into it,
         then return an App instance pointed at that folder.
         """
         shutil.copytree(self.folder, dest)
         return App(
-            folder=dest, 
-            url=self.url, 
+            folder=dest,
+            url=self.url,
             buildpack=self._buildpack,
             buildpack_order=self.buildpack_order,
             **self._kwargs
@@ -128,10 +128,10 @@ class App(repo.Repo):
 
     def tar(self, appname, appversion):
         """
-        Given an app name and version to be used in the tarball name, 
+        Given an app name and version to be used in the tarball name,
         create a tar.bz2 file with all of this folder's contents inside.
 
-        Return a Build object with attributes for appname, appversion, 
+        Return a Build object with attributes for appname, appversion,
         time, and path.
         """
         name_tmpl = '%(app)s-%(version)s-%(time)s.tar.bz2'
