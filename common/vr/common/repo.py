@@ -79,7 +79,7 @@ class Repo(object):
         """
         cmd = {
             'hg': 'hg paths default',
-            'git': 'git config --get remote.origin.url',
+            'git': 'git config --local --get remote.origin.url',
         }[self.vcs_type]
         with chdir(self.folder):
             r = self.run(cmd)
