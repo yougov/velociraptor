@@ -7,7 +7,6 @@ import os
 import traceback
 import tempfile
 import shutil
-import hashlib
 import paramiko
 import random
 import string
