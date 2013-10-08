@@ -15,6 +15,8 @@ import posixpath
 import pkg_resources
 import json
 import re
+import io
+import zipfile
 
 from fabric.api import sudo, get, put, task, env
 from fabric.contrib import files
@@ -40,14 +42,38 @@ def download_build(build_url, build_name, user='nobody'):
         colors.green('%s already on server.  No need to upload.' % remote_procfile)
         return
 
+    if not files.exists('/tmp/exclusive-stream.zip'):
+        files.put(build_xstr_file(), '/tmp/exclusive-stream.zip')
+
     colors.green('Pulling and unpacking build')
-    sudo('wget %(build_url)s -q -O - | tar xj -C %(remote_path)s' % vars())
+    sudo('wget %(build_url)s -q -O - | '
+        'python /tmp/exclusive-stream.zip %(remote_path)s/.lock | '
+        'tar xj -C %(remote_path)s' % vars())
 
     sudo('chown -R {user} {remote_path}'.format(**vars()))
     sudo('chgrp -R admin {remote_path}'.format(**vars()))
     sudo('chmod -R ug+r {remote_path}'.format(**vars()))
     sudo('chmod -R g+w {remote_path}'.format(**vars()))
     # todo: mark directories as g+s
+
+
+def build_xstr_file():
+    """
+    Assemble a zip file stream containing the exclusive-stream script and
+    modules (as found in tools/exclusive-stream).
+    """
+    stream = io.BytesIO()
+    zf = zipfile.ZipFile(stream, mode='w', compression=zipfile.ZIP_DEFLATED)
+    tool_root = pkg_resources.resource_filename('vr.common',
+        'tools/exclusive-stream')
+    root_len = len(tool_root) + 1
+    for base, dirs, files in os.walk(tool_root):
+        for file in files:
+            fn = os.path.join(base, file)
+            zf.write(fn, fn[root_len:])
+    zf.close()
+    stream.seek(0)
+    return stream
 
 
 @task
