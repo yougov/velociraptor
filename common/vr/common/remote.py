@@ -15,8 +15,9 @@ import posixpath
 import pkg_resources
 import json
 import re
+import uuid
 
-from fabric.api import sudo, get, put, task, env
+from fabric.api import sudo, get, put, task, env, settings
 from fabric.contrib import files
 from fabric import colors
 
@@ -31,23 +32,29 @@ RELEASES_ROOT = '/apps/releases'
 def download_build(build_url, build_name, user='nobody'):
 
     remote_path = posixpath.join(BUILDS_ROOT, build_name)
-    if not files.exists(remote_path):
-        sudo('mkdir -p ' + remote_path)
-    remote_procfile = posixpath.join(remote_path, 'Procfile')
 
-    # check if the build is needed.  upload if so.
-    if files.exists(remote_procfile):
-        colors.green('%s already on server.  No need to upload.' % remote_procfile)
+    if files.exists(remote_path):
+        # build already exists
+        colors.green('%s already on server.  No need to deploy.' % remote_path)
         return
 
-    colors.green('Pulling and unpacking build')
-    sudo('wget %(build_url)s -q -O - | tar xj -C %(remote_path)s' % vars())
+    extract_path = '/tmp/vrbuild-{build_name}-{rand}'.format(
+        rand=uuid.uuid4().hex[-12:],
+        **vars())
+    sudo('mkdir -p "{extract_path}"'.format(extract_path=extract_path))
 
-    sudo('chown -R {user} {remote_path}'.format(**vars()))
-    sudo('chgrp -R admin {remote_path}'.format(**vars()))
-    sudo('chmod -R ug+r {remote_path}'.format(**vars()))
-    sudo('chmod -R g+w {remote_path}'.format(**vars()))
-    # todo: mark directories as g+s
+    colors.green('Pulling and unpacking build')
+    sudo('wget {build_url} -q -O - | '
+        'tar xj -C "{extract_path}"'.format(**vars()))
+
+    with settings(warn_only=True):
+        # the move may fail if another deploy has won the race
+        sudo('mv "{extract_path}" "{remote_path}"'.format(**vars()))
+        sudo('chown -R {user} {remote_path}'.format(**vars()))
+        sudo('chgrp -R admin {remote_path}'.format(**vars()))
+        sudo('chmod -R ug+r {remote_path}'.format(**vars()))
+        sudo('chmod -R g+w {remote_path}'.format(**vars()))
+        # todo: mark directories as g+s
 
 
 @task
