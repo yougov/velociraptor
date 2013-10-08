@@ -16,7 +16,7 @@ import json
 import re
 import uuid
 
-from fabric.api import sudo, get, put, task, env, settings
+from fabric.api import sudo, get, put, task, env
 from fabric.contrib import files
 from fabric import colors
 
@@ -46,14 +46,16 @@ def download_build(build_url, build_name, user='nobody'):
     sudo('wget {build_url} -q -O - | '
         'tar xj -C "{extract_path}"'.format(**vars()))
 
-    with settings(warn_only=True):
-        # the move may fail if another deploy has won the race
-        sudo('mv "{extract_path}" "{remote_path}"'.format(**vars()))
-        sudo('chown -R {user} {remote_path}'.format(**vars()))
-        sudo('chgrp -R admin {remote_path}'.format(**vars()))
-        sudo('chmod -R ug+r {remote_path}'.format(**vars()))
-        sudo('chmod -R g+w {remote_path}'.format(**vars()))
-        # todo: mark directories as g+s
+    sudo('mv -nT "{extract_path}" "{remote_path}"'.format(**vars()))
+    if files.exists(extract_path):
+        # another deploy has won the race
+        sudo('rm -R "{extract_path}"')
+        return
+    sudo('chown -R {user} {remote_path}'.format(**vars()))
+    sudo('chgrp -R admin {remote_path}'.format(**vars()))
+    sudo('chmod -R ug+r {remote_path}'.format(**vars()))
+    sudo('chmod -R g+w {remote_path}'.format(**vars()))
+    # todo: mark directories as g+s
 
 
 @task
