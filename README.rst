@@ -17,6 +17,8 @@ Testimonials
 
 Gustavo Picon: velociraptor is BLISS
 
+Mike Malecki: vr2 is pretty badass.
+
 Development
 ===========
 

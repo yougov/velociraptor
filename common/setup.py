@@ -14,6 +14,7 @@ setup(
         'isodate>=0.4.4',
         'mercurial>=2.6.1',
         'paramiko>=1.8.0,<2.0',
+        'six',
         'suds==0.4',
         'utc',
     ],
