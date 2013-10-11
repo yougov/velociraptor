@@ -49,7 +49,7 @@ def download_build(build_url, build_name, user='nobody'):
     sudo('mv -nT "{extract_path}" "{remote_path}"'.format(**vars()))
     if files.exists(extract_path):
         # another deploy has won the race
-        sudo('rm -R "{extract_path}"')
+        sudo('rm -R "{extract_path}"'.format(**vars()))
         return
     sudo('chown -R {user} {remote_path}'.format(**vars()))
     sudo('chgrp -R admin {remote_path}'.format(**vars()))
