@@ -30,6 +30,8 @@ RELEASES_ROOT = '/apps/releases'
 @task
 def download_build(build_url, build_name, user='nobody'):
 
+    sudo('mkdir -p {BUILDS_ROOT}'.format(**globals()))
+
     remote_path = posixpath.join(BUILDS_ROOT, build_name)
 
     if files.exists(remote_path):
