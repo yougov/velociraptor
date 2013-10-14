@@ -12,6 +12,8 @@ setup(
     install_requires=[
         'vr.common>=2.15.2',
         'redis>=2.6.2',
+        'psutil>=1.2.0',
+        'PyYAML>=3.10',
     ],
     entry_points={
         'console_scripts': [

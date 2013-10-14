@@ -68,6 +68,32 @@ class event_on_exception(object):
         return wrapper
 
 
+def build_proc_info(release, config_name, hostname, proc, port):
+    """
+    Return a dictionary with exhaustive metadata about a proc.
+    """
+
+    build = release.build
+    app = build.app
+    return {
+        'release_hash': release.hash,
+        'config_name': config_name,
+        'settings': release.config_yaml or {},
+        'env': release.env_yaml or {},
+        'version': build.tag,
+        'build_hash': build.hash,
+        'build_url': build.file.url,
+        'buildpack_url': build.buildpack_url,
+        'buildpack_version': build.buildpack_version,
+        'app_name': app.name,
+        'app_repo_url': app.repo_url,
+        'app_repo_type': app.repo_type,
+        'host': hostname,
+        'proc': proc,
+        'port': port
+    }
+
+
 @task
 @event_on_exception(['deploy'])
 def deploy(release_id, config_name, hostname, proc, port):
@@ -98,6 +124,12 @@ def deploy(release_id, config_name, hostname, proc, port):
                                       default_flow_style=False)
                 f.write(conf)
 
+            # write the proc.yaml locally
+            with open('proc.yaml', 'wb') as f:
+                info = build_proc_info(release, config_name, hostname, proc,
+                    port)
+                f.write(yaml.safe_dump(info, default_flow_style=False))
+
             # write the env.sh locally
             with open('env.sh', 'wb') as f:
                 def format_var(key, val):
@@ -110,6 +142,7 @@ def deploy(release_id, config_name, hostname, proc, port):
                 remote.deploy_parcel(build_url=release.build.file.url,
                                      config_path='settings.yaml',
                                      envsh_path='env.sh',
+                                     proc_yaml_path='proc.yaml',
                                      swarm=config_name,
                                      proc=proc,
                                      release_hash=release.hash,

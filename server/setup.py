@@ -26,6 +26,7 @@ setup(
         'pymongo>=2.5.2,<3',
         'redis>=2.6.2,<3',
         'requests==1.0.4',
+        'setproctitle',
         'South==0.7.6',
         'sseclient==0.0.4',
     ],

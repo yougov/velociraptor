@@ -1,4 +1,4 @@
-web: gunicorn -c server/vr/server/gunicorn_config.py -b 0.0.0.0:8000 -w 1 vr.server.wsgi:app
+web: gunicorn -n vr_server -c server/vr/server/gunicorn_config.py -b 0.0.0.0:8000 -w 1 vr.server.wsgi:app
 worker: vr_worker
 beat: vr_beat
 files: khartoum --port 8001 --mongo_url mongodb://localhost/velociraptor.fs

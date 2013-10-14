@@ -96,7 +96,8 @@ class Deployer(object):
     mountpoints = []
     lxc_config_template = None
 
-    def __init__(self, build_name, release_name, proc, port, user, use_syslog):
+    def __init__(self, build_name, release_name, proc, port, user, proc_yaml_path,
+        use_syslog):
         self.build_name = build_name
         self.release_name = release_name
         self.proc = proc
@@ -114,6 +115,8 @@ class Deployer(object):
                                                  "settings.yaml")
         self.proc_line = self.get_proc_line()
 
+        self.proc_yaml_path = proc_yaml_path
+
     def run(self):
         """
         Do everything needed to get the proc running on the remote host.
@@ -128,6 +131,7 @@ class Deployer(object):
         """
         sudo('mkdir -p ' + self.proc_path)
 
+        self.write_proc_yaml()
         self.write_proc_conf()
         self.write_proc_lxc()
         self.write_start_proc_sh()
@@ -136,6 +140,10 @@ class Deployer(object):
         self.upload_uptester()
         self.create_mount_points()
         self.copy_config()
+
+    def write_proc_yaml(self):
+        remote_path = posixpath.join(self.proc_path, 'proc.yaml')
+        put(self.proc_yaml_path, remote_path, use_sudo=True)
 
     def copy_config(self):
         """
@@ -283,21 +291,10 @@ class PreciseDeployer(Deployer):
     lxc_config_template = 'precise.lxc'
 
 
-@task
-def configure_proc(build_name, release_name, proc, port, user='nobody',
-                   use_syslog=False):
-    issue = sudo('cat /etc/issue')
-    if issue.startswith('Ubuntu 12.04 LTS'):
-        deployer_cls = PreciseDeployer
-    else:
-        raise ValueError("Could not determine deployer type for %s" %
-                         issue)
-    deployer_cls(build_name, release_name, proc, port, user, use_syslog).run()
-
 
 @task
-def deploy_parcel(build_url, config_path, envsh_path, swarm,
-                  proc, port, user='nobody', use_syslog=False,
+def deploy_parcel(build_url, config_path, envsh_path, proc_yaml_path, 
+                  swarm, proc, port, user='nobody', use_syslog=False,
                   release_hash=None):
     # Builds have timstamps, but releases really don't care about them.  Two
     # releases created at different times with the same build and settings
@@ -324,9 +321,14 @@ def deploy_parcel(build_url, config_path, envsh_path, swarm,
 
     upload_release(build_url, build_name, config_path, release_path,
                    envsh_path, user=user)
-
-    configure_proc(build_name, release_name, proc, port, user,
-                   use_syslog=use_syslog)
+    issue = sudo('cat /etc/issue')
+    if issue.startswith('Ubuntu 12.04 LTS'):
+        deployer_cls = PreciseDeployer
+    else:
+        raise ValueError("Could not determine deployer type for %s" %
+                         issue)
+    deployer_cls(build_name, release_name, proc, port, user, proc_yaml_path, 
+                 use_syslog).run()
 
 
 def build_container_cmd(cmd, user, container_name, lxc_config_path):
