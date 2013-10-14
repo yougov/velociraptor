@@ -550,6 +550,14 @@ class Swarm(models.Model):
         release.save()
         return release
 
+    def get_version(self):
+        return self.release.build.tag
+
+    def set_version(self, version):
+        self.release = self.get_current_release(version)
+
+    version = property(get_version, set_version)
+
 
 
 class PortLock(models.Model):

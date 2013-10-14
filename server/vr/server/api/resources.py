@@ -131,13 +131,18 @@ v1.register(BuildResource())
 class SwarmResource(ModelResource):
     app = fields.ToOneField('api.resources.AppResource', 'app')
     squad = fields.ToOneField('api.resources.SquadResource', 'squad')
-    release = fields.ToOneField('api.resources.ReleaseResource', 'release')
+
+    # Leave 'release' blank when you want to set 'version' to something new, and
+    # the model will intelligently create a new release for you.
+    release = fields.ToOneField('api.resources.ReleaseResource', 'release', 
+        blank=True, null=True)
 
     shortname = fields.CharField('shortname')
     config_ingredients = fields.ToManyField('api.resources.IngredientResource',
                                            'config_ingredients')
     compiled_config = fields.DictField('get_config')
     compiled_env = fields.DictField('get_env')
+    version = fields.CharField('version')
 
     class Meta:
         queryset = models.Swarm.objects.all()
@@ -164,7 +169,6 @@ class SwarmResource(ModelResource):
         bundle.data['procs'] = [p.as_dict() for p in
                                 bundle.obj.get_procs(check_cache=True)]
         bundle.data['squad_name'] = bundle.obj.squad.name
-        bundle.data['version'] = bundle.obj.release.build.tag
 
         # Also add in convenience data
         bundle.data.update(app_name=bundle.obj.app.name,
