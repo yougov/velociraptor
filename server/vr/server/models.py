@@ -1,23 +1,16 @@
 import sys
-import xmlrpclib
 import hashlib
-import json
 import datetime
-from copy import copy
 
 from django.db import models
-from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.files.storage import default_storage
 from django.utils import timezone
 import yaml
 import redis
 
 from vr.server.fields import YAMLDictField
-from vr.server import events
 from vr.common import repo, build, models as raptor_models
 from vr.common.utils import parse_redis_url
 
