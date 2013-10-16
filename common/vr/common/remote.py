@@ -30,6 +30,8 @@ RELEASES_ROOT = '/apps/releases'
 @task
 def download_build(build_url, build_name, user='nobody'):
 
+    sudo('mkdir -p {BUILDS_ROOT}'.format(**globals()))
+
     remote_path = posixpath.join(BUILDS_ROOT, build_name)
 
     if files.exists(remote_path):
@@ -96,8 +98,8 @@ class Deployer(object):
     mountpoints = []
     lxc_config_template = None
 
-    def __init__(self, build_name, release_name, proc, port, user, proc_yaml_path,
-        use_syslog):
+    def __init__(self, build_name, release_name, proc, port, user,
+            proc_yaml_path, use_syslog):
         self.build_name = build_name
         self.release_name = release_name
         self.proc = proc
@@ -291,9 +293,8 @@ class PreciseDeployer(Deployer):
     lxc_config_template = 'precise.lxc'
 
 
-
 @task
-def deploy_parcel(build_url, config_path, envsh_path, proc_yaml_path, 
+def deploy_parcel(build_url, config_path, envsh_path, proc_yaml_path,
                   swarm, proc, port, user='nobody', use_syslog=False,
                   release_hash=None):
     # Builds have timstamps, but releases really don't care about them.  Two
@@ -327,7 +328,7 @@ def deploy_parcel(build_url, config_path, envsh_path, proc_yaml_path,
     else:
         raise ValueError("Could not determine deployer type for %s" %
                          issue)
-    deployer_cls(build_name, release_name, proc, port, user, proc_yaml_path, 
+    deployer_cls(build_name, release_name, proc, port, user, proc_yaml_path,
                  use_syslog).run()
 
 
