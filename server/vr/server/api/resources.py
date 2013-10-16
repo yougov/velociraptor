@@ -175,6 +175,17 @@ class SwarmResource(ModelResource):
                            config_name=bundle.obj.config_name)
         return bundle
 
+    def hydrate(self, bundle):
+        # delete the compiled_config and compiled_env keys in the bundle, because
+        # they can cause hydration problems if tastypie tries to set them.
+        bundle.data.pop('compiled_config', None)
+        bundle.data.pop('compiled_env', None)
+
+        # If version is provided, that takes priority over release
+        if 'version' in bundle.data:
+            bundle.data.pop('release', None)
+        return bundle
+
     def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/swarm%s$" %

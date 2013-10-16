@@ -554,6 +554,7 @@ class Swarm(models.Model):
         return self.release.build.tag
 
     def set_version(self, version):
+        # assert False
         self.release = self.get_current_release(version)
 
     version = property(get_version, set_version)
