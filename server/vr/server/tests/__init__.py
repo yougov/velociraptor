@@ -4,6 +4,8 @@ import shlex
 import random
 import string
 
+from vr.common.utils import randchars
+
 
 here = os.path.dirname(os.path.abspath(__file__))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'vr.server.settings'
@@ -28,10 +30,6 @@ def dbsetup():
     manage = os.path.join(project, 'manage.py')
     sh('python %s syncdb --noinput' % manage)
     sh('python %s migrate' % manage)
-
-
-def randchars(num=8):
-    return ''.join(random.choice(string.ascii_lowercase) for x in xrange(num))
 
 
 def randurl():

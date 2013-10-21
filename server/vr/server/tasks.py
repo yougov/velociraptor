@@ -89,8 +89,10 @@ def build_proc_info(release, config_name, hostname, proc, port):
         'app_repo_url': app.repo_url,
         'app_repo_type': app.repo_type,
         'host': hostname,
-        'proc': proc,
-        'port': port
+        'proc_name': proc,
+        'port': port,
+        'user': 'nobody',
+        'group': 'admin',
     }
 
 

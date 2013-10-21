@@ -5,7 +5,8 @@ import unittest
 from django.test.client import Client
 from django.core.urlresolvers import reverse
 
-from vr.server.tests import get_user, randchars
+from vr.common.utils import randchars
+from vr.server.tests import get_user
 from vr.server import models
 
 

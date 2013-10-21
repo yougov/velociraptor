@@ -295,7 +295,8 @@ class Release(models.Model):
 class Host(models.Model):
     name = models.CharField(max_length=200, unique=True)
 
-    # It might be hard to delete host records if there
+    # It might be hard to delete host records if there are things linked
+    # to them in the DB, but we should be able to mark them inactive.
     active = models.BooleanField(default=True)
     squad = models.ForeignKey('Squad', null=True, blank=True,
                               related_name='hosts')

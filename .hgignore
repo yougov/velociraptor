@@ -24,7 +24,7 @@ likes_*.json
 *pep8.txt
 *pylint.txt
 uploads*
-.vagrant
+.vagrant*
 *settings*.yaml
 tmp/
 celeryev.pid

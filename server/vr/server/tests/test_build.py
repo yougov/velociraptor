@@ -5,7 +5,8 @@ from django.utils import timezone
 from django.core.files import File
 
 from vr.server import models
-from vr.server.tests import randchars, randurl
+from vr.server.tests import randurl
+from vr.common.utils import randchars
 
 
 def test_builds_get_current():

@@ -6,6 +6,8 @@ import subprocess
 import shutil
 import tempfile
 import urlparse
+import random
+import string
 from datetime import datetime
 
 import isodate
@@ -119,3 +121,7 @@ def utcfromtimestamp(ts):
     """
     dt = datetime.utcfromtimestamp(ts)
     return dt.replace(tzinfo=utc)
+
+
+def randchars(num=8):
+    return ''.join(random.choice(string.ascii_lowercase) for x in xrange(num))

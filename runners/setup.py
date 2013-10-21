@@ -2,7 +2,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='vr.agent',
+    name='vr.runners',
     namespace_packages=['vr'],
     version='0.0.1',
     author='Brent Tubbs',
@@ -11,15 +11,13 @@ setup(
     include_package_data=True,
     install_requires=[
         'vr.common>=2.15.2',
-        'redis>=2.6.2',
         'requests>=1.0.4',
-        'psutil',
         'PyYAML>=3.10',
     ],
     entry_points={
         'console_scripts': [
-            'proc_publisher = vr.agent.publisher:main',
+            'vrun_precise = vr.runners.precise:main',
         ]
     },
-    description=('Velociraptor plugins to Supervisord.'),
+    description=('Command line tools to launch procs.'),
 )
