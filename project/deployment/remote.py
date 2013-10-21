@@ -127,7 +127,8 @@ def _create_proc_path(proc_path):
 
 
 @task
-def configure_proc(release_name, proc, port, user='nobody', use_syslog=False):
+def configure_proc(release_name, proc, port, user='nobody', use_syslog=False,
+        stopwaitsecs=30):
 
     # Define some paths for using below.
     # procs have names like gryphon-2.2.3-d5338b8a07-web-5678
