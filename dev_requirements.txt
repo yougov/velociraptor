@@ -2,6 +2,7 @@ pytest
 mock
 
 -e ./common
+-e ./runners
 -e ./server
 -e ./cli
 -e ./agent

@@ -20,11 +20,11 @@ from django.core.files.storage import default_storage
 from django.conf import settings
 from django.utils import timezone
 
-from vr.server import events, utils, balancer, models
+from vr.server import events, utils, balancer, models, remote
 from vr.common.slugignore import clean_slug_dir
 from vr.server.models import (Release, Build, Swarm, Host, PortLock, App,
                                TestRun, TestResult)
-from vr.common import repo, remote, build as rbuild
+from vr.common import repo, build as rbuild
 from vr.common.models import Proc
 from vr.common.utils import tmpdir, run
 

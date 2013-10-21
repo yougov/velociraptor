@@ -20,7 +20,7 @@ import requests
 
 import yaml
 
-from vr.common.remote import BUILDS_ROOT, PROCS_ROOT
+from vr.common.paths import BUILDS_ROOT, PROCS_ROOT
 from vr.common.utils import tmpdir, randchars
 
 
