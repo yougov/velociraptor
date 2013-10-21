@@ -10,5 +10,8 @@ except ImportError:
 
 import settings
 
+import os
+os.environ['INITIAL_DIRECTORY'] = os.getcwd()
+
 if __name__ == "__main__":
     execute_manager(settings)

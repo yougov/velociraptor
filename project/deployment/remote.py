@@ -166,7 +166,8 @@ def configure_proc(release_name, proc, port, user='nobody', use_syslog=False,
         raise KeyError("{proc} not found in Procfile ({proc_names} defined)"
             .format(**vars()))
     cmd = _expand_env_vars(procs[proc], env_vars)
-    tmpl = pkg_resources.resource_filename('yg.deploy', 'fabric/proc.conf')
+    tmpl = os.path.join(os.environ['INITIAL_DIRECTORY'],
+        'project/deployment/templates/proc.conf')
     remote_supd = posixpath.join(proc_path, 'proc.conf')
 
     # XXX Note that using 'syslog' here breaks supervisord's ability to show
