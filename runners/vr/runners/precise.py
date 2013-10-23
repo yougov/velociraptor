@@ -15,18 +15,27 @@ import fcntl
 import errno
 import stat
 
-
 import requests
 
 import yaml
 
-from vr.common.paths import BUILDS_ROOT, PROCS_ROOT
+from vr.common.paths import (ProcData, get_container_path, get_container_name,
+                             get_proc_path, get_build_path, get_buildfile_path)
 from vr.common.utils import tmpdir, randchars
 
 
 def main():
+    commands = {
+        'setup': setup,
+        'run': run,
+        'shell': shell,
+        'uptest': uptest,
+        'teardown': teardown,
+        }
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('command', help="'setup' or 'run'.")
+    cmd_help = "One of: %s" % ', '.join(commands.keys())
+    parser.add_argument('command', help=cmd_help)
     parser.add_argument('file', help="Path to proc.yaml file.")
 
     args = parser.parse_args()
@@ -35,29 +44,18 @@ def main():
     # to avoid race conditions.
     f = open(args.file, 'rwb')
 
-    settings = Namespace(yaml.safe_load(f))
-
-    commands = {
-        'setup': setup,
-        'run': run,
-        'shell': shell,
-        }
-
-    nolock = set(['shell'])
+    settings = ProcData(yaml.safe_load(f))
 
     try:
-        if args.command not in nolock:
-            lock_proc_yaml(f)
-        commands[args.command](settings)
+        cmd = commands[args.command]
+        # Commands that have a lock=False attribute won't try to lock the
+        # proc.yaml file.  'uptest' and 'shell' are in this category.
+        if getattr(cmd, 'lock', True):
+            lock_file_or_die(f)
+        cmd(settings)
     except KeyError:
         raise SystemExit("Command must be one of: %s" %
                          ', '.join(commands.keys()))
-
-
-class Namespace(object):
-    def __init__(self, dct):
-        for k, v in dct.items():
-            setattr(self, k, v)
 
 
 def setup(settings):
@@ -78,31 +76,68 @@ def run(settings):
 
 def shell(settings):
     print "Running shell for", get_container_name(settings)
-    settings.run_shell = True
-    args = get_lxc_args(settings)
+    args = get_lxc_args(settings, special_cmd='/bin/bash')
     os.execve(which('lxc-start')[0], args, {})
+shell.lock = False
 
 
-def lock_proc_yaml(f):
-    # Die if another process has already grabbed the lock for this proc.yaml
+def uptest(settings):
+    # copy the uptester into the container. ensure it's executable.
+    src = pkg_resources.resource_filename('vr.runners', 'uptester/uptester')
+    container_path = get_container_path(settings)
+    dest = os.path.join(container_path, 'uptester')
+    shutil.copy(src, dest)
+    st = os.stat(dest)
+    os.chmod(dest, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+    proc_name = getattr(settings, 'proc_name', None)
+    if proc_name:
+        build_path = get_build_path(settings)
+        uptests_path = os.path.join(build_path, 'uptests', proc_name)
+        if os.path.isdir(uptests_path):
+            # run an LXC container for the uptests.
+            inside_path = os.path.join('/app/uptests', proc_name)
+            cmd = '/uptester %s %s %s ' % (inside_path, '127.0.0.1',
+                                           settings.port)
+            args = get_lxc_args(settings, special_cmd=cmd)
+            os.execve(which('lxc-start')[0], args, {})
+        else:
+            # There are no uptests for this proc.  Output an empty JSON list.
+            print "[]"
+uptest.lock = False
+
+
+def teardown(settings):
+    # Everything should have been put in the proc path, so delete that.
+    # We don't delete the build.  That will have to be cleaned up by someone
+    # else.
+    shutil.rmtree(get_proc_path(settings))
+
+
+def lock_file_or_die(f):
+    # Die hard and fast if another process has already grabbed the lock for
+    # this proc.yaml
     try:
         fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
     except IOError as e:
         if e.errno in (errno.EACCES, errno.EAGAIN):
-            raise SystemExit("ERROR: %s is already locked by another process." %
+            raise SystemExit("ERROR: %s is locked by another process." %
                              f.name)
         raise
 
 
-
-
-def get_lxc_args(settings):
+def get_lxc_args(settings, special_cmd=None):
 
     name = get_container_name(settings)
-    # Container names must be unique, so to allow running a shell next to the
-    # app container we have to add more stuff to the name.
-    if getattr(settings, 'run_shell', False):
+    if special_cmd:
+        cmd = special_cmd
+        # Container names must be unique, so to allow running a shell or
+        # uptests next to the app container we have to add more stuff to the
+        # name.
         name += '-shell' + randchars()
+    else:
+        cmd = get_cmd(settings)
+
     return [
         'lxc-start',
         '--name', name,
@@ -111,7 +146,7 @@ def get_lxc_args(settings):
         'su',
         '--preserve-environment',
         '--shell', '/bin/bash',
-        '-c', 'cd /app;source /env.sh; exec /proc.sh "%s"' % get_cmd(settings),
+        '-c', 'cd /app;source /env.sh; exec /proc.sh "%s"' % cmd,
         settings.user
     ]
 
@@ -231,16 +266,11 @@ def write_proc_sh(settings):
 
 def get_cmd(settings):
     """
-    If settings.run_shell == True, return /bin/bash
-
-    Else if settings contains 'cmd', return that.
+    If settings contains 'cmd', return that.
 
     Otherwise, read the Procfile inside the build code, parse it (as yaml), and
     pull out the command for settings.proc_name.
     """
-    if getattr(settings, 'run_shell', False):
-        return '/bin/bash'
-
     if hasattr(settings, 'cmd'):
         return settings.cmd
 
@@ -248,29 +278,6 @@ def get_cmd(settings):
     with open(procfile_path, 'rb') as f:
         procs = yaml.safe_load(f)
     return procs[settings.proc_name]
-
-
-def get_container_path(settings):
-    return os.path.join(get_proc_path(settings), 'root')
-
-
-def get_container_name(settings):
-    return '-'.join([
-        settings.app_name,
-        settings.version,
-        settings.config_name,
-        settings.release_hash,
-        settings.proc_name,
-        str(settings.port),
-    ])
-
-
-def get_proc_path(settings):
-    return os.path.join(PROCS_ROOT, get_container_name(settings))
-
-
-def get_build_path(settings):
-    return os.path.join(BUILDS_ROOT, '%s-%s' % (settings.app_name, settings.version))
 
 
 def ensure_build(settings):
@@ -310,12 +317,6 @@ def url_etag(url):
     """
     resp = requests.head(url)
     return resp.headers.get('ETag', '')
-
-
-def get_buildfile_path(settings):
-
-    base = os.path.basename(settings.build_url)
-    return os.path.join(BUILDS_ROOT, base)
 
 
 def untar(settings):

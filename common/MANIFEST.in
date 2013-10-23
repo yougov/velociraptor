@@ -1,4 +1,3 @@
 recursive-include vr/common/templates *
-recursive-include vr/common/uptester *
 recursive-include vr/common/balancer *
 include LICENSE

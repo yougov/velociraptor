@@ -120,11 +120,6 @@ def deploy(release_id, config_name, hostname, proc, port):
         env.linewise = True
 
         with tmpdir():
-            # write the settings.yaml locally
-            with open('settings.yaml', 'wb') as f:
-                conf = yaml.safe_dump(release.config_yaml,
-                                      default_flow_style=False)
-                f.write(conf)
 
             # write the proc.yaml locally
             with open('proc.yaml', 'wb') as f:
@@ -132,27 +127,8 @@ def deploy(release_id, config_name, hostname, proc, port):
                     port)
                 f.write(yaml.safe_dump(info, default_flow_style=False))
 
-            # write the env.sh locally
-            with open('env.sh', 'wb') as f:
-                def format_var(key, val):
-                    return 'export %s="%s"' % (key, val)
-                e = release.env_yaml or {}
-                env_str = '\n'.join(format_var(k, e[k]) for k in e)
-                f.write(env_str)
-
             with always_disconnect():
-                remote.deploy_parcel(build_url=release.build.file.url,
-                                     config_path='settings.yaml',
-                                     envsh_path='env.sh',
-                                     proc_yaml_path='proc.yaml',
-                                     swarm=config_name,
-                                     proc=proc,
-                                     release_hash=release.hash,
-                                     port=port,
-                                     user=getattr(settings, 'PROC_USER',
-                                                  'nobody'),
-                                     use_syslog=getattr(settings,
-                                                        'PROC_SYSLOG', False))
+                remote.deploy_proc('proc.yaml')
 
 
 @task

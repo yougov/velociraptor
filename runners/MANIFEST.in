@@ -1,2 +1,3 @@
 recursive-include vr/runners/templates *
+recursive-include vr/runners/uptester *
 include LICENSE
