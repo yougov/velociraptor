@@ -426,9 +426,14 @@ def swarm_assign_uptests(swarm_id):
     header = [uptest_host_procs.subtask((h, ps)) for h, ps in
               host_procs.items()]
 
-    this_chord = chord(header)
-    callback = swarm_post_uptest.s(swarm_id)
-    this_chord(callback)
+    if len(header):
+        this_chord = chord(header)
+        callback = swarm_post_uptest.s(swarm_id)
+        this_chord(callback)
+    else:
+        # There are no procs, so there are no uptests to run.  Call
+        # swarm_post_uptest with an empty list of uptest results.
+        swarm_post_uptest([], swarm_id)
 
 
 @task
