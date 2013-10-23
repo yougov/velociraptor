@@ -1,30 +1,23 @@
 import sys
-import xmlrpclib
 import hashlib
-import json
 import datetime
-from copy import copy
 
 from django.db import models
-from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.files.storage import default_storage
 from django.utils import timezone
 import yaml
 import redis
 
 from vr.server.fields import YAMLDictField
-from vr.server import events
 from vr.common import repo, build, models as raptor_models
 from vr.common.utils import parse_redis_url
 
 
 # If we're actually running (not just collecting static files), and there's not
 # already an 'events_redis' in this module, then make a such a connection and
-# save it here.  redis-py implements an internal connection pool, so this
+# save it here.  redis-py implements an internal conection pool, so this
 # should be thread safe and gevent safe.
 if 'collectstatic' not in sys.argv and 'events_redis' not in globals():
     events_redis = redis.StrictRedis(**parse_redis_url(settings.EVENTS_PUBSUB_URL))
@@ -36,7 +29,6 @@ LOG_ENTRY_TYPES = (
 )
 
 
-
 def validate_app_name(value):
     if '-' in value:
         raise ValidationError(u'Dashes are not allowed')
@@ -44,7 +36,6 @@ def validate_app_name(value):
         raise ValidationError(u'Spaces are not allowed')
     if '/' in value:
         raise ValidationError(u'Slashes are not allowed')
-
 
 
 class DeploymentLogEntry(models.Model):
@@ -201,8 +192,10 @@ class Build(models.Model):
         # First check if there's a build for our app and the given tag
         builds = cls.objects.filter(
                 app=app, tag=tag
-            ).exclude(status='expired'
-            ).exclude(status='failed'
+            ).exclude(
+                status='expired'
+            ).exclude(
+                status='failed'
             ).order_by('-id')
 
         if not builds:
@@ -216,7 +209,6 @@ class Build(models.Model):
         # the buildpack.  We used to have a check like this that used the
         # buildpack revision hash, but it was removed when trying to figure out
         # why we were seeing unnecessary builds.
-
 
     def __unicode__(self):
         # Return the app name and version
@@ -261,7 +253,6 @@ def compute_release_hash(build, config_dict, env_dict):
     return make_hash(build.hash, config_dict, env_dict)[:8]
 
 
-
 config_name_help = ("Short name like 'prod' or 'europe' to distinguish between "
              "deployments of the same app. Must be filesystem-safe, "
              "with no dashes or spaces.")
@@ -271,12 +262,13 @@ class Release(models.Model):
     build = models.ForeignKey(Build)
     config_yaml = YAMLDictField(blank=True, null=True, help_text="YAML text to "
                              "be written to settings.yaml at deploy time.")
-    env_yaml = YAMLDictField(help_text=("YAML dict of env vars to be set "
-                                           "at runtime"), null=True, blank=True)
+    env_yaml = YAMLDictField(
+        help_text="YAML dict of env vars to be set at runtime",
+        null=True, blank=True
+    )
 
     # Hash will be computed on saving the model.
     hash = models.CharField(max_length=32, blank=True, null=True)
-
 
     def __unicode__(self):
         return u'-'.join([self.build.app.name, self.build.tag, self.hash or ''])
@@ -309,7 +301,7 @@ class Host(models.Model):
 
     def get_next_port(self):
 
-        all_ports = xrange(settings.PORT_RANGE_START, settings.PORT_RANGE_END)
+        all_ports = range(settings.PORT_RANGE_START, settings.PORT_RANGE_END)
         used_ports = self.get_used_ports()
 
         # Return the first port in our configured range that's not already in
@@ -441,9 +433,11 @@ class Swarm(models.Model):
             procs += host.get_procs(check_cache=check_cache)
 
         def is_mine(proc):
-            return p.config_name == self.config_name and \
-                   p.proc_name == self.proc_name and \
-                   p.app_name == self.app.name
+            return (
+                p.config_name == self.config_name and
+                p.proc_name == self.proc_name and
+                p.app_name == self.app.name
+            )
 
         return [p for p in procs if is_mine(p)]
 
@@ -559,7 +553,6 @@ class Swarm(models.Model):
         self.release = self.get_current_release(version)
 
     version = property(get_version, set_version)
-
 
 
 class PortLock(models.Model):
