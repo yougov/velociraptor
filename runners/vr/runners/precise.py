@@ -353,14 +353,15 @@ def untar(settings):
                                           | stat.S_IRGRP)
             for f in files:
                 path = os.path.join(root, f)
-                # chown nobody:admin
-                os.chown(path, user.pw_uid, group.gr_gid)
-                st = os.stat(path)
-                # chmod ug+rw
-                os.chmod(path, st.st_mode | stat.S_IWUSR
-                                          | stat.S_IWGRP
-                                          | stat.S_IRUSR
-                                          | stat.S_IRGRP)
+                if not os.path.islink(path):
+                    # chown nobody:admin
+                    os.chown(path, user.pw_uid, group.gr_gid)
+                    st = os.stat(path)
+                    # chmod ug+rw
+                    os.chmod(path, st.st_mode | stat.S_IWUSR
+                                              | stat.S_IWGRP
+                                              | stat.S_IRUSR
+                                              | stat.S_IRGRP)
 
 
         # Use mv to atomically put the folder in place unless already present 

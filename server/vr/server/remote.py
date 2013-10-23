@@ -48,8 +48,6 @@ def deploy_proc(proc_yaml_path):
 
     # FIXME: When we have other runners, we'll need to be told which one to
     # run.
-    sudo('echo $PATH')
-    sudo('which vrun_precise')
     sudo('vrun_precise setup ' + remote_proc_yaml)
     write_proc_conf(settings)
     sudo('supervisorctl reread')
@@ -87,9 +85,19 @@ def run_uptests(proc, user='nobody'):
     tests_path = posixpath.join(build_path, 'uptests', procname)
     try:
         if files.exists(tests_path):
-            proc_yaml_path = posixpath.join(proc_path, 'proc.yaml')
-            cmd = 'vrun_precise uptest ' + proc_yaml_path
-            print cmd
+
+            # Containers set up by new-style 'runners' will be in a 'rootfs'
+            # subpath under the proc_path.  Old style containers are right in
+            # the proc_path.  We have to launch the uptester slightly
+            # differently
+            new_container_path = posixpath.join(proc_path, 'rootfs')
+            if files.exists(new_container_path):
+                proc_yaml_path = posixpath.join(proc_path, 'proc.yaml')
+                cmd = 'vrun_precise uptest ' + proc_yaml_path
+            else:
+                cmd = legacy_uptests_command(proc_path, procname,
+                                             env.host_string, procdata['port'],
+                                             user)
             result = sudo(cmd)
             # Though the uptester emits JSON to stdout, it's possible for the
             # container or env var setup to emit some other output before the
@@ -144,6 +152,23 @@ def run_uptests(proc, user='nobody'):
             'Passed': False,
         }]
 
+def legacy_uptests_command(proc_path, proc, host, port, user):
+    """
+    Build the command string for uptesting the given proc inside its lxc
+    container.
+    """
+    cmd = "/uptester %(folder)s %(host)s %(port)s" % {
+        'folder': posixpath.join('/app/uptests', proc),
+        'host': host,
+        'port': port,
+    }
+    tmpl = """exec lxc-start --name %(container_name)s -f %(lxc_config_path)s -- su --preserve-environment --shell /bin/bash -c "cd /app;source /env.sh; exec %(cmd)s" %(user)s"""
+    return tmpl % {
+        'cmd': cmd,
+        'user': user,
+        'container_name': posixpath.basename(proc_path) + '-uptest',
+        'lxc_config_path': posixpath.join(proc_path, 'proc.lxc'),
+    }
 
 @task
 def delete_proc(proc):
