@@ -609,16 +609,19 @@ def swarm_delete_proc(swarm_id, hostname, procname, port):
 
 @task
 def uptest_all_procs():
-    # Create a test run record.
-    run = TestRun(start=timezone.now())
-    run.save()
     # Fan out a task for each active host
     # callback post_uptest_all_procs at the end
     hosts = Host.objects.filter(active=True)
 
-    def make_test_task(host):
-        return uptest_host.subtask((host.name, run.id), expires=120)
-    chord((make_test_task(h) for h in hosts))(post_uptest_all_procs.subtask((run.id,)))
+    # Only bother doing anything if there are active hosts
+    if hosts:
+        # Create a test run record.
+        run = TestRun(start=timezone.now())
+        run.save()
+
+        def make_test_task(host):
+            return uptest_host.subtask((host.name, run.id), expires=120)
+        chord((make_test_task(h) for h in hosts))(post_uptest_all_procs.subtask((run.id,)))
 
 
 @task
@@ -641,7 +644,7 @@ def post_uptest_all_procs(results, test_run_id):
 
 
 @task
-def _clean_host_releases(hostname):
+def _clean_host(hostname):
     env.host_string = hostname
     env.abort_on_prompts = True
     env.user = settings.DEPLOY_USER
@@ -649,14 +652,14 @@ def _clean_host_releases(hostname):
     env.linewise = True
 
     with always_disconnect():
-        remote.clean_releases_and_builds()
+        remote.clean_builds_folders()
 
 
 @task
 def scooper():
     # Clean up all active hosts
     for host in Host.objects.filter(active=True):
-        _clean_host_releases.apply_async((host.name,), expires=120)
+        _clean_host.apply_async((host.name,), expires=120)
 
 
 @task

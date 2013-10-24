@@ -21,4 +21,4 @@ export APP_SETTINGS_YAML="%(settings)s"
 export PORT=%(port)s
 
 # Let 'er rip.
-exec $1
+exec $@

@@ -84,14 +84,14 @@ def run_uptests(proc, user='nobody'):
 
     tests_path = posixpath.join(build_path, 'uptests', procname)
     try:
-        if files.exists(tests_path):
+        if files.exists(tests_path, use_sudo=True):
 
             # Containers set up by new-style 'runners' will be in a 'rootfs'
             # subpath under the proc_path.  Old style containers are right in
             # the proc_path.  We have to launch the uptester slightly
             # differently
             new_container_path = posixpath.join(proc_path, 'rootfs')
-            if files.exists(new_container_path):
+            if files.exists(new_container_path, use_sudo=True):
                 proc_yaml_path = posixpath.join(proc_path, 'proc.yaml')
                 cmd = 'vrun_precise uptest ' + proc_yaml_path
             else:
@@ -182,11 +182,11 @@ def delete_proc(proc):
     proc_dir = posixpath.join(PROCS_ROOT, proc)
 
     proc_yaml_path = posixpath.join(proc_dir, 'proc.yaml')
-    if files.exists(proc_yaml_path):
+    if files.exists(proc_yaml_path, use_sudo=True):
         sudo('vrun_precise teardown ' + proc_yaml_path)
 
     # delete the proc dir
-    if files.exists(proc_dir):
+    if files.exists(proc_dir, use_sudo=True):
         sudo('rm -rf %s' % proc_dir)
 
 
@@ -219,8 +219,6 @@ def delete_build(build, cascade=False):
     sudo('rm -rf %s/%s' % (BUILDS_ROOT, build))
 
 
-# FIXME: We don't bother with releases anymore on the remote hosts, so this
-# function needs to get a bit smarter and look at procs using builds instead.
 def clean_builds_folders():
     """
     Check in builds_root for builds not being used by releases.

@@ -20,7 +20,8 @@ import requests
 import yaml
 
 from vr.common.paths import (ProcData, get_container_path, get_container_name,
-                             get_proc_path, get_build_path, get_buildfile_path)
+                             get_proc_path, get_build_path, get_buildfile_path,
+                             BUILDS_ROOT)
 from vr.common.utils import tmpdir, randchars
 
 
@@ -61,7 +62,7 @@ def main():
 def setup(settings):
     print "Setting up", get_container_name(settings)
     ensure_build(settings)
-    makedirs(settings)
+    make_proc_dirs(settings)
     write_proc_lxc(settings)
     write_settings_yaml(settings)
     write_proc_sh(settings)
@@ -160,7 +161,7 @@ def get_template(name):
         return f.read()
 
 
-def makedirs(settings):
+def make_proc_dirs(settings):
     print "Making directories"
     proc_path = get_proc_path(settings)
     container_path = get_container_path(settings)
@@ -286,6 +287,10 @@ def ensure_build(settings):
     the builds folder.
     """
     path = get_buildfile_path(settings)
+
+    # Ensure that builds_root has been created.
+    mkdir(BUILDS_ROOT)
+
     if os.path.exists(path) and url_etag(settings.build_url) == file_md5(path):
         print "Build already downloaded"
     else:
