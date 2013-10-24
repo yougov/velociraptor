@@ -135,9 +135,9 @@ def get_lxc_args(settings, special_cmd=None):
         # Container names must be unique, so to allow running a shell or
         # uptests next to the app container we have to add more stuff to the
         # name.
-        name += '-shell' + randchars()
+        name += '-tmp' + randchars()
     else:
-        cmd = get_cmd(settings)
+        cmd = 'run'
 
     return [
         'lxc-start',
@@ -256,6 +256,7 @@ def write_proc_sh(settings):
         'settings': '/settings.yaml',
         'envsh': '/env.sh',
         'port': settings.port,
+        'cmd': get_cmd(settings),
     }
     sh_path = os.path.join(get_container_path(settings), 'proc.sh')
     rendered = get_template('proc.sh') % context

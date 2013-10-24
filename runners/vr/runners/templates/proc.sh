@@ -20,5 +20,14 @@ export APP_SETTINGS_YAML="%(settings)s"
 # We control the port.  Don't allow env.sh or .profile.d to override it.
 export PORT=%(port)s
 
-# Let 'er rip.
-exec $@
+# Launch the actual program with 'exec', making the process replace this one
+# (rather than being a child).  The app's command is special cased with this
+# 'run' option so it can be written into the script instead of having to be
+# passed as an argument, which can be tricky when it's got its own long
+# argument list and variable expansion going on.
+if [ "run" == "$1" ]
+then
+  exec %(cmd)s
+else
+  exec $@
+fi
