@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 setup(
     name='vr.runners',
     namespace_packages=['vr'],
-    version='0.0.3',
+    version='0.0.4',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
     packages=find_packages(),
