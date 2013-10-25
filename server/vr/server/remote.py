@@ -76,6 +76,7 @@ def write_proc_conf(settings):
 # line.
 @task
 def run_uptests(proc, user='nobody'):
+    ensure_runners_installed()
     procdata = Proc.parse_name(proc)
     procname = procdata['proc_name']
     build_name = '%(app_name)s-%(version)s' % procdata
