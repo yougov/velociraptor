@@ -83,7 +83,12 @@ def run_uptests(proc, user='nobody'):
     build_path = posixpath.join(BUILDS_ROOT, build_name)
     proc_path = posixpath.join(PROCS_ROOT, proc)
 
-    tests_path = posixpath.join(build_path, 'uptests', procname)
+    new_container_path = posixpath.join(proc_path, 'rootfs')
+    if files.exists(new_container_path, use_sudo=True):
+        tests_path = posixpath.join(new_container_path, 'app/uptests',
+                                    procname)
+    else:
+        tests_path = posixpath.join(build_path, 'uptests', procname)
     try:
         if files.exists(tests_path, use_sudo=True):
 
@@ -91,7 +96,6 @@ def run_uptests(proc, user='nobody'):
             # subpath under the proc_path.  Old style containers are right in
             # the proc_path.  We have to launch the uptester slightly
             # differently
-            new_container_path = posixpath.join(proc_path, 'rootfs')
             if files.exists(new_container_path, use_sudo=True):
                 proc_yaml_path = posixpath.join(proc_path, 'proc.yaml')
                 cmd = 'vrun_precise uptest ' + proc_yaml_path
