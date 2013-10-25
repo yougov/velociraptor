@@ -18,9 +18,5 @@ lxc.mount.entry = none %(proc_path)s/dev/pts devpts defaults 0 0
 lxc.mount.entry = none %(proc_path)s/proc    proc   defaults 0 0
 lxc.mount.entry = none %(proc_path)s/sys     sysfs  defaults 0 0
 
-# Put the actual release at /app.  This mount is *not* readonly, in order to
-# allow .pyc files (for example) to be created.
-lxc.mount.entry = %(build_path)s %(proc_path)s/app none bind 0 0
-
 lxc.aa_profile = unconfined
 lxc.console = none

@@ -20,7 +20,7 @@ import requests
 import yaml
 
 from vr.common.paths import (ProcData, get_container_path, get_container_name,
-                             get_proc_path, get_build_path, get_buildfile_path,
+                             get_proc_path, get_app_path, get_buildfile_path,
                              BUILDS_ROOT)
 from vr.common.utils import tmpdir, randchars
 
@@ -93,8 +93,8 @@ def uptest(settings):
 
     proc_name = getattr(settings, 'proc_name', None)
     if proc_name:
-        build_path = get_build_path(settings)
-        uptests_path = os.path.join(build_path, 'uptests', proc_name)
+        app_path = get_app_path(settings)
+        uptests_path = os.path.join(app_path, 'uptests', proc_name)
         if os.path.isdir(uptests_path):
             # run an LXC container for the uptests.
             inside_path = os.path.join('/app/uptests', proc_name)
@@ -216,14 +216,12 @@ def write_proc_lxc(settings):
     print "Writing proc.lxc"
 
     proc_path = get_proc_path(settings)
-    build_path = get_build_path(settings)
     container_path = get_container_path(settings)
 
     tmpl = get_template('precise.lxc')
 
     content = tmpl % {
         'proc_path': container_path,
-        'build_path': build_path,
     }
 
     # append lines to bind-mount volumes.
@@ -276,7 +274,7 @@ def get_cmd(settings):
     if hasattr(settings, 'cmd'):
         return settings.cmd
 
-    procfile_path = os.path.join(get_build_path(settings), 'Procfile')
+    procfile_path = os.path.join(get_app_path(settings), 'Procfile')
     with open(procfile_path, 'rb') as f:
         procs = yaml.safe_load(f)
     return procs[settings.proc_name]
@@ -298,9 +296,8 @@ def ensure_build(settings):
         download_build(settings.build_url, path)
 
     # Now untar.
-    outfolder = get_build_path(settings)
-    if not os.path.isdir(outfolder):
-        untar(settings)
+    outfolder = get_app_path(settings)
+    untar(settings)
 
 
 def file_md5(filename):
@@ -328,7 +325,7 @@ def url_etag(url):
 def untar(settings):
     tarpath = get_buildfile_path(settings)
     print "Untarring", tarpath
-    outfolder = get_build_path(settings)
+    outfolder = get_app_path(settings)
     # make a folder to untar to 
     with tmpdir() as here:
         _, _, ext = tarpath.rpartition('.')
@@ -369,9 +366,13 @@ def untar(settings):
                                               | stat.S_IRUSR
                                               | stat.S_IRGRP)
 
-
-        # Use mv to atomically put the folder in place unless already present 
-        subprocess.check_call(['mv', '-nT', 'contents', outfolder])
+        # Each proc gets its own copy of the build.  If there's already one
+        # there, assume that 'setup' has been called again to fix a screwed up
+        # proc.  In that case, we should remove the build that's there and
+        # replace it with the fresh copy.
+        if os.path.isdir(outfolder):
+            shutil.rmtree(outfolder)
+        os.rename('contents', outfolder)
 
 
 def download_build(url, path):

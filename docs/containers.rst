@@ -26,4 +26,4 @@ container.  This is only available to apps with special buildpacks that don't
 expect to be able to write to /app (which excludes all publicly available build
 packs).  In the future this option will be removed entirely.
 
-.. _LXC: http://lxc.sourceforge.net
+.. _LXC: http://linuxcontainers.org
