@@ -16,6 +16,8 @@ def main():
 
 class PreciseRunner(BaseRunner):
 
+    lxc_template_name = 'precise.lxc'
+
     def make_proc_dirs(self):
         print "Making directories"
         proc_path = get_proc_path(self.config)
@@ -49,25 +51,6 @@ class PreciseRunner(BaseRunner):
         volumes = getattr(self.config, 'volumes', [])
         for outside, inside in volumes:
             mkdir(os.path.join(container_path, inside.lstrip('/')))
-
-
-    def write_proc_lxc(self):
-        print "Writing proc.lxc"
-
-        proc_path = get_proc_path(self.config)
-        container_path = get_container_path(self.config)
-
-        tmpl = get_template('precise.lxc')
-
-        content = tmpl % {
-            'proc_path': container_path,
-        }
-
-        content += self.get_lxc_volume_str()
-
-        filepath = os.path.join(proc_path, 'proc.lxc')
-        with open(filepath, 'wb') as f:
-            f.write(content)
 
 
 if __name__ == '__main__':

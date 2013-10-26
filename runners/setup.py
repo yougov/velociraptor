@@ -16,6 +16,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
+            'vrun = vr.runners.image:main',
             'vrun_precise = vr.runners.precise:main',
         ]
     },

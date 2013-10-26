@@ -5,9 +5,10 @@ built from a dict parsed out of a proc.yaml file.
 """
 import os
 
-BUILDS_ROOT = '/apps/builds'
-PROCS_ROOT = '/apps/procs'
-RELEASES_ROOT = '/apps/releases'
+VR_ROOT = '/apps'
+BUILDS_ROOT = VR_ROOT + '/builds'
+PROCS_ROOT = VR_ROOT + '/procs'
+RELEASES_ROOT = VR_ROOT + '/releases'
 
 
 def get_container_path(settings):
