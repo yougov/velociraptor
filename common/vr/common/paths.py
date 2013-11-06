@@ -51,17 +51,3 @@ def get_buildfile_path(settings):
     base = os.path.basename(settings.build_url)
     return os.path.join(BUILDS_ROOT, base)
 
-
-# FIXME: We should be more explicit about which attributes are allowed and
-# required here.  Maybe a namedtuple?
-class ProcData(object):
-    """
-    Given a dict on init, set attributes on self for each dict key/value.
-    """
-    def __init__(self, dct):
-        for k, v in dct.items():
-            # Work around earlier versions of proc.yaml that used a different
-            # key for proc_name'
-            if k == 'proc':
-                k = 'proc_name'
-            setattr(self, k, v)

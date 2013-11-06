@@ -4,6 +4,7 @@ from datetime import datetime
 
 import six
 import redis
+import yaml
 
 from vr.common.utils import utcfromtimestamp, parse_redis_url
 
@@ -122,6 +123,20 @@ class Proc(object):
     hostname and a dict of data structured like the one you get back from
     Supervisor's XML RPC interface.
     """
+    # FIXME: I'm kind of an ugly grab bag of information about a proc, some of
+    # it used for initial setup, and some of it the details returned by
+    # supervisor at runtime.  In the future, I'd like to have just 3 main
+    # attributes:
+        # 1. A 'ProcData' instance holding all the info used to create the
+        # proc.
+        # 2. A 'supervisor' thing that just holds exactly what supervisor
+        # returns.
+        # 3. A 'resources' thing showing how much RAM and CPU this proc is
+        # using.
+    # The Supervisor RPC plugin in vr.agent supports returning all of this info
+    # in one RPC call.  We should refactor this class to use that, and the
+    # cache to use that, and the JS frontend to use that structure too.  Not a
+    # small job :(
 
     def __init__(self, host, data):
         self.host = host
@@ -245,3 +260,78 @@ class ProcError(Exception):
     Raised when you request a proc that doesn't exist.
     """
     pass
+
+
+class ConfigData(object):
+    """
+    Superclass for defining objects with required and optional attributes that
+    are set by passing in a dict on init.
+
+    Subclasses should have '_required' and '_optional' lists of attributes to
+    be pulled out of the dict on init.
+    """
+    def __init__(self, dct):
+
+        # KeyError will be raised if any of these are missing from dct.
+        for attr in self._required:
+            setattr(self, attr, dct[attr])
+
+        # Any of these that are missing from dct will be set to None.
+        for attr in self._optional:
+            setattr(self, attr, dct.get(attr))
+
+    def as_yaml(self):
+        return yaml.safe_dump(self.as_dict(), default_flow_style=False)
+
+    def as_dict(self):
+        attrs = {}
+        for attr in self._required:
+            attrs[attr] = getattr(self, attr)
+        for attr in self._optional:
+            attrs[attr] = getattr(self, attr)
+        return attrs
+
+
+class ProcData(ConfigData):
+    """
+    An object with all the attributes you need to set up a proc on a host.
+    """
+    _required = [
+        'app_name',
+        'app_repo_url',
+        'app_repo_type',
+        'buildpack_url',
+        'buildpack_version',
+        'config_name',
+        'env',
+        'host',
+        'port',
+        'version',
+        'release_hash',
+        'settings',
+        'user',
+        'proc_name',
+    ]
+
+    _optional = [
+        'build_url',
+        'group',
+        'cmd',
+        'image_url',
+        'image_name',
+        'image_md5',
+        'build_md5',
+        'volumes',
+    ]
+
+    def __init__(self, dct):
+
+        super(ProcData, self).__init__(dct)
+        if self.proc_name is None and 'proc' in dct:
+            # Work around earlier versions of proc.yaml that used a different
+            # key for proc_name
+            setattr(self, 'proc_name', dct['proc'])
+
+        # One of proc_name or cmd must be provided.
+        if self.proc_name is None and self.cmd is None:
+            raise ValueError('Must provide either proc_name or cmd')

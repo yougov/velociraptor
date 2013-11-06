@@ -2,12 +2,16 @@ from __future__ import print_function
 
 import sys
 import os
+import pwd
+import grp
 import subprocess
 import shutil
 import tempfile
 import urlparse
 import random
 import string
+import hashlib
+import fcntl
 from datetime import datetime
 
 import isodate
@@ -41,6 +45,11 @@ class chdir(object):
 
     def __exit__(self, type, value, traceback):
         os.chdir(self.orig_path)
+
+
+def mkdir(path):
+    if not os.path.isdir(path):
+        os.makedirs(path)
 
 
 class CommandException(Exception):
@@ -125,3 +134,88 @@ def utcfromtimestamp(ts):
 
 def randchars(num=8):
     return ''.join(random.choice(string.ascii_lowercase) for x in xrange(num))
+
+
+def mkdir(path):
+    if not os.path.isdir(path):
+        os.makedirs(path)
+
+
+def lock_file(f, block=False):
+    """
+    If block=False (the default), die hard and fast if another process has
+    already grabbed the lock for this file.
+
+    If block=True, wait for the lock to be released, then continue.
+    """
+    try:
+        flags = fcntl.LOCK_EX
+        if block:
+            flags |= fcntl.LOCK_NB
+        fcntl.flock(f.fileno(), flags)
+    except IOError as e:
+        if e.errno in (errno.EACCES, errno.EAGAIN):
+            raise SystemExit("ERROR: %s is locked by another process." %
+                             f.name)
+        raise
+
+
+def file_md5(filename):
+    """
+    Given a path to a file, read it chunk-wise and feed each chunk into
+    an MD5 file hash.  Avoids having to hold the whole file in memory.
+    """
+    md5 = hashlib.md5()
+    with open(filename,'rb') as f:
+        for chunk in iter(lambda: f.read(128*md5.block_size), b''):
+             md5.update(chunk)
+    return md5.hexdigest()
+
+
+def which(name, flags=os.X_OK):
+    """
+    Search PATH for executable files with the given name.
+
+    Taken from Twisted.
+    """
+    result = []
+    exts = filter(None, os.environ.get('PATHEXT', '').split(os.pathsep))
+    path = os.environ.get('PATH', None)
+    if path is None:
+        return []
+    for p in os.environ.get('PATH', '').split(os.pathsep):
+        p = os.path.join(p, name)
+        if os.access(p, flags):
+            result.append(p)
+        for e in exts:
+            pext = p + e
+            if os.access(pext, flags):
+                result.append(pext)
+    return result
+
+
+
+def chowntree(path, username=None, groupname=None):
+    if username is None and groupname is None:
+        raise ValueError("Must provide username and/or groupname")
+
+    # os.chown will let you pass -1 to leave user or group unchanged.
+    uid = -1
+    gid = -1
+
+    if username:
+        uid = pwd.getpwnam(username).pw_uid
+
+    if groupname:
+        gid = grp.getgrnam(groupname).gr_gid
+
+    os.chown(path, uid, gid)
+
+    for root, dirs, files in os.walk(path):
+        for d in dirs:
+            dpath = os.path.join(root, d)
+            os.chown(dpath, uid, gid)
+        for f in files:
+            fpath = os.path.join(root, f)
+            if not os.path.islink(fpath):
+                os.chown(fpath, uid, gid)

@@ -48,7 +48,7 @@ class PreciseRunner(BaseRunner):
         for path in mountpoints:
             mkdir(os.path.join(container_path, path))
 
-        volumes = getattr(self.config, 'volumes', [])
+        volumes = getattr(self.config, 'volumes', []) or []
         for outside, inside in volumes:
             mkdir(os.path.join(container_path, inside.lstrip('/')))
 

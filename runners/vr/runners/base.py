@@ -9,15 +9,16 @@ import hashlib
 import tarfile
 import pkg_resources
 import argparse
-import socket
 
 import requests
 import yaml
 
-from vr.common.paths import (ProcData, get_container_name, get_buildfile_path,
+from vr.common.paths import (get_container_name, get_buildfile_path,
                              BUILDS_ROOT, get_app_path, get_container_path,
                              get_proc_path)
-from vr.common.utils import tmpdir, randchars
+from vr.common.models import ProcData
+from vr.common.utils import (tmpdir, randchars, mkdir, lock_file, which,
+                             file_md5)
 
 class BaseRunner(object):
     def main(self):
@@ -47,7 +48,7 @@ class BaseRunner(object):
             # Commands that have a lock=False attribute won't try to lock the
             # proc.yaml file.  'uptest' and 'shell' are in this category.
             if getattr(cmd, 'lock', True):
-                lock_file_or_die(self.file)
+                lock_file(self.file)
             else:
                 self.file.close()
         except KeyError:
@@ -116,12 +117,12 @@ class BaseRunner(object):
 
     def get_cmd(self):
         """
-        If self.config contains 'cmd', return that.
+        If self.config.cmd is not None, return that.
 
         Otherwise, read the Procfile inside the build code, parse it (as yaml), and
         pull out the command for self.config.proc_name.
         """
-        if hasattr(self.config, 'cmd'):
+        if self.config.cmd is not None:
             return self.config.cmd
 
         procfile_path = os.path.join(get_app_path(self.config), 'Procfile')
@@ -131,19 +132,20 @@ class BaseRunner(object):
 
     def ensure_build(self):
         """
-        Given a URL to a build file, ensure that it's been downloaded to
-        the builds folder.
+        If self.config.build_url is set, ensure it's been downloaded to the
+        builds folder.
         """
-        path = get_buildfile_path(self.config)
+        if self.config.build_url:
+            path = get_buildfile_path(self.config)
 
-        # Ensure that builds_root has been created.
-        mkdir(BUILDS_ROOT)
-        build_md5 = getattr(self.config, 'build_md5', None)
-        ensure_file(self.config.build_url, path, build_md5)
+            # Ensure that builds_root has been created.
+            mkdir(BUILDS_ROOT)
+            build_md5 = getattr(self.config, 'build_md5', None)
+            ensure_file(self.config.build_url, path, build_md5)
 
-        # Now untar.
-        outfolder = get_app_path(self.config)
-        self.untar()
+            # Now untar.
+            outfolder = get_app_path(self.config)
+            self.untar()
 
     def write_settings_yaml(self):
         print "Writing settings.yaml"
@@ -178,10 +180,10 @@ class BaseRunner(object):
     def get_lxc_volume_str(self):
         content = ''
         # append lines to bind-mount volumes.
-        volumes = getattr(self.config, 'volumes', [])
+        volumes = getattr(self.config, 'volumes', []) or []
         volume_tmpl = "\nlxc.mount.entry = %s %s%s none bind 0 0"
         for outside, inside in volumes:
-            content += volume_tmpl % (outside, container_path, inside)
+            content += volume_tmpl % (outside, get_container_path(self.config), inside)
         return content
 
     def uptest(self):
@@ -200,7 +202,7 @@ class BaseRunner(object):
             if os.path.isdir(uptests_path):
                 # run an LXC container for the uptests.
                 inside_path = os.path.join('/app/uptests', proc_name)
-                cmd = '/uptester %s %s %s ' % (inside_path, socket.getfqdn(),
+                cmd = '/uptester %s %s %s ' % (inside_path, self.config.host,
                                                self.config.port)
                 args = self.get_lxc_args(special_cmd=cmd)
                 os.execve(which('lxc-start')[0], args, {})
@@ -222,7 +224,7 @@ class BaseRunner(object):
         mkdir(proc_path)
         mkdir(container_path)
 
-        volumes = getattr(self.config, 'volumes', [])
+        volumes = getattr(self.config, 'volumes', None) or []
         for outside, inside in volumes:
             mkdir(os.path.join(container_path, inside.lstrip('/')))
 
@@ -335,41 +337,6 @@ def download_file(url, path):
         os.rename(base, path)
 
 
-def file_md5(filename):
-    """
-    Given a path to a file, read it chunk-wise and feed each chunk into
-    an MD5 file hash.  Avoids having to hold the whole file in memory.
-    """
-    md5 = hashlib.md5()
-    with open(filename,'rb') as f:
-        for chunk in iter(lambda: f.read(128*md5.block_size), b''):
-             md5.update(chunk)
-    return md5.hexdigest()
-
-
-
-def which(name, flags=os.X_OK):
-    """
-    Search PATH for executable files with the given name.
-
-    Taken from Twisted.
-    """
-    result = []
-    exts = filter(None, os.environ.get('PATHEXT', '').split(os.pathsep))
-    path = os.environ.get('PATH', None)
-    if path is None:
-        return []
-    for p in os.environ.get('PATH', '').split(os.pathsep):
-        p = os.path.join(p, name)
-        if os.access(p, flags):
-            result.append(p)
-        for e in exts:
-            pext = p + e
-            if os.access(pext, flags):
-                result.append(pext)
-    return result
-
-
 def get_template(name):
     """
     Look for 'name' in the vr.runners.templates folder.  Return its contents.
@@ -378,22 +345,3 @@ def get_template(name):
     with open(path, 'rb') as f:
         return f.read()
 
-
-def mkdir(path):
-    if not os.path.isdir(path):
-        os.makedirs(path)
-
-
-
-def lock_file_or_die(f):
-    """
-    Die hard and fast if another process has already grabbed the lock for
-    this proc.yaml
-    """
-    try:
-        fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except IOError as e:
-        if e.errno in (errno.EACCES, errno.EAGAIN):
-            raise SystemExit("ERROR: %s is locked by another process." %
-                             f.name)
-        raise

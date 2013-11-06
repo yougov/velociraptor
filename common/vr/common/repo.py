@@ -19,7 +19,9 @@ def guess_url_vcs(url):
 
     if parsed.scheme in ('git', 'svn'):
         return parsed.scheme
-    elif url.endswith('.git'):
+    elif parsed.path.endswith('.git'):
+        return 'git'
+    elif parsed.hostname == 'github.com':
         return 'git'
     return None
 

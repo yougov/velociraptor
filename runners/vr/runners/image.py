@@ -48,10 +48,19 @@ class ImageRunner(BaseRunner):
         image_file_path = os.path.join(IMAGES_ROOT, self.config.image_name, base)
         expected_md5 = getattr(self.config, 'image_md5', None)
         ensure_file(image_url, image_file_path, expected_md5)
-        untar(image_file_path, self.get_contents_folder())
+        untar(image_file_path, self.get_image_folder())
 
+        # Some OSes have started making /etc/resolv.conf into a symlink to
+        # /run/resolv.conf.  That prevents us from bind-mounting to that
+        # location.  So delete that symlink, if it exists.
+        resolv_path = os.path.join(self.get_image_folder(), 'etc',
+                                   'resolv.conf')
+        if os.path.islink(resolv_path):
+            os.remove(resolv_path)
+            with open(resolv_path, 'wb') as f:
+                f.write('')
 
-    def get_contents_folder(self):
+    def get_image_folder(self):
         return os.path.join(IMAGES_ROOT, self.config.image_name, 'contents')
 
 
@@ -65,7 +74,7 @@ class ImageRunner(BaseRunner):
 
         content = tmpl % {
             'proc_path': container_path,
-            'image_path': self.get_contents_folder(),
+            'image_path': self.get_image_folder(),
         }
 
         content += self.get_lxc_volume_str()
