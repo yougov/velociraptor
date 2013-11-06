@@ -9,6 +9,17 @@ class {'currentmongo': }
 class {'lxc': }
 class {'ruby': }
 
+# Set root password to 'vagrant' so the workers can SSH in and sudo.
+user { 'root':
+  ensure  => 'present',
+  comment => 'root',
+  gid     => '0',
+  home    => '/root',
+  shell   => '/bin/bash',
+  uid     => '0',
+  password => '$6$JC/PK.2v$itn.8ecXxQIm.vTnxKifHgzUc.4Nh8c/7RXpusn/eUlZ5sIfRPi7sgpPhT5OkDCWQUQ7zBfwwDHP9uqPGwHyq1',
+}
+
 Exec { path => '/usr/bin:/bin:/usr/sbin:/sbin' }
 
 # TODO: re-organize these classes around the roles of different hosts in a

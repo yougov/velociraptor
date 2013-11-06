@@ -171,8 +171,6 @@ def build_app(build_id, callback=None):
             env.task = build_app
             env.user = settings.DEPLOY_USER
             env.password = settings.DEPLOY_PASSWORD
-            env.user = 'root'
-            env.password = 'blah'
             env.linewise = True
             remote.build_app('build_job.yaml')
             # store the build file and metadata in the database.  There should

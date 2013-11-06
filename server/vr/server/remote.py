@@ -288,11 +288,12 @@ def build_app(build_yaml_path):
     with cd(remote_tmp):
         try:
             remote_build_yaml_path = posixpath.join(remote_tmp, 'build_job.yaml')
-            put(build_yaml_path, remote_build_yaml_path)
+            put(build_yaml_path, remote_build_yaml_path, use_sudo=True)
             sudo('vbuild build ' + remote_build_yaml_path)
             # relies on the build being named build.tar.gz and the manifest being named
             # build_result.yaml.
-            get(posixpath.join(remote_tmp, 'build_result.yaml'), 'build_result.yaml')
+            get(posixpath.join(remote_tmp, 'build_result.yaml'),
+                'build_result.yaml')
             with open('build_result.yaml', 'rb') as f:
                 build_data = BuildData(yaml.safe_load(f))
             get(posixpath.join(remote_tmp, 'build.tar.gz'), 'build.tar.gz')

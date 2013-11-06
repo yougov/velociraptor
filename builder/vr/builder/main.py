@@ -61,9 +61,13 @@ def cmd_build(build_data):
 
         cachefolder = os.path.join(CACHE_HOME, app_folder)
         if os.path.isdir(cachefolder):
-            shutil.copytree(cachefolder, 'cache', symlinks=True)
+            with lock_or_wait(cachefolder):
+                shutil.copytree(cachefolder, 'cache', symlinks=True)
         else:
             mkdir('cache')
+            # Maybe we're on a brand new host that's never had CACHE_HOME
+            # created.  Ensure that now.
+            mkdir(CACHE_HOME)
         chowntree('cache', username=user)
         volumes.append([os.path.join(here, 'cache'), '/cache'])
 
@@ -114,9 +118,9 @@ def cmd_build(build_data):
         finally:
             subprocess.check_call([runner, 'teardown', 'buildproc.yaml'])
 
-        shutil.rmtree(cachefolder, ignore_errors=True)
-        os.rename('cache', cachefolder)
-
+        with lock_or_wait(cachefolder):
+            shutil.rmtree(cachefolder, ignore_errors=True)
+            os.rename('cache', cachefolder)
 
         build_data.release_data = recover_release_data(app_folder)
 
