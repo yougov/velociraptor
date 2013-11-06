@@ -1,5 +1,6 @@
 ./common
 ./runners
+./builder
 ./server
 khartoum>=0.3.3
 
