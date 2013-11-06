@@ -4,13 +4,13 @@ from setuptools import setup, find_packages
 setup(
     name='vr.builder',
     namespace_packages=['vr'],
-    version='0.0.1',
+    version='0.0.2',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'vr.runners>=0.0.7',
+        'vr.runners>=0.0.8',
         'PyYAML>=3.10',
     ],
     entry_points={
@@ -18,5 +18,5 @@ setup(
             'vbuild = vr.builder.main:main',
         ]
     },
-    description=('Command line tools to launch procs.'),
+    description=('Command line tools to build apps in containers.'),
 )
