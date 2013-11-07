@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 setup(
     name='vr.server',
     namespace_packages=['vr'],
-    version='3.6.3',
+    version='3.6.4',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
     packages=find_packages(),
@@ -33,8 +33,8 @@ setup(
         'South==0.7.6',
         'sseclient==0.0.6',
         'vr.common',
-        'vr.runners>=0.0.9',
-        'vr.builder>=0.0.5',
+        'vr.runners>=0.0.10',
+        'vr.builder>=0.0.6',
     ],
     dependency_links = [
         'https://bitbucket.org/yougov/velociraptor/downloads/django-tastypie-0.9.12-alpha.tar.gz#egg=django-tastypie-0.9.12-alpha',
