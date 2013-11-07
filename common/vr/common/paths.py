@@ -5,6 +5,10 @@ built from a dict parsed out of a proc.yaml file.
 """
 import os
 
+# Imported here just to satisfy legacy versions of vr.runners that used to grab
+# it here.
+from vr.common.models import ProcData
+
 VR_ROOT = '/apps'
 BUILDS_ROOT = VR_ROOT + '/builds'
 PROCS_ROOT = VR_ROOT + '/procs'
