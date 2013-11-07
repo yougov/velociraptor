@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 setup(
     name='vr.common',
     namespace_packages=['vr'],
-    version='3.5.2',
+    version='3.5.3',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
     packages=find_packages(),
@@ -14,6 +14,7 @@ setup(
         'six',
         'suds==0.4',
         'utc',
+        'requests',
     ],
     description=('Libraries and command line tools for deploying with '
                  'Velociraptor'),
