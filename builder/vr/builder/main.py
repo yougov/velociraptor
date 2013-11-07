@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import stat
 import argparse
 import hashlib
 import shutil
@@ -110,6 +111,10 @@ def cmd_build(build_data):
             script_dst = os.path.join(get_container_path(buildproc),
                                       'builder.sh')
             shutil.copy(script_src, script_dst)
+            # Make sure builder.sh is chmod a+x
+            builder_st = os.stat(script_dst)
+            os.chmod(script_dst, builder_st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
             # make /app/vendor
             slash_app = os.path.join(get_container_path(buildproc), 'app')
             mkdir(os.path.join(slash_app, 'vendor'))
