@@ -60,6 +60,11 @@ class event_on_exception(object):
         def wrapper(*args, **kwargs):
             try:
                 func(*args, **kwargs)
+            except remote.Error as e:
+                try:
+                    send_event(title=e.title, msg=e.out, tags=self.tags)
+                finally:
+                    raise
             except (Exception, SystemExit) as e:
                 try:
                     send_event(title=str(e), msg=traceback.format_exc(),

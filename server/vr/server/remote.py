@@ -11,7 +11,7 @@ import re
 
 import yaml
 
-from fabric.api import sudo, get, put, task, env
+from fabric.api import sudo as sudo_, get, put, task, env
 from fabric.contrib import files
 from fabric.context_managers import cd
 
@@ -24,6 +24,36 @@ from vr.builder.main import BuildData
 
 def get_template(name):
     return pkg_resources.resource_filename('vr.common', 'templates/' + name)
+
+
+class Error(Exception):
+    """
+    An exception representing a remote command error.
+    """
+    def __init__(self, out):
+        self.out = out
+
+    @property
+    def title(self):
+        return ("Command failed with exit code {self.return_code}: "
+            "{self.command}".format(self=self))
+
+    def __getattr__(self, attr):
+        return getattr(self.out, attr)
+
+    @classmethod
+    def handle(cls, out):
+        if out.failed:
+            raise cls(out)
+        return out
+
+
+def sudo(*args, **kwargs):
+    """
+    Wrap fabric's sudo to trap errors and raise them.
+    """
+    kwargs.setdefault('warn_only', True)
+    return Error.handle(sudo_(*args, **kwargs))
 
 
 @task
