@@ -19,7 +19,7 @@ setup(
         'django-reversion==1.6.1',
         'django-tastypie==0.9.12-alpha',
         'django-yamlfield==0.2',
-        'Fabric==1.4.0',
+        'Fabric==1.8.0',
         'gevent>=1.0rc2,<2',
         'gevent-psycopg2==0.0.3',
         'gunicorn==0.17.2',
