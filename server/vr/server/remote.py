@@ -3,25 +3,17 @@ Utilities for running commands and reading/writing files on remote hosts over
 SSH.
 """
 
-import os
 import traceback
-import tempfile
-import shutil
-import paramiko
-import random
-import string
 import posixpath
 import pkg_resources
 import json
 import re
-import uuid
 
 import yaml
 
 from fabric.api import sudo, get, put, task, env
 from fabric.contrib import files
 from fabric.context_managers import cd
-from fabric import colors
 
 from vr.common.models import Proc, ProcData
 from vr.common.paths import (BUILDS_ROOT, PROCS_ROOT, get_proc_path,
@@ -295,8 +287,7 @@ def build_app(build_yaml_path):
             get(posixpath.join(remote_tmp, 'build_result.yaml'),
                 'build_result.yaml')
             with open('build_result.yaml', 'rb') as f:
-                build_data = BuildData(yaml.safe_load(f))
+                BuildData(yaml.safe_load(f))
             get(posixpath.join(remote_tmp, 'build.tar.gz'), 'build.tar.gz')
         finally:
             sudo('rm -rf ' + remote_tmp)
-
