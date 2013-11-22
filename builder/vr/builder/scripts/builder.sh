@@ -70,6 +70,7 @@ fi
 
 echo "Compiling app with $BUILDPACK_DIR"
 set -eo pipefail
+cd $APP_DIR
 $BUILDPACK_DIR/bin/compile $APP_DIR $CACHE_DIR
 
 # Record the output of the release script.
