@@ -59,14 +59,9 @@ class CommandException(Exception):
     """
 
     def __init__(self, result):
-        params = {
-            'command': result.command,
-            'status_code': result.status_code,
-            'output': result.output,
-        }
-        message = ("Command '%(command)s' failed with status code "
-                   "%(status_code)s.\n"
-                   "output: %(output)s\n") % params
+        message = ("Command '{result.command}' failed with status code "
+                   "{result.status_code}.\n"
+                   "output: {result.output}\n").format(result=result)
         super(CommandException, self).__init__(message)
 
 
