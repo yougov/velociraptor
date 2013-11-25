@@ -508,8 +508,8 @@ class Swarm(models.Model):
 
     def get_current_release(self, tag):
         """
-        Retrieve or create a Release that has current config and a build with
-        the specified tag.
+        Retrieve or create a Release that has current config and a successful
+        or pending build with the specified tag.
         """
 
         build = Build.get_current(self.app, tag)
@@ -525,7 +525,8 @@ class Swarm(models.Model):
         releases = Release.objects.filter(build=build).order_by('-id')
 
         # ...then filter in Python for equivalent config (identical keys/values
-        # in different order are treated as the same)
+        # in different order are treated as the same, since we're comparing
+        # dicts here instead of serialized yaml)
         match = lambda r: r.config_yaml == config and r.env_yaml == env
         releases = [r for r in releases if match(r)]
         if releases:
@@ -549,7 +550,6 @@ class Swarm(models.Model):
         return self.release.build.tag
 
     def set_version(self, version):
-        # assert False
         self.release = self.get_current_release(version)
 
     version = property(get_version, set_version)

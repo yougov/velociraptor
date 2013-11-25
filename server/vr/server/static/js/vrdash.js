@@ -70,15 +70,20 @@ VR.Dash.getHostData = function() {
 };
 
 VR.Dash.onHostList = function(data, stat, xhr) {
-    _.each(data.objects, function(el) {
-        _.each(el.procs, function(data) {
-          VR.ProcMessages.trigger('updateproc:'+data.id, data);
-        });
-    });
+  _.each(data.objects, function(el) {
+      _.each(el.procs, function(data) {
+        VR.ProcMessages.trigger('updateproc:'+data.id, data);
+      });
+  });
 
-   // poll the API once every minute to refresh the host list, just in case
-   // it somehow didn't stay in sync from the pubsub.
-   setTimeout(VR.Dash.getHostData, VR.Dash.Options.refreshInterval);
+  // if there are more pages, get those too
+  if (data.next) {
+    $.getJSON(data.next, VR.Dash.onHostList);
+  } else {
+    // poll the API again after a minute to refresh the host list, just in case
+    // it somehow didn't stay in sync from the pubsub.
+    setTimeout(VR.Dash.getHostData, VR.Dash.Options.refreshInterval);
+  }
 };
 
 VR.Dash.onHostData = function(data, stat, xhr) {
