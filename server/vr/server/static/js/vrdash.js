@@ -77,8 +77,8 @@ VR.Dash.onHostList = function(data, stat, xhr) {
   });
 
   // if there are more pages, get those too
-  if (data.next) {
-    $.getJSON(data.next, VR.Dash.onHostList);
+  if (data.meta.next) {
+    $.getJSON(data.meta.next, VR.Dash.onHostList);
   } else {
     // poll the API again after a minute to refresh the host list, just in case
     // it somehow didn't stay in sync from the pubsub.
