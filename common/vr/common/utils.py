@@ -59,9 +59,11 @@ class CommandException(Exception):
     """
 
     def __init__(self, result):
-        message = ("Command '{result.command}' failed with status code "
-                   "{result.status_code}.\n"
-                   "output: {result.output}\n").format(result=result)
+        template = six.text_type(
+            "Command '{result.command}' failed with status code "
+            "{result.status_code}.\noutput: {result.output}\n"
+        )
+        message = template.format(result=result)
         super(CommandException, self).__init__(message)
 
 
