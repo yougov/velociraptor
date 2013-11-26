@@ -324,6 +324,11 @@ class ProcData(ConfigData):
         'volumes',
     ]
 
+    # for compatibility, don't require any config yet
+    _optional += _required
+    _optional.sort()
+    del _required[:]
+
     def __init__(self, dct):
 
         super(ProcData, self).__init__(dct)
