@@ -4,6 +4,7 @@ import urlparse
 import re
 import logging
 
+import requests
 from vr.common.utils import chdir, run
 
 
@@ -19,8 +20,18 @@ def guess_url_vcs(url):
 
     if parsed.scheme in ('git', 'svn'):
         return parsed.scheme
-    elif url.endswith('.git'):
+    elif parsed.path.endswith('.git'):
         return 'git'
+    elif parsed.hostname == 'github.com':
+        return 'git'
+
+    # If it's an http url, we can try requesting it and guessing from the
+    # contents.
+    if parsed.scheme in ('http', 'https'):
+        resp = requests.get(url)
+        if re.match('basehttp.*python.*', resp.headers.get('server').lower()):
+            # It's the mercurial http server
+            return 'hg'
     return None
 
 

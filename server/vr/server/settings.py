@@ -127,7 +127,7 @@ CELERYBEAT_SCHEDULE = {
     },
     'test_all_the_things': {
         'task': 'vr.server.tasks.uptest_all_procs',
-        'schedule': timedelta(minutes=30),
+        'schedule': timedelta(minutes=60),
         'options': {
             'expires': 120,
         },

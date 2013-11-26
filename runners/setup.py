@@ -4,18 +4,19 @@ from setuptools import setup, find_packages
 setup(
     name='vr.runners',
     namespace_packages=['vr'],
-    version='0.0.7',
+    version='0.0.10',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'vr.common>=3.5.1',
+        'vr.common>=3.5.4,<4',
         'requests>=1.2.0',
         'PyYAML>=3.10',
     ],
     entry_points={
         'console_scripts': [
+            'vrun = vr.runners.image:main',
             'vrun_precise = vr.runners.precise:main',
         ]
     },

@@ -19,11 +19,12 @@ from fabric.api import env
 from django.core.files.storage import default_storage
 from django.conf import settings
 from django.utils import timezone
+from django.core.files import File
 
 from vr.server import events, utils, balancer, models, remote
 from vr.common.slugignore import clean_slug_dir
 from vr.server.models import (Release, Build, Swarm, Host, PortLock, App,
-                               TestRun, TestResult)
+                               TestRun, TestResult, BuildPack)
 from vr.common import repo, build as rbuild
 from vr.common.models import Proc
 from vr.common.utils import tmpdir, run
@@ -75,7 +76,8 @@ class event_on_exception(object):
 
 def build_proc_info(release, config_name, hostname, proc, port):
     """
-    Return a dictionary with exhaustive metadata about a proc.
+    Return a dictionary with exhaustive metadata about a proc.  This is saved
+    as the proc.yaml file that is given to the runner.
     """
 
     build = release.build
@@ -86,7 +88,7 @@ def build_proc_info(release, config_name, hostname, proc, port):
         'settings': release.config_yaml or {},
         'env': release.env_yaml or {},
         'version': build.tag,
-        'build_hash': build.hash,
+        'build_md5': build.hash,
         'build_url': build.file.url,
         'buildpack_url': build.buildpack_url,
         'buildpack_version': build.buildpack_version,
@@ -135,6 +137,7 @@ def deploy(release_id, config_name, hostname, proc, port):
             with always_disconnect():
                 remote.deploy_proc('proc.yaml')
 
+from vr.builder.main import BuildData
 
 @task
 @event_on_exception(['build'])
@@ -147,67 +150,55 @@ def build_app(build_id, callback=None):
     build.start_time = timezone.now()
     build.save()
     try:
-        # Clone the repo.
-        checkout_path = rbuild.get_repo_folder(app.repo_url)
-        app_path = os.path.join(checkout_path, repo.basename(app.repo_url))
-        repo_kwargs = {
-            'folder': app_path,
-            'url': app.repo_url,
-            'vcs_type': app.repo_type,
-        }
+        # enter a temp folder
+        with tmpdir() as here:
+            build_data = {
+                'app_name': app.name,
+                'app_repo_url': app.repo_url,
+                'app_repo_type': app.repo_type,
+                'version': build.tag,
+            }
 
-        # If the app specifies a buildpack, just use that.  Else make sure
-        # all buildpacks are cloned and specify the order in which they
-        # should be checked against the repo.
-        if app.buildpack:
-            repo_kwargs['buildpack'] = app.buildpack.get_repo()
-        else:
-            for bp in models.BuildPack.objects.all():
-                bp.get_repo()
-            repo_kwargs['buildpack_order'] = models.BuildPack.get_order()
+            if app.buildpack:
+                build_data['buildpack_url'] = app.buildpack.repo_url
+            else:
+                buildpacks = BuildPack.objects.order_by('order')
+                urls = [bp.repo_url for bp in buildpacks]
+                build_data['buildpack_urls'] = urls
 
-        app_repo = rbuild.App(**repo_kwargs)
+            # TODO: add image_url, image_md5, and image_name when we get there.
 
-        # Check out project and update to specified version
-        app_repo.update(build.tag)
+            with open('build_job.yaml', 'wb') as f:
+                f.write(BuildData(build_data).as_yaml())
+            # call the fabric build task to ssh to self and do the build
+            env.host_string = 'localhost'
+            env.abort_on_prompts = True
+            env.task = build_app
+            env.user = settings.DEPLOY_USER
+            env.password = settings.DEPLOY_PASSWORD
+            env.linewise = True
+            remote.build_app('build_job.yaml')
+            # store the build file and metadata in the database.  There should
+            # now be a build.tar.gz and build_result.yaml in the current folder
 
-        # copy the repo to temporary build folder
-        build_folder = rbuild.get_build_folder(app.repo_url)
-        if os.path.exists(build_folder):
-            shutil.rmtree(build_folder)
-        app_repo = app_repo.copy(build_folder)
+            with open('build_result.yaml', 'rb') as f:
+                build_result = BuildData(yaml.safe_load(f))
 
-        # Enter temporary build folder to do compile.  Clean up when done.
-        with rbuild.use_buildfolder(app.repo_url) as here:
-            # Build!
-            app_repo.compile()
-
-            # Clean out anything listed in .slugignore.
-            app_repo.slugignore()
-
-            # tar the build
-            build_data = app_repo.tar(build.app, build.tag)                    
-
-            # compute and remember the tarball's MD5 hash
-            with open(build_data.path, 'rb') as f:
-                build.hash = hashlib.md5(f.read()).hexdigest()
-            filepath = 'builds/' + os.path.basename(build_data.path)
-            with open(build_data.path, 'rb') as localfile:
-                default_storage.save(filepath, localfile)
-
-            build.file = filepath
-            build.end_time = build_data.time
+            filepath = ('builds/' + '-'.join([build_result.app_name,
+                                             build_result.version,
+                                             build_result.build_md5]) + '.tar.gz')
+            with open('build.tar.gz', 'rb') as localfile:
+                build.file.save(filepath, File(localfile))
+            build.hash = build_result.build_md5
+            build.env_yaml = build_result.release_data.get('config_vars', {})
+            build.buildpack_url = build_result.buildpack_url
+            build.buildpack_version = build_result.buildpack_version
             build.status = 'success'
-
-            # Ask the buildpack for any necessary env vars.  Store them with
-            # the build.
-            build.env_yaml = app_repo.release().get('config_vars')
-            build.buildpack_url = app_repo.buildpack.url
-            build.buildpack_version = app_repo.buildpack.version
     except:
         build.status = 'failed'
         raise
     finally:
+        build.end_time = timezone.now()
         build.save()
 
     send_event(str(build), "Completed build %s" % build, tags=['build',

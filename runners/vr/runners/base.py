@@ -9,15 +9,16 @@ import hashlib
 import tarfile
 import pkg_resources
 import argparse
-import socket
 
 import requests
 import yaml
 
-from vr.common.paths import (ProcData, get_container_name, get_buildfile_path,
+from vr.common.paths import (get_container_name, get_buildfile_path,
                              BUILDS_ROOT, get_app_path, get_container_path,
                              get_proc_path)
-from vr.common.utils import tmpdir, randchars
+from vr.common.models import ProcData
+from vr.common.utils import (tmpdir, randchars, mkdir, lock_file, which,
+                             file_md5)
 
 class BaseRunner(object):
     def main(self):
@@ -47,7 +48,7 @@ class BaseRunner(object):
             # Commands that have a lock=False attribute won't try to lock the
             # proc.yaml file.  'uptest' and 'shell' are in this category.
             if getattr(cmd, 'lock', True):
-                lock_file_or_die(self.file)
+                lock_file(self.file)
             else:
                 self.file.close()
         except KeyError:
@@ -79,53 +80,8 @@ class BaseRunner(object):
         tarpath = get_buildfile_path(self.config)
         print "Untarring", tarpath
         outfolder = get_app_path(self.config)
-        # make a folder to untar to 
-        with tmpdir() as here:
-            _, _, ext = tarpath.rpartition('.')
-
-            if ext not in ('gz', 'bz2'):
-                raise ValueError('tarpath must point to a .gz or .bz2 file')
-
-            tf = tarfile.open(tarpath, 'r:'+ext)
-            try:
-                os.mkdir('contents')
-                tf.extractall('contents')
-            finally:
-                tf.close()
-
-            # now fix all the perms
-            user = pwd.getpwnam(self.config.user)
-            group = grp.getgrnam(self.config.group)
-            for root, dirs, files in os.walk('contents'):
-                for d in dirs:
-                    path = os.path.join(root, d)
-                    # chown user:group
-                    os.chown(path, user.pw_uid, group.gr_gid)
-                    st = os.stat(path)
-                    # chmod ug+xr 
-                    os.chmod(path, st.st_mode | stat.S_IXUSR
-                                              | stat.S_IXGRP
-                                              | stat.S_IRUSR
-                                              | stat.S_IRGRP)
-                for f in files:
-                    path = os.path.join(root, f)
-                    if not os.path.islink(path):
-                        # chown nobody:admin
-                        os.chown(path, user.pw_uid, group.gr_gid)
-                        st = os.stat(path)
-                        # chmod ug+rw
-                        os.chmod(path, st.st_mode | stat.S_IWUSR
-                                                  | stat.S_IWGRP
-                                                  | stat.S_IRUSR
-                                                  | stat.S_IRGRP)
-
-            # Each proc gets its own copy of the build.  If there's already one
-            # there, assume that 'setup' has been called again to fix a screwed up
-            # proc.  In that case, we should remove the build that's there and
-            # replace it with the fresh copy.
-            if os.path.isdir(outfolder):
-                shutil.rmtree(outfolder)
-            os.rename('contents', outfolder)
+        owners = (self.config.user, self.config.group)
+        untar(tarpath, outfolder, owners)
 
     def write_proc_sh(self):
         """
@@ -161,12 +117,12 @@ class BaseRunner(object):
 
     def get_cmd(self):
         """
-        If self.config contains 'cmd', return that.
+        If self.config.cmd is not None, return that.
 
         Otherwise, read the Procfile inside the build code, parse it (as yaml), and
         pull out the command for self.config.proc_name.
         """
-        if hasattr(self.config, 'cmd'):
+        if self.config.cmd is not None:
             return self.config.cmd
 
         procfile_path = os.path.join(get_app_path(self.config), 'Procfile')
@@ -176,22 +132,20 @@ class BaseRunner(object):
 
     def ensure_build(self):
         """
-        Given a URL to a build file, ensure that it's been downloaded to
-        the builds folder.
+        If self.config.build_url is set, ensure it's been downloaded to the
+        builds folder.
         """
-        path = get_buildfile_path(self.config)
+        if self.config.build_url:
+            path = get_buildfile_path(self.config)
 
-        # Ensure that builds_root has been created.
-        mkdir(BUILDS_ROOT)
+            # Ensure that builds_root has been created.
+            mkdir(BUILDS_ROOT)
+            build_md5 = getattr(self.config, 'build_md5', None)
+            ensure_file(self.config.build_url, path, build_md5)
 
-        if os.path.exists(path) and url_etag(self.config.build_url) == file_md5(path):
-            print "Build already downloaded"
-        else:
-            download_build(self.config.build_url, path)
-
-        # Now untar.
-        outfolder = get_app_path(self.config)
-        self.untar()
+            # Now untar.
+            outfolder = get_app_path(self.config)
+            self.untar()
 
     def write_settings_yaml(self):
         print "Writing settings.yaml"
@@ -226,10 +180,10 @@ class BaseRunner(object):
     def get_lxc_volume_str(self):
         content = ''
         # append lines to bind-mount volumes.
-        volumes = getattr(self.config, 'volumes', [])
+        volumes = getattr(self.config, 'volumes', []) or []
         volume_tmpl = "\nlxc.mount.entry = %s %s%s none bind 0 0"
         for outside, inside in volumes:
-            content += volume_tmpl % (outside, container_path, inside)
+            content += volume_tmpl % (outside, get_container_path(self.config), inside)
         return content
 
     def uptest(self):
@@ -248,7 +202,7 @@ class BaseRunner(object):
             if os.path.isdir(uptests_path):
                 # run an LXC container for the uptests.
                 inside_path = os.path.join('/app/uptests', proc_name)
-                cmd = '/uptester %s %s %s ' % (inside_path, socket.getfqdn(),
+                cmd = '/uptester %s %s %s ' % (inside_path, self.config.host,
                                                self.config.port)
                 args = self.get_lxc_args(special_cmd=cmd)
                 os.execve(which('lxc-start')[0], args, {})
@@ -264,13 +218,116 @@ class BaseRunner(object):
         shutil.rmtree(get_proc_path(self.config))
 
     def make_proc_dirs(self):
-        raise NotImplementedError('Subclasses should implement this.')
+        print "Making directories"
+        proc_path = get_proc_path(self.config)
+        container_path = get_container_path(self.config)
+        mkdir(proc_path)
+        mkdir(container_path)
+
+        volumes = getattr(self.config, 'volumes', None) or []
+        for outside, inside in volumes:
+            mkdir(os.path.join(container_path, inside.lstrip('/')))
 
     def write_proc_lxc(self):
-        raise NotImplementedError('Subclasses should implement this.')
+        print "Writing proc.lxc"
+
+        proc_path = get_proc_path(self.config)
+        container_path = get_container_path(self.config)
+
+        tmpl = get_template(self.lxc_template_name)
+
+        content = tmpl % {
+            'proc_path': container_path,
+        }
+
+        content += self.get_lxc_volume_str()
+
+        filepath = os.path.join(proc_path, 'proc.lxc')
+        with open(filepath, 'wb') as f:
+            f.write(content)
 
 
-def download_build(url, path):
+def untar(tarpath, outfolder, owners=None, overwrite=True, fixperms=True):
+    """
+    Unpack tarpath to outfolder.  Make a guess about the compression based on
+    file extension (.gz or .bz2).
+
+    The unpacking of the tarfile is done in a temp directory and moved into
+    place atomically at the end (assuming /tmp is on the same filesystem as
+    outfolder).
+
+    If 'owners' is provided, it should be a tuple in the form
+    (username, groupname), and the contents of the unpacked folder will be set
+    with that owner and group.
+
+    If outfolder already exists, and overwrite=True (the default), the existing
+    outfolder will be deleted before the new one is put in place. If outfolder
+    already exists and overwrite=False, IOError will be raised.
+    """
+    # make a folder to untar to 
+    with tmpdir() as here:
+        _, _, ext = tarpath.rpartition('.')
+
+        if ext not in ('gz', 'bz2'):
+            raise ValueError('tarpath must point to a .gz or .bz2 file')
+
+        tf = tarfile.open(tarpath, 'r:'+ext)
+        try:
+            os.mkdir('contents')
+            tf.extractall('contents')
+        finally:
+            tf.close()
+
+        if owners is not None:
+            username, groupname = owners
+            user = pwd.getpwnam(username)
+            group = grp.getgrnam(groupname)
+            for root, dirs, files in os.walk('contents'):
+                for d in dirs:
+                    path = os.path.join(root, d)
+                    # chown user:group
+                    os.chown(path, user.pw_uid, group.gr_gid)
+                    # chmod ug+xr 
+                    st = os.stat(path)
+                    os.chmod(path, st.st_mode | stat.S_IXUSR
+                                              | stat.S_IXGRP
+                                              | stat.S_IRUSR
+                                              | stat.S_IRGRP)
+                for f in files:
+                    path = os.path.join(root, f)
+                    if not os.path.islink(path):
+                        # chown nobody:admin
+                        os.chown(path, user.pw_uid, group.gr_gid)
+                        # chmod ug+rw
+                        st = os.stat(path)
+                        os.chmod(path, st.st_mode | stat.S_IWUSR
+                                                  | stat.S_IWGRP
+                                                  | stat.S_IRUSR
+                                                  | stat.S_IRGRP)
+
+        if os.path.isdir(outfolder):
+            if overwrite:
+                shutil.rmtree(outfolder)
+            else:
+                raise IOError(('Cannot untar %s because %s already exists and '
+                              'overwrite=False') % (tarfile, outfolder))
+        os.rename('contents', outfolder)
+
+
+def ensure_file(url, path, md5sum=None):
+    """
+    If file is not already at 'path', then download from 'url' and put it
+    there.
+
+    If md5sum is provided, and 'path' exists, check that file matches the
+    md5sum.  If not, re-download.
+    """
+
+    if not os.path.isfile(path) or (md5sum and md5sum != file_md5(path)):
+        download_file(url, path)
+
+
+def download_file(url, path):
     with tmpdir() as here:
         print "Downloading %s" % url
         base = os.path.basename(path)
@@ -278,37 +335,6 @@ def download_build(url, path):
             resp = requests.get(url, stream=True)
             shutil.copyfileobj(resp.raw, f)
         os.rename(base, path)
-
-
-def url_etag(url):
-    """
-    Given a URL, do a HEAD request and check for an ETag.  Return it if
-    found, otherwise return empty string.
-    """
-    resp = requests.head(url)
-    return resp.headers.get('ETag', '')
-
-
-def which(name, flags=os.X_OK):
-    """
-    Search PATH for executable files with the given name.
-
-    Taken from Twisted.
-    """
-    result = []
-    exts = filter(None, os.environ.get('PATHEXT', '').split(os.pathsep))
-    path = os.environ.get('PATH', None)
-    if path is None:
-        return []
-    for p in os.environ.get('PATH', '').split(os.pathsep):
-        p = os.path.join(p, name)
-        if os.access(p, flags):
-            result.append(p)
-        for e in exts:
-            pext = p + e
-            if os.access(pext, flags):
-                result.append(pext)
-    return result
 
 
 def get_template(name):
@@ -319,33 +345,3 @@ def get_template(name):
     with open(path, 'rb') as f:
         return f.read()
 
-
-def mkdir(path):
-    if not os.path.isdir(path):
-        os.makedirs(path)
-
-
-def file_md5(filename):
-    """
-    Given a path to a file, read it chunk-wise and feed each chunk into
-    an MD5 file hash.  Avoids having to hold the whole file in memory.
-    """
-    md5 = hashlib.md5()
-    with open(filename,'rb') as f:
-        for chunk in iter(lambda: f.read(128*md5.block_size), b''):
-             md5.update(chunk)
-    return md5.hexdigest()
-
-
-def lock_file_or_die(f):
-    """
-    Die hard and fast if another process has already grabbed the lock for
-    this proc.yaml
-    """
-    try:
-        fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except IOError as e:
-        if e.errno in (errno.EACCES, errno.EAGAIN):
-            raise SystemExit("ERROR: %s is locked by another process." %
-                             f.name)
-        raise

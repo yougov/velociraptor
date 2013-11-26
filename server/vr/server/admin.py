@@ -60,6 +60,6 @@ admin.site.register(models.TestRun, TestRunAdmin)
 
 
 class ReleaseAdmin(admin.ModelAdmin):
-    search_fields = ['config', 'build__app__name']
+    search_fields = ['config_yaml', 'env_yaml', 'build__app__name']
 admin.site.register(models.Release, ReleaseAdmin)
 
