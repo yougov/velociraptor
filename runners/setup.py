@@ -9,6 +9,7 @@ setup(
     author_email='brent.tubbs@gmail.com',
     packages=find_packages(),
     include_package_data=True,
+    url='https://bitbucket.org/yougov/velociraptor',
     install_requires=[
         'vr.common>=3.5.6,<4',
         'requests>=1.2.0',
