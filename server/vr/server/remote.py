@@ -291,9 +291,8 @@ def get_builds():
 
 @task
 def ensure_runners_installed():
-    pip_env = getattr(settings, 'pip_env', {})
     version = pkg_resources.get_distribution('vr.runners').version
-    with shell_env(**pip_env):
+    with shell_env(**settings.pip_env):
         sudo('pip install vr.runners==' + version)
 
 

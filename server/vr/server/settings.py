@@ -320,3 +320,5 @@ if BUILD_EXPIRATION_DAYS is not None:
         'schedule': timedelta(days=1),
         'options': {'expires': 120}
     }
+
+pip_env = {}
