@@ -321,4 +321,4 @@ if BUILD_EXPIRATION_DAYS is not None:
         'options': {'expires': 120}
     }
 
-pip_env = {}
+PIP_ENV = {}
