@@ -289,13 +289,13 @@ def ensure_runners_installed():
     version = pkg_resources.get_distribution('vr.runners').version
     with shell_env(**settings.PIP_ENV):
         sudo('pip install vr.runners==' + version)
-    sudo('pip install vr.runners==' + version)
 
 
 @task
 def ensure_builder_installed():
     version = pkg_resources.get_distribution('vr.builder').version
-    sudo('pip install vr.builder==' + version)
+    with shell_env(**settings.PIP_ENV):
+        sudo('pip install vr.builder==' + version)
 
 
 @task
