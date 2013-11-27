@@ -15,6 +15,7 @@ import pkg_resources
 import json
 import re
 import uuid
+import contextlib
 
 import yaml
 
@@ -25,6 +26,7 @@ from fabric import colors
 from vr.common.models import Proc
 from vr.common.paths import (BUILDS_ROOT, PROCS_ROOT, ProcData, get_proc_path,
                              get_container_name, get_container_path)
+from . import settings
 
 
 def get_template(name):
@@ -289,5 +291,29 @@ def get_builds():
 
 @task
 def ensure_runners_installed():
+    pip_env = getattr(settings, 'pip_env', {})
     version = pkg_resources.get_distribution('vr.runners').version
-    sudo('pip install vr.runners==' + version)
+    with shell_env(**pip_env):
+        sudo('pip install vr.runners==' + version)
+
+
+@contextlib.contextmanager
+def shell_env(**env_vars):
+    """
+    A context that updates the shell to add environment variables.
+    Ref http://stackoverflow.com/a/8454134/70170
+    """
+    orig_shell = env['shell']
+    env_vars_str = ' '.join(
+        '{key}={value}'.format(**vars())
+        for key, value in env_vars.items()
+    )
+    if env_vars:
+        env['shell'] = '{env_vars_str} {orig_shell}'.format(
+            env_vars_str=env_vars_str,
+            orig_shell=env['shell'],
+        )
+    try:
+        yield
+    finally:
+        env['shell'] = orig_shell
