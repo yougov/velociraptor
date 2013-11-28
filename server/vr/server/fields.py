@@ -126,7 +126,7 @@ class YAMLListField(models.TextField):
 
         value = yaml.dump(value, Dumper=DjangoSafeDumper,
                           default_flow_style=False)
-        return super(YAMLDictField, self).get_db_prep_save(value, connection)
+        return super(YAMLListField, self).get_db_prep_save(value, connection)
 
     def value_from_object(self, obj):
         """

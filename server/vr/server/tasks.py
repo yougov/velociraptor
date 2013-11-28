@@ -28,6 +28,7 @@ from vr.server.models import (Release, Build, Swarm, Host, PortLock, App,
 from vr.common import repo, build as rbuild
 from vr.common.models import Proc
 from vr.common.utils import tmpdir, run
+from vr.builder.main import BuildData
 
 
 logger = logging.getLogger('velociraptor')
@@ -100,6 +101,7 @@ def build_proc_info(release, config_name, hostname, proc, port):
         'port': port,
         'user': 'nobody',
         'group': 'admin',
+        'volumes': release.volumes or [],
     }
 
 
@@ -137,7 +139,6 @@ def deploy(release_id, config_name, hostname, proc, port):
             with always_disconnect():
                 remote.deploy_proc('proc.yaml')
 
-from vr.builder.main import BuildData
 
 @task
 @event_on_exception(['build'])

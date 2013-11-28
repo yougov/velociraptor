@@ -255,8 +255,8 @@ class Release(models.Model):
     )
 
     volumes = YAMLListField(
-        help_text=("YAML list of directory,mountpoint pairs to be exposed "
-                   "inside the container."),
+        help_text=('YAML list of directory,mountpoint pairs to be exposed '
+                   'inside the container. E.g. [["/var/data", "/data"]]'),
         null=True, blank=True
     )
 
