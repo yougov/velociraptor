@@ -8,6 +8,7 @@ import posixpath
 import pkg_resources
 import json
 import re
+import contextlib
 
 import yaml
 
@@ -20,6 +21,7 @@ from vr.common.paths import (BUILDS_ROOT, PROCS_ROOT, get_proc_path,
                              get_container_name, get_container_path)
 from vr.common.utils import randchars
 from vr.builder.main import BuildData
+from . import settings
 
 
 def get_template(name):
@@ -282,19 +284,18 @@ def get_builds():
     return sudo('ls -1 %s' % BUILDS_ROOT).split()
 
 
-# FIXME: This is always going to try to pull from pypi, unless pip has been
-# hacked on the remote end to pull from some internal cheeseshop.  It would be
-# better to push the package.  How could we do that?  Maybe a pybundle?
 @task
 def ensure_runners_installed():
     version = pkg_resources.get_distribution('vr.runners').version
-    sudo('pip install vr.runners==' + version)
+    with shell_env(**settings.PIP_ENV):
+        sudo('pip install vr.runners==' + version)
 
 
 @task
 def ensure_builder_installed():
     version = pkg_resources.get_distribution('vr.builder').version
-    sudo('pip install vr.builder==' + version)
+    with shell_env(**settings.PIP_ENV):
+        sudo('pip install vr.builder==' + version)
 
 
 @task
@@ -321,3 +322,25 @@ def build_app(build_yaml_path):
             get(posixpath.join(remote_tmp, 'build.tar.gz'), 'build.tar.gz')
         finally:
             sudo('rm -rf ' + remote_tmp)
+
+
+@contextlib.contextmanager
+def shell_env(**env_vars):
+    """
+    A context that updates the shell to add environment variables.
+    Ref http://stackoverflow.com/a/8454134/70170
+    """
+    orig_shell = env['shell']
+    env_vars_str = ' '.join(
+        '{key}={value}'.format(**vars())
+        for key, value in env_vars.items()
+    )
+    if env_vars:
+        env['shell'] = '{env_vars_str} {orig_shell}'.format(
+            env_vars_str=env_vars_str,
+            orig_shell=env['shell'],
+        )
+    try:
+        yield
+    finally:
+        env['shell'] = orig_shell
