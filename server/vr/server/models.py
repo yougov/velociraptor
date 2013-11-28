@@ -10,7 +10,7 @@ from django.utils import timezone
 import yaml
 import redis
 
-from vr.server.fields import YAMLDictField
+from vr.server.fields import YAMLDictField, YAMLListField
 from vr.common import repo, build, models as raptor_models
 from vr.common.utils import parse_redis_url
 
@@ -245,25 +245,18 @@ def make_hash(*args):
     return hashlib.md5(''.join(stringify(a) for a in args)).hexdigest()
 
 
-def compute_release_hash(build, config_dict, env_dict):
-    """
-    Given the build and config from a release, generate the 8 byte hash to be
-    used in the release's proc names.
-    """
-    return make_hash(build.hash, config_dict, env_dict)[:8]
-
-
-config_name_help = ("Short name like 'prod' or 'europe' to distinguish between "
-             "deployments of the same app. Must be filesystem-safe, "
-             "with no dashes or spaces.")
-
-
 class Release(models.Model):
     build = models.ForeignKey(Build)
     config_yaml = YAMLDictField(blank=True, null=True, help_text="YAML text to "
                              "be written to settings.yaml at deploy time.")
     env_yaml = YAMLDictField(
         help_text="YAML dict of env vars to be set at runtime",
+        null=True, blank=True
+    )
+
+    volumes = YAMLListField(
+        help_text=("YAML list of directory,mountpoint pairs to be exposed "
+                   "inside the container."),
         null=True, blank=True
     )
 
@@ -274,7 +267,8 @@ class Release(models.Model):
         return u'-'.join([self.build.app.name, self.build.tag, self.hash or ''])
 
     def compute_hash(self):
-        return compute_release_hash(self.build, self.config_yaml, self.env_yaml)
+        return make_hash(self.build.hash, self.config_yaml,
+                         self.env_yaml, self.volumes)[:8]
 
     def parsed_config(self):
         return yaml.safe_load(self.config_yaml or '')
@@ -355,6 +349,11 @@ class Squad(models.Model):
     class Meta:
         ordering = ('name',)
         db_table = 'deployment_squad'
+
+
+config_name_help = ("Short name like 'prod' or 'europe' to distinguish between "
+             "deployments of the same app. Must be filesystem-safe, "
+             "with no dashes or spaces.")
 
 
 class Swarm(models.Model):
