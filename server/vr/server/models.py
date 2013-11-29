@@ -257,6 +257,13 @@ class Release(models.Model):
         ordering = ['-id']
         db_table = 'deployment_release'
 
+    def save(self):
+        # Compute hash on save only if it hasn't already been done and the
+        # build is complete.
+        if self.build.status == BUILD_SUCCESS and not self.hash:
+            self.hash = self.compute_hash()
+        super(Release, self).save()
+
 
 class Host(models.Model):
     name = models.CharField(max_length=200, unique=True)
@@ -538,24 +545,18 @@ class Swarm(models.Model):
             return (release.config_yaml == config and
                     release.env_yaml == env and
                     release.volumes == volumes)
-        releases = [r for r in releases if release_matches(r, config, env,
-                                                           self.volumes)]
-        if releases:
-            # We found one!
-            release = releases[0]
-            # Just in case it hasn't been hashed since the build completed, do
-            # that now.
-            rhash = release.compute_hash()
-            if release.hash != rhash and release.build.status == BUILD_SUCCESS:
-                release.hash = rhash
-                release.save()
+        try:
+            release = next(r for r in releases if release_matches(r, config,
+                                                                  env,
+                                                                  self.volumes))
             return release
+        except StopIteration:
+            pass
 
         # We didn't find a release with the right build+config+env+volumes. Go
         # ahead and make one.
         release = Release(build=build, config_yaml=config, env_yaml=env,
                           volumes=self.volumes)
-        release.hash = release.compute_hash()
         release.save()
         return release
 

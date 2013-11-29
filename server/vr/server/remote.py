@@ -11,7 +11,6 @@ import re
 import contextlib
 
 import yaml
-
 from fabric.api import sudo as sudo_, get, put, task, env
 from fabric.contrib import files
 from fabric.context_managers import cd
@@ -34,6 +33,7 @@ class Error(Exception):
     """
     def __init__(self, out):
         self.out = out
+        super(Error, self).__init__(out)
 
     @property
     def title(self):

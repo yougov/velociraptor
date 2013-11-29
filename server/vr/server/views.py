@@ -77,6 +77,9 @@ def release(request):
         form.save()
         events.eventify(request.user, 'release', release)
         return HttpResponseRedirect(reverse('deploy'))
+
+    builds = models.Build.objects
+    form.fields['build'].queryset = builds.filter(status=models.BUILD_SUCCESS)
     return render(request, 'basic_form.html', {
         'form': form,
         'btn_text': 'Save',
