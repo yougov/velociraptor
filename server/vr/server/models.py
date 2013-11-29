@@ -134,6 +134,14 @@ class Tag(models.Model):
     class Meta:
         db_table = 'deployment_tag'
 
+
+BUILD_PENDING = 'pending'
+BUILD_STARTED = 'started'
+BUILD_SUCCESS = 'success'
+BUILD_FAILED = 'failed'
+BUILD_EXPIRED = 'expired'
+
+
 class Build(models.Model):
     app = models.ForeignKey(App)
     tag = models.CharField(max_length=50)
@@ -143,11 +151,11 @@ class Build(models.Model):
     end_time = models.DateTimeField(null=True)
 
     build_status_choices = (
-        ('pending', 'Pending'),
-        ('started', 'Started'),
-        ('success', 'Success'),
-        ('failed', 'Failed'),
-        ('expired', 'Expired'),
+        (BUILD_PENDING, 'Pending'),
+        (BUILD_STARTED, 'Started'),
+        (BUILD_SUCCESS, 'Success'),
+        (BUILD_FAILED, 'Failed'),
+        (BUILD_EXPIRED, 'Expired'),
     )
 
     status = models.CharField(max_length=20, choices=build_status_choices,
@@ -162,7 +170,7 @@ class Build(models.Model):
     buildpack_version = models.CharField(max_length=50, null=True, blank=True)
 
     def is_usable(self):
-        return self.file.name and self.status == 'success'
+        return self.file.name and self.status == BUILD_SUCCESS
 
     def in_progress(self):
         if self.status not in ('pending', 'started'):
@@ -181,34 +189,6 @@ class Build(models.Model):
             return False
 
         return True
-
-    @classmethod
-    def get_current(cls, app, tag):
-        """
-        Given an app and a tag, look for a build that matches both, and was
-        successfully built (or is currently building).  If not found, return
-        None.
-        """
-        # First check if there's a build for our app and the given tag
-        builds = cls.objects.filter(
-                app=app, tag=tag
-            ).exclude(
-                status='expired'
-            ).exclude(
-                status='failed'
-            ).order_by('-id')
-
-        if not builds:
-            return None
-
-        # we found a qualifying build (either successful or in progress of
-        # being built right this moment).
-        return builds[0]
-
-        # TODO: Also check that the build was made with the current version of
-        # the buildpack.  We used to have a check like this that used the
-        # buildpack revision hash, but it was removed when trying to figure out
-        # why we were seeing unnecessary builds.
 
     def __unicode__(self):
         # Return the app name and version
@@ -245,20 +225,20 @@ def make_hash(*args):
     return hashlib.md5(''.join(stringify(a) for a in args)).hexdigest()
 
 
+env_help = "YAML dict of env vars to be set at runtime"
+volumes_help = ('YAML list of directory,mountpoint pairs to be exposed '
+                   'inside the container. E.g. [["/var/data", "/data"]]')
+config_help = ("Config for settings.yaml. Must be valid YAML dict.")
+
+
 class Release(models.Model):
     build = models.ForeignKey(Build)
-    config_yaml = YAMLDictField(blank=True, null=True, help_text="YAML text to "
-                             "be written to settings.yaml at deploy time.")
+    config_yaml = YAMLDictField(blank=True, null=True, help_text=config_help)
     env_yaml = YAMLDictField(
-        help_text="YAML dict of env vars to be set at runtime",
+        help_text=env_help,
         null=True, blank=True
     )
-
-    volumes = YAMLListField(
-        help_text=('YAML list of directory,mountpoint pairs to be exposed '
-                   'inside the container. E.g. [["/var/data", "/data"]]'),
-        null=True, blank=True
-    )
+    volumes = YAMLListField(help_text=volumes_help, null=True, blank=True)
 
     # Hash will be computed on saving the model.
     hash = models.CharField(max_length=32, blank=True, null=True)
@@ -379,12 +359,9 @@ class Swarm(models.Model):
     balancer = models.CharField(max_length=50, choices=_balancer_choices,
                                 blank=True, null=True)
 
-    config_yaml = YAMLDictField(help_text=("Config for settings.yaml. "
-                                           "Must be valid YAML dict."),
-                                blank=True, null=True)
-    env_yaml = YAMLDictField(help_text=("Environment variables. "
-                                        "Must be valid YAML dict."),
-                             blank=True, null=True)
+    config_yaml = YAMLDictField(help_text=config_help, blank=True, null=True)
+    env_yaml = YAMLDictField(help_text=env_help, blank=True, null=True)
+    volumes = YAMLListField(help_text=volumes_help, null=True, blank=True)
 
     ing_help = "Optional config shared with other swarms."
     config_ingredients = models.ManyToManyField(ConfigIngredient,
@@ -511,7 +488,33 @@ class Swarm(models.Model):
         or pending build with the specified tag.
         """
 
-        build = Build.get_current(self.app, tag)
+        def get_current_build(app, tag):
+            """
+            Given an app and a tag, look for a build that matches both, and was
+            successfully built (or is currently building).  If not found, return
+            None.
+            """
+            # First check if there's a build for our app and the given tag
+            builds = Build.objects.filter(
+                    app=app, tag=tag
+                ).exclude(
+                    status='expired'
+                ).exclude(
+                    status='failed'
+                ).order_by('-id')
+
+            if not builds:
+                return None
+
+            # we found a qualifying build (either successful or in progress of
+            # being built right this moment).
+            return builds[0]
+
+            # Note: there's currently no way of ensuring that the build was
+            # done by a particular version of the buildpack.
+
+
+        build = get_current_build(self.app, tag)
         if build is None:
             build = Build(app=self.app, tag=tag)
             build.save()
@@ -526,21 +529,32 @@ class Swarm(models.Model):
         # ...then filter in Python for equivalent config (identical keys/values
         # in different order are treated as the same, since we're comparing
         # dicts here instead of serialized yaml)
-        match = lambda r: r.config_yaml == config and r.env_yaml == env
-        releases = [r for r in releases if match(r)]
+
+        def release_matches(release, config, env, volumes):
+            """
+            Given a release, see if its config, env, and volumes match those
+            passed in.
+            """
+            return (release.config_yaml == config and
+                    release.env_yaml == env and
+                    release.volumes == volumes)
+        releases = [r for r in releases if release_matches(r, config, env,
+                                                           self.volumes)]
         if releases:
             # We found one!
             release = releases[0]
             # Just in case it hasn't been hashed since the build completed, do
             # that now.
             rhash = release.compute_hash()
-            if release.hash != rhash:
+            if release.hash != rhash and release.build.status == BUILD_SUCCESS:
                 release.hash = rhash
                 release.save()
             return release
 
-        # Go ahead and make one.
-        release = Release(build=build, config_yaml=config, env_yaml=env)
+        # We didn't find a release with the right build+config+env+volumes. Go
+        # ahead and make one.
+        release = Release(build=build, config_yaml=config, env_yaml=env,
+                          volumes=self.volumes)
         release.hash = release.compute_hash()
         release.save()
         return release
