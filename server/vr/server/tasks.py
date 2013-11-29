@@ -99,8 +99,8 @@ def build_proc_info(release, config_name, hostname, proc, port):
         'host': hostname,
         'proc_name': proc,
         'port': port,
-        'user': 'nobody',
-        'group': 'admin',
+        'user': release.run_as or 'nobody',
+        'group': 'nogroup',
         'volumes': release.volumes or [],
     }
 

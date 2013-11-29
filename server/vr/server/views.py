@@ -132,6 +132,7 @@ def edit_swarm(request, swarm_id=None):
             'config_yaml': yamlize(swarm.config_yaml),
             'env_yaml': yamlize(swarm.env_yaml),
             'volumes': yamlize(swarm.volumes),
+            'run_as': swarm.run_as,
             'proc_name': swarm.proc_name,
             'size': swarm.size,
             'pool': swarm.pool or '',
@@ -152,6 +153,7 @@ def edit_swarm(request, swarm_id=None):
         swarm.config_yaml = data['config_yaml']
         swarm.env_yaml = data['env_yaml']
         swarm.volumes = data['volumes']
+        swarm.run_as = data['run_as']
         swarm.proc_name = data['proc_name']
         swarm.size = data['size']
         swarm.pool = data['pool'] or None

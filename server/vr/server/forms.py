@@ -65,6 +65,7 @@ class HostForm(forms.ModelForm):
 class ReleaseForm(forms.ModelForm):
     class Meta:
         model = models.Release
+        exclude = ('hash',)
 
 
 class DeploymentForm(forms.Form):
@@ -114,6 +115,7 @@ class SwarmForm(forms.Form):
     volumes = forms.CharField(required=False,
                                widget=forms.widgets.Textarea(attrs={'class':
                                                                     'codearea'}))
+    run_as = forms.CharField(max_length=32)
     proc_name = forms.CharField(max_length=50)
     squad_id = forms.ChoiceField(choices=[], label='Squad')
     size = forms.IntegerField()

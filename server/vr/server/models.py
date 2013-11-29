@@ -227,7 +227,7 @@ def make_hash(*args):
 
 env_help = "YAML dict of env vars to be set at runtime"
 volumes_help = ('YAML list of directory,mountpoint pairs to be exposed '
-                   'inside the container. E.g. [["/var/data", "/data"]]')
+                   'inside the container. E.g. "- [/var/data, /data]"')
 config_help = ("Config for settings.yaml. Must be valid YAML dict.")
 
 
@@ -243,12 +243,14 @@ class Release(models.Model):
     # Hash will be computed on saving the model.
     hash = models.CharField(max_length=32, blank=True, null=True)
 
+    run_as = models.CharField(max_length=32, default='nobody')
+
     def __unicode__(self):
         return u'-'.join([self.build.app.name, self.build.tag, self.hash or ''])
 
     def compute_hash(self):
         return make_hash(self.build.hash, self.config_yaml,
-                         self.env_yaml, self.volumes)[:8]
+                         self.env_yaml, self.volumes, self.run_as)[:8]
 
     def parsed_config(self):
         return yaml.safe_load(self.config_yaml or '')
@@ -369,6 +371,7 @@ class Swarm(models.Model):
     config_yaml = YAMLDictField(help_text=config_help, blank=True, null=True)
     env_yaml = YAMLDictField(help_text=env_help, blank=True, null=True)
     volumes = YAMLListField(help_text=volumes_help, null=True, blank=True)
+    run_as = models.CharField(max_length=32, default='nobody')
 
     ing_help = "Optional config shared with other swarms."
     config_ingredients = models.ManyToManyField(ConfigIngredient,
@@ -531,7 +534,8 @@ class Swarm(models.Model):
 
         # If there's a release with the build and config we need, re-use it.
         # First filter by build in the DB query...
-        releases = Release.objects.filter(build=build).order_by('-id')
+        releases = Release.objects.filter(build=build,
+                                          run_as=self.run_as).order_by('-id')
 
         # ...then filter in Python for equivalent config (identical keys/values
         # in different order are treated as the same, since we're comparing
@@ -556,7 +560,7 @@ class Swarm(models.Model):
         # We didn't find a release with the right build+config+env+volumes. Go
         # ahead and make one.
         release = Release(build=build, config_yaml=config, env_yaml=env,
-                          volumes=self.volumes)
+                          volumes=self.volumes, run_as=self.run_as)
         release.save()
         return release
 
