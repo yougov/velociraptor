@@ -9,8 +9,8 @@ Caution
 
 The volumes feature is a departure from Velociraptor's normal requirement that
 applications be completely stateless (i.e. `12 Factor`_-compliant).  With
-volumes, applications may maintain some state between deployments by writing
-persistent files to the local disk.
+volumes, applications may maintain some state between deployments by reading
+from and writing to persistent files on the local disk.
 
 Configuration
 ~~~~~~~~~~~~~
@@ -42,11 +42,11 @@ Permissions
 ~~~~~~~~~~~
 
 Volumes are implemented using `bind mounts`_ written into the proc's LXC
-container configuration.  They will not automatically modify any permissions on
+container configuration.  They will *not* automatically modify any permissions on
 the files in the volume in order to make them readable or writable by your
 application.  It is up to you to ensure that the permissions are appropriately
 set, and then use the 'Run as' field in the Swarm and Release forms to make
 your application run as the right user.
 
-.. 12 factor: http://12factor.net/
+.. 12 Factor: http://12factor.net/
 .. bind mounts: http://docs.1h.com/Bind_mounts
