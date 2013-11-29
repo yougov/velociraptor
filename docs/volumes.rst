@@ -48,5 +48,5 @@ application.  It is up to you to ensure that the permissions are appropriately
 set, and then use the 'Run as' field in the Swarm and Release forms to make
 your application run as the right user.
 
-.. 12 Factor: http://12factor.net/
-.. bind mounts: http://docs.1h.com/Bind_mounts
+.. _12 Factor: http://12factor.net/
+.. _bind mounts: http://docs.1h.com/Bind_mounts
