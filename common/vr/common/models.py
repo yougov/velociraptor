@@ -1,6 +1,10 @@
-import xmlrpclib
 import json
 from datetime import datetime
+
+try:
+    import xmlrpc.client as xmlrpc_client
+except ImportError:
+    import xmlrpclib as xmlrpc_client
 
 import six
 import redis
@@ -40,11 +44,11 @@ class Host(object):
         # Allow passing in an RPC connection, or a port number for making one
         if isinstance(rpc_or_port, int):
             if self.username:
-                self.rpc = xmlrpclib.Server('http://%s:%s@%s:%s' %
+                self.rpc = xmlrpc_client.Server('http://%s:%s@%s:%s' %
                                             (self.username,self.password, name,
                                              rpc_or_port))
             else:
-                self.rpc = xmlrpclib.Server('http://%s:%s' % (name, rpc_or_port))
+                self.rpc = xmlrpc_client.Server('http://%s:%s' % (name, rpc_or_port))
         else:
             self.rpc = rpc_or_port
         self.supervisor = self.rpc.supervisor
@@ -235,7 +239,7 @@ class Proc(object):
     def start(self):
         try:
             self.host.supervisor.startProcess(self.name)
-        except xmlrpclib.Fault as f:
+        except xmlrpc_client.Fault as f:
             if f.faultString == 'ALREADY_STARTED':
                 pass
             else:
@@ -244,7 +248,7 @@ class Proc(object):
     def stop(self):
         try:
             self.host.supervisor.stopProcess(self.name)
-        except xmlrpclib.Fault as f:
+        except xmlrpc_client.Fault as f:
             if f.faultString == 'NOT_RUNNING':
                 pass
             else:
