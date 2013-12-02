@@ -135,7 +135,7 @@ def utcfromtimestamp(ts):
 
 
 def randchars(num=8):
-    return ''.join(random.choice(string.ascii_lowercase) for x in xrange(num))
+    return ''.join(random.choice(string.ascii_lowercase) for x in range(num))
 
 
 def mkdir(path):
