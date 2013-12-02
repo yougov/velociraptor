@@ -19,7 +19,7 @@ params = dict(
     url='https://bitbucket.org/yougov/velociraptor',
     install_requires=[
         'isodate>=0.4.4',
-        'six',
+        'six>=1.4.1',
         'utc',
         'requests',
     ] + py2_reqs,

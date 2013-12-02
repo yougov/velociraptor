@@ -5,7 +5,6 @@ import os
 import subprocess
 import shutil
 import tempfile
-import urlparse
 import random
 import string
 import hashlib
@@ -115,7 +114,7 @@ def parse_redis_url(url):
     Given a url like redis://localhost:6379/0, return a dict with host, port,
     and db members.
     """
-    parsed = urlparse.urlsplit(url)
+    parsed = six.moves.urllib.parse.urlsplit(url)
     return {
         'host': parsed.hostname,
         'port': parsed.port,
