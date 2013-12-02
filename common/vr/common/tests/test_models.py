@@ -5,7 +5,7 @@ import json
 import redis
 import pytest
 
-from vr.common.models import Host, Proc, ProcError, Build
+from vr.common.models import Host, ProcError, Build
 from vr.common.utils import parse_redis_url, utc
 from vr.common.tests import FakeRPC
 
@@ -84,29 +84,30 @@ class FakeProcCase(unittest.TestCase):
 
     def test_as_dict(self):
         assert self.dummyproc.as_dict() == {
-             'app_name': 'dummyproc',
-             'description': 'pid 5556, uptime 16:05:53',
-             'exitstatus': 0,
-             'group': 'dummyproc',
-             'hash': 'UNKNOWN',
-             'host': 'somewhere',
-             'id': 'somewhere-dummyproc',
-             'jsname': 'dummyproc',
-             'logfile': '/var/log/supervisor/dummyproc-stdout---supervisor-cYv5Q2.log',
-             'name': 'dummyproc',
-             'now': '2012-12-19T06:19:46+00:00',
-             'pid': 5556,
-             'port': 0,
-             'proc_name': 'dummyproc',
-             'config_name': 'UNKNOWN',
-             'spawnerr': '',
-             'start_time': '2012-12-19T06:19:46+00:00',
-             'state': 20,
-             'statename': 'RUNNING',
-             'stderr_logfile': '/tmp/pub.log',
-             'stdout_logfile': '/var/log/supervisor/dummyproc-stdout---supervisor-cYv5Q2.log',
-             'stop_time': '2012-12-19T06:19:46+00:00',
-             'version': 'UNKNOWN'}
+            'app_name': 'dummyproc',
+            'description': 'pid 5556, uptime 16:05:53',
+            'exitstatus': 0,
+            'group': 'dummyproc',
+            'hash': 'UNKNOWN',
+            'host': 'somewhere',
+            'id': 'somewhere-dummyproc',
+            'jsname': 'dummyproc',
+            'logfile': '/var/log/supervisor/dummyproc-stdout---supervisor-cYv5Q2.log',
+            'name': 'dummyproc',
+            'now': '2012-12-19T06:19:46+00:00',
+            'pid': 5556,
+            'port': 0,
+            'proc_name': 'dummyproc',
+            'config_name': 'UNKNOWN',
+            'spawnerr': '',
+            'start_time': '2012-12-19T06:19:46+00:00',
+            'state': 20,
+            'statename': 'RUNNING',
+            'stderr_logfile': '/tmp/pub.log',
+            'stdout_logfile': '/var/log/supervisor/dummyproc-stdout---supervisor-cYv5Q2.log',
+            'stop_time': '2012-12-19T06:19:46+00:00',
+            'version': 'UNKNOWN',
+        }
 
     def test_app_name(self):
         assert self.nodeproc.app_name == 'node_example'
@@ -181,7 +182,7 @@ class RedisCacheTests(unittest.TestCase):
     def test_full_set_partial_get(self):
         # Ensure that data cached from a full get is used when just requesting
         # a single proc
-        procs = self.host.get_procs(check_cache=True)
+        self.host.get_procs(check_cache=True)
         # If we actually hit the RPC, an exception will be raised
         self.supervisor.exception = AssertionError('cache not used')
         self.host.get_proc('dummyproc', check_cache=True)
