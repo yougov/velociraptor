@@ -7,8 +7,12 @@ except ImportError:
     import xmlrpclib as xmlrpc_client
 
 import six
-import redis
 import yaml
+
+try:
+    import redis
+except ImportError:
+    pass # optional dependency
 
 from vr.common.utils import utcfromtimestamp, parse_redis_url
 
