@@ -178,9 +178,17 @@ def run_uptests(proc, user='nobody'):
         else:
             return []
 
-    except (Exception, SystemExit):
-        # Fabric will raise SystemExit if we don't supply the right password
-        # and abort_on_prompts is True.  Here we catch any exception raised
+    except Error as error:
+        # An error occurred in the command invocation, including if an
+        # incorrect password is supplied and abort_on_prompts is True.
+        return [{
+            'Name': None,
+            'Output': error.out,
+            'Passed': False,
+        }]
+
+    except Exception:
+        # Catch any other exception raised
         # during the uptests and pass it back in the same format as other test
         # results.
         return [{
