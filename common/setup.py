@@ -1,6 +1,12 @@
 #!/usr/bin/python
 
+import sys
+
 import setuptools
+
+PY3 = sys.version_info >= (3,)
+
+py2_reqs = ['suds==0.4'] if not PY3 else []
 
 params = dict(
     name='vr.common',
@@ -14,10 +20,9 @@ params = dict(
     install_requires=[
         'isodate>=0.4.4',
         'six',
-        'suds==0.4',
         'utc',
         'requests',
-    ],
+    ] + py2_reqs,
     description=('Libraries and command line tools for deploying with '
                  'Velociraptor'),
 )
