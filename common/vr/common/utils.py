@@ -166,7 +166,7 @@ def file_md5(filename):
     md5 = hashlib.md5()
     with open(filename,'rb') as f:
         for chunk in iter(lambda: f.read(128*md5.block_size), b''):
-             md5.update(chunk)
+            md5.update(chunk)
     return md5.hexdigest()
 
 
@@ -190,7 +190,6 @@ def which(name, flags=os.X_OK):
             if os.access(pext, flags):
                 result.append(pext)
     return result
-
 
 
 def chowntree(path, username=None, groupname=None):
