@@ -138,11 +138,6 @@ def randchars(num=8):
     return ''.join(random.choice(string.ascii_lowercase) for x in range(num))
 
 
-def mkdir(path):
-    if not os.path.isdir(path):
-        os.makedirs(path)
-
-
 def lock_file(f, block=False):
     """
     If block=False (the default), die hard and fast if another process has
