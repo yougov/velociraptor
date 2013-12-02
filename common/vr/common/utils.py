@@ -2,8 +2,6 @@ from __future__ import print_function
 
 import sys
 import os
-import pwd
-import grp
 import subprocess
 import shutil
 import tempfile
@@ -11,8 +9,15 @@ import urlparse
 import random
 import string
 import hashlib
-import fcntl
 from datetime import datetime
+
+try:
+    import pwd
+    import grp
+    import fcntl
+except ImportError:
+    # bypass import failure on Windows
+    pass
 
 import isodate
 import six
