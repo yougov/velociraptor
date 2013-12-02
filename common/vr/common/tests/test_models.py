@@ -5,7 +5,7 @@ import json
 import redis
 import pytest
 
-from vr.common.models import Host, Proc, ProcError
+from vr.common.models import Host, Proc, ProcError, Build
 from vr.common.utils import parse_redis_url, utc
 from vr.common.tests import FakeRPC
 
@@ -204,3 +204,12 @@ class RedisCacheTests(unittest.TestCase):
     def test_nonexistent_proc_raises_proc_error(self):
         with pytest.raises(ProcError):
             self.host.get_proc('nonexistent')
+
+def test_build_sets():
+    """
+    A set of builds should resolve distinct builds
+    """
+    b1 = Build(None, {'app': 'foo'})
+    b2 = Build(None, {'app': 'foo'})
+    b3 = Build(None, {'app': 'bar'})
+    assert set([b1, b2, b3]) == set([b1, b3])
