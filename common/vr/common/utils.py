@@ -8,6 +8,7 @@ import tempfile
 import random
 import string
 import hashlib
+import errno
 from datetime import datetime
 
 try:
