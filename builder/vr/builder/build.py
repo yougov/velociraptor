@@ -124,7 +124,7 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
 
         with lock_or_wait(cachefolder):
             shutil.rmtree(cachefolder, ignore_errors=True)
-            os.rename('cache', cachefolder)
+            shutil.move('cache', cachefolder)
 
         if make_tarball:
             build_data.release_data = recover_release_data(app_folder)
@@ -142,7 +142,7 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
             build_data.build_md5 = file_md5('build.tar.gz')
 
             tardest = os.path.join(outfolder, 'build.tar.gz')
-            os.rename('build.tar.gz', tardest)
+            shutil.move('build.tar.gz', tardest)
 
             build_data_path = os.path.join(outfolder, 'build_result.yaml')
             print "Writing", build_data_path

@@ -47,6 +47,11 @@ def send_event(title, msg, tags=None):
     sender.close()
 
 
+def send_debug_event(title, msg=''):
+    if settings.DEBUG:
+        send_event(title, msg, tags=['debug'])
+
+
 class event_on_exception(object):
     """
     Decorator that puts a message on the pubsub for any exception raised in the
@@ -256,6 +261,10 @@ def swarm_wait_for_build(swarm, build):
 
 
 def build_start_waiting_swarms(build_id):
+    """
+    Check Redis for the list of swarms waiting on a particular build.  Pop each
+    off the list and call swarm_start for it.
+    """
     with tmpredis() as r:
         key = getattr(settings, 'BUILD_WAIT_PREFIX', 'buildwait_') + str(build_id)
         swarm_id = r.lpop(key)
@@ -295,6 +304,7 @@ def swarm_release(swarm_id):
     release with that build + current config, and call subtasks to make sure
     there are enough deployments.
     """
+    send_debug_event('swarm release')
     swarm = Swarm.objects.get(id=swarm_id)
     build = swarm.release.build
 

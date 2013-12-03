@@ -311,7 +311,7 @@ def untar(tarpath, outfolder, owners=None, overwrite=True, fixperms=True):
             else:
                 raise IOError(('Cannot untar %s because %s already exists and '
                               'overwrite=False') % (tarfile, outfolder))
-        os.rename('contents', outfolder)
+        shutil.move('contents', outfolder)
 
 
 def ensure_file(url, path, md5sum=None):
@@ -334,7 +334,7 @@ def download_file(url, path):
         with open(base, 'wb') as f:
             resp = requests.get(url, stream=True)
             shutil.copyfileobj(resp.raw, f)
-        os.rename(base, path)
+        shutil.move(base, path)
 
 
 def get_template(name):
