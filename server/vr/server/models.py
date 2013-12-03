@@ -345,6 +345,32 @@ config_name_help = ("Short name like 'prod' or 'europe' to distinguish between "
              "with no dashes or spaces.")
 
 
+def release_eq(release, config, env, volumes):
+    """
+    Given a release, see if its config, env, and volumes match those
+    passed in.
+
+    Note that this function does *not* check whether the app and version are
+    the same.  You should do that in SQL to narrow the list of relevant
+    releases before using this function to check the equality of the
+    YAML-formatted fields.
+    """
+    # For settings and env vars, treat None and '' the same as {}
+    r_config = release.config_yaml or {}
+    if r_config != config:
+        return False
+
+    r_env = release.env_yaml or {}
+    if r_env != env:
+        return False
+
+    r_volumes = release.volumes or []
+    volumes = volumes or []
+    if r_volumes != volumes:
+        return False
+    return True
+
+
 class Swarm(models.Model):
     """
     This is the payoff.  Save a swarm record and then you can tell Velociraptor
@@ -541,18 +567,9 @@ class Swarm(models.Model):
         # in different order are treated as the same, since we're comparing
         # dicts here instead of serialized yaml)
 
-        def release_matches(release, config, env, volumes):
-            """
-            Given a release, see if its config, env, and volumes match those
-            passed in.
-            """
-            return (release.config_yaml == config and
-                    release.env_yaml == env and
-                    release.volumes == volumes)
         try:
-            release = next(r for r in releases if release_matches(r, config,
-                                                                  env,
-                                                                  self.volumes))
+            release = next(r for r in releases if release_eq(r, config, env,
+                                                             self.volumes))
             return release
         except StopIteration:
             pass
