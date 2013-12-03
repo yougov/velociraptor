@@ -1,12 +1,41 @@
-import xmlrpclib
+import getpass
+import re
+import socket
+import os
+import collections
+import logging
+import copy
+import functools
 import json
 from datetime import datetime
 
+try:
+    import xmlrpc.client as xmlrpc_client
+except ImportError:
+    import xmlrpclib as xmlrpc_client
+
 import six
-import redis
 import yaml
+import requests
+import jaraco.util.functools
+
+try:
+    import redis
+except ImportError:
+    pass # optional dependency
+
+try:
+    import keyring
+except ImportError:
+    # stub out keyring
+    class keyring:
+        @staticmethod
+        def get_password(*args, **kwargs):
+            return None
 
 from vr.common.utils import utcfromtimestamp, parse_redis_url
+
+log = logging.getLogger(__name__)
 
 
 class Host(object):
@@ -40,11 +69,11 @@ class Host(object):
         # Allow passing in an RPC connection, or a port number for making one
         if isinstance(rpc_or_port, int):
             if self.username:
-                self.rpc = xmlrpclib.Server('http://%s:%s@%s:%s' %
+                self.rpc = xmlrpc_client.Server('http://%s:%s@%s:%s' %
                                             (self.username,self.password, name,
                                              rpc_or_port))
             else:
-                self.rpc = xmlrpclib.Server('http://%s:%s' % (name, rpc_or_port))
+                self.rpc = xmlrpc_client.Server('http://%s:%s' % (name, rpc_or_port))
         else:
             self.rpc = rpc_or_port
         self.supervisor = self.rpc.supervisor
@@ -235,7 +264,7 @@ class Proc(object):
     def start(self):
         try:
             self.host.supervisor.startProcess(self.name)
-        except xmlrpclib.Fault as f:
+        except xmlrpc_client.Fault as f:
             if f.faultString == 'ALREADY_STARTED':
                 pass
             else:
@@ -244,7 +273,7 @@ class Proc(object):
     def stop(self):
         try:
             self.host.supervisor.stopProcess(self.name)
-        except xmlrpclib.Fault as f:
+        except xmlrpc_client.Fault as f:
             if f.faultString == 'NOT_RUNNING':
                 pass
             else:
@@ -340,3 +369,211 @@ class ProcData(ConfigData):
         # One of proc_name or cmd must be provided.
         if self.proc_name is None and self.cmd is None:
             raise ValueError('Must provide either proc_name or cmd')
+
+Credential = collections.namedtuple('Credential', 'username password')
+
+class HashableDict(dict):
+    def __hash__(self):
+        return hash(tuple(sorted(self.items())))
+
+
+class SwarmFilter(six.text_type):
+    """
+    A regular expression indicating which swarm names to include.
+    """
+    exclusions = []
+    "additional patterns to exclude"
+
+    def matches(self, swarms):
+        return filter(self.match, swarms)
+
+    def match(self, swarm):
+        return (
+            not any(re.search(exclude, swarm.name, re.I)
+                for exclude in self.exclusions)
+            and re.match(self, swarm.name)
+        )
+
+class Velociraptor(object):
+    """
+    A Velociraptor 2 HTTP API service
+    """
+
+    def __init__(self, base=None, username=None):
+        self.base = base or self._get_base()
+        self.username = username
+        self.session.auth = self.get_credentials()
+
+    @staticmethod
+    def _get_base():
+        """
+        if 'deploy' resolves in this environment, use the hostname for which
+        that name resolves.
+        Override with 'VELOCIRAPTOR_URL'
+        """
+        try:
+            name, aliaslist, addresslist = socket.gethostbyname_ex('deploy')
+        except socket.gaierror:
+            name = 'deploy'
+        fallback = 'https://{name}/'.format(name=name)
+        return os.environ.get('VELOCIRAPTOR_URL', fallback)
+
+    def hostname(self):
+        return six.moves.urllib.parse.urlparse(self.base).hostname
+
+    session = requests.session()
+    session.headers = {
+        'Content-Type': 'application/json',
+    }
+
+    @jaraco.util.functools.once
+    def get_credentials(self):
+        username = self.username or getpass.getuser()
+        hostname = self.hostname()
+        _, _, default_domain = hostname.partition('.')
+        auth_domain = os.environ.get('VELOCIRAPTOR_AUTH_DOMAIN',
+            default_domain)
+        password = keyring.get_password(auth_domain, username)
+        if password is None:
+            prompt_tmpl = "{username}@{hostname}'s password: "
+            prompt = prompt_tmpl.format(**vars())
+            password = getpass.getpass(prompt)
+        return Credential(username, password)
+
+    def load(self, path):
+        url = self._build_url(path)
+        url += '?format=json&limit=9999'
+        return self.session.get(url).json()
+
+    def cut(self, build, **kwargs):
+        """
+        Cut a release
+        """
+        raise NotImplementedError("Can't cut releases (config?)")
+
+    def _build_url(self, *parts):
+        joiner = six.moves.urllib.parse.urljoin
+        return functools.reduce(joiner, parts, self.base)
+
+
+class Swarm(object):
+    """
+    A VR Swarm
+    """
+    base = '/api/v1/swarms/'
+
+    def __init__(self, vr, obj):
+        self._vr = vr
+        self.__dict__.update(obj)
+
+    def __lt__(self, other):
+        return self.name < other.name
+
+    @property
+    def name(self):
+        return '-'.join([self.app_name, self.config_name, self.proc_name])
+
+    def __repr__(self):
+        return self.name
+
+    @classmethod
+    def load_all(cls, vr):
+        """
+        Load all swarms
+        """
+        swarm_obs = vr.load(cls.base)['objects']
+        swarms = [cls(vr, ob) for ob in swarm_obs]
+        return swarms
+
+    def dispatch(self, **changes):
+        """
+        Patch the swarm with changes and then trigger the swarm.
+        """
+        self.patch(**changes)
+        trigger_url = self._vr._build_url(self.resource_uri, 'swarm/')
+        resp = self._vr.session.post(trigger_url)
+        resp.raise_for_status()
+
+    def patch(self, **changes):
+        if not changes:
+            return
+        url = self._vr._build_url(self.resource_uri)
+        resp = self._vr.session.patch(url, json.dumps(changes))
+        resp.raise_for_status()
+        self.__dict__.update(changes)
+
+    def save(self):
+        url = self._vr._build_url(self.resource_uri)
+        content = copy.deepcopy(self.__dict__)
+        content.pop('_vr')
+        resp = self._vr.session.put(url, json.dumps(content))
+        resp.raise_for_status()
+
+    @property
+    def app(self):
+        return self.app_name
+
+    @property
+    def recipe(self):
+        return self.config_name
+
+    def new_build(self):
+        return Build._for_app_and_tag(
+            self._vr,
+            self.app,
+            self.version,
+        )
+
+
+class Build(object):
+    base = '/api/v1/builds/'
+
+    def __init__(self, vr, obj):
+        self._vr = vr
+        self.__dict__.update(obj)
+
+    @property
+    def created(self):
+        return 'id' in vars(self)
+
+    def create(self):
+        if self.created:
+            raise ValueError("Build already created")
+        doc = copy.deepcopy(self.__dict__)
+        doc.pop('_vr')
+        url = self._vr._build_url(self.base)
+        resp = self._vr.session.post(url, json.dumps(doc))
+        resp.raise_for_status()
+        self.load(resp.headers['location'])
+
+    def load(self, url):
+        resp = self._vr.session.get(url)
+        resp.raise_for_status()
+        self.__dict__.update(resp.json())
+
+    def assemble(self):
+        """
+        Assemble a build
+        """
+        if not self.created:
+            self.create()
+        # trigger the build
+        url = self._vr._build_url(self.resource_uri, 'build/')
+        resp = self._vr.session.post(url)
+        resp.raise_for_status()
+
+    @classmethod
+    def _for_app_and_tag(cls, vr, app, tag):
+        obj = dict(app=App.base + app + '/', tag=tag)
+        return cls(vr, obj)
+
+    def __hash__(self):
+        hd = HashableDict(self.__dict__)
+        hd.pop('_vr')
+        return hash(hd)
+
+    def __eq__(self, other):
+        return vars(self) == vars(other)
+
+class App(object):
+    base='/api/v1/apps/'

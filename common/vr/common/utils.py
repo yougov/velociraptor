@@ -2,17 +2,22 @@ from __future__ import print_function
 
 import sys
 import os
-import pwd
-import grp
 import subprocess
 import shutil
 import tempfile
-import urlparse
 import random
 import string
 import hashlib
-import fcntl
+import errno
 from datetime import datetime
+
+try:
+    import pwd
+    import grp
+    import fcntl
+except ImportError:
+    # bypass import failure on Windows
+    pass
 
 import isodate
 import six
@@ -110,7 +115,7 @@ def parse_redis_url(url):
     Given a url like redis://localhost:6379/0, return a dict with host, port,
     and db members.
     """
-    parsed = urlparse.urlsplit(url)
+    parsed = six.moves.urllib.parse.urlsplit(url)
     return {
         'host': parsed.hostname,
         'port': parsed.port,
@@ -131,12 +136,7 @@ def utcfromtimestamp(ts):
 
 
 def randchars(num=8):
-    return ''.join(random.choice(string.ascii_lowercase) for x in xrange(num))
-
-
-def mkdir(path):
-    if not os.path.isdir(path):
-        os.makedirs(path)
+    return ''.join(random.choice(string.ascii_lowercase) for x in range(num))
 
 
 def lock_file(f, block=False):
@@ -166,7 +166,7 @@ def file_md5(filename):
     md5 = hashlib.md5()
     with open(filename,'rb') as f:
         for chunk in iter(lambda: f.read(128*md5.block_size), b''):
-             md5.update(chunk)
+            md5.update(chunk)
     return md5.hexdigest()
 
 
@@ -190,7 +190,6 @@ def which(name, flags=os.X_OK):
             if os.access(pext, flags):
                 result.append(pext)
     return result
-
 
 
 def chowntree(path, username=None, groupname=None):
