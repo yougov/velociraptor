@@ -17,7 +17,6 @@ except ImportError:
 import six
 import yaml
 import requests
-import jaraco.util.functools
 
 try:
     import redis
@@ -426,7 +425,6 @@ class Velociraptor(object):
         'Content-Type': 'application/json',
     }
 
-    @jaraco.util.functools.once
     def get_credentials(self):
         username = self.username or getpass.getuser()
         hostname = self.hostname()
