@@ -33,7 +33,7 @@ setup(
         'South==0.7.6',
         'sseclient==0.0.6',
         'vr.common==3.6',
-        'vr.runners>=0.0.10',
+        'vr.runners==0.0.12',
         'vr.builder>=0.0.6',
     ],
     dependency_links = [
