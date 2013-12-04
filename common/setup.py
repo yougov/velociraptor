@@ -23,8 +23,7 @@ params = dict(
         'utc',
         'requests',
     ] + py2_reqs,
-    description=('Libraries and command line tools for deploying with '
-                 'Velociraptor'),
+    description='Libraries and for deploying with Velociraptor',
 )
 
 if __name__ == '__main__':
