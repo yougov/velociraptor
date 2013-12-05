@@ -66,7 +66,6 @@ def deploy_proc(proc_yaml_path):
     """
     with open(proc_yaml_path, 'rb') as f:
         settings = ProcData(yaml.safe_load(f))
-    ensure_runners_installed()
     proc_path = get_proc_path(settings)
     sudo('mkdir -p ' + proc_path)
 
@@ -103,7 +102,6 @@ def write_proc_conf(settings):
 # line.
 @task
 def run_uptests(proc, user='nobody'):
-    ensure_runners_installed()
     procdata = Proc.parse_name(proc)
     procname = procdata['proc_name']
     build_name = '%(app_name)s-%(version)s' % procdata
@@ -293,27 +291,12 @@ def get_builds():
 
 
 @task
-def ensure_runners_installed():
-    version = pkg_resources.get_distribution('vr.runners').version
-    with shell_env(**settings.PIP_ENV):
-        sudo('pip install vr.runners==' + version)
-
-
-@task
-def ensure_builder_installed():
-    version = pkg_resources.get_distribution('vr.builder').version
-    with shell_env(**settings.PIP_ENV):
-        sudo('pip install vr.builder==' + version)
-
-
-@task
 def build_app(build_yaml_path):
     """
     Given the path to a build.yaml file with everything you need to make a
     build, copy it to the remote host and run the vbuild tool on it.  Then copy
     the resulting build.tar.gz and build_result.yaml back up here.
     """
-    ensure_builder_installed()
     remote_tmp = '/tmp/' + randchars()
     sudo('mkdir -p ' + remote_tmp)
     with cd(remote_tmp):
