@@ -271,6 +271,8 @@ SUPERVISORD_WEB_PORT = 9001
 BUILD_EXPIRATION_DAYS = 30
 BUILD_EXPIRATION_COUNT = 10
 
+API_LIMIT_PER_PAGE = 100
+
 # Allow production to override these settings.
 if os.environ.get('APP_SETTINGS_YAML'):
     import yaml
