@@ -33,6 +33,7 @@ setup(
         'South==0.7.6',
         'sseclient==0.0.6',
         'vr.common>=3.6.1,<4',
+        'vr.builder>=0.0.9,<1',
     ],
     dependency_links = [
         'https://bitbucket.org/yougov/velociraptor/downloads/django-tastypie-0.9.12-alpha.tar.gz#egg=django-tastypie-0.9.12-alpha',
