@@ -59,12 +59,16 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
             for folder in buildpack_folders:
                 volumes.append([os.path.join(here, folder), '/' + folder])
 
+        # Some buildpacks (Node) like to rm -rf the whole cache folder they're
+        # given.  They can't do that to a mountpoint, so we have to provide a
+        # buildpack_cache folder nested inside the /cache mountpoint.
         cachefolder = os.path.join(CACHE_HOME, app_folder)
         if os.path.isdir(cachefolder):
             with lock_or_wait(cachefolder):
-                shutil.copytree(cachefolder, 'cache', symlinks=True)
+                mkdir('cache')
+                shutil.copytree(cachefolder, 'cache/buildpack_cache', symlinks=True) 
         else:
-            mkdir('cache')
+            mkdir('cache/buildpack_cache')
             # Maybe we're on a brand new host that's never had CACHE_HOME
             # created.  Ensure that now.
             mkdir(CACHE_HOME)
@@ -85,7 +89,7 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
             'release_hash': '',
             'settings': {},
             'user': user,
-            'cmd': '/builder.sh /build /cache',
+            'cmd': '/builder.sh /build /cache/buildpack_cache',
             'volumes': volumes,
             'proc_name': 'build',
             'image_name': build_data.image_name,
@@ -124,7 +128,7 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
 
         with lock_or_wait(cachefolder):
             shutil.rmtree(cachefolder, ignore_errors=True)
-            shutil.move('cache', cachefolder)
+            shutil.move('cache/buildpack_cache', cachefolder)
 
         if make_tarball:
             build_data.release_data = recover_release_data(app_folder)
