@@ -162,20 +162,21 @@ def build_app(build_id, callback=None):
         'version': build.tag,
     }
 
+    if app.buildpack:
+        build_data['buildpack_url'] = app.buildpack.repo_url
+    else:
+        buildpacks = BuildPack.objects.order_by('order')
+        urls = [bp.repo_url for bp in buildpacks]
+        build_data['buildpack_urls'] = urls
+
     build_msg = "Started build %s" % build
 
-    build_msg += '\n\n' + yaml.safe_dump(build_data, default_flow_style=False)
+    build_msg += '\n\n' + BuildData(build_data).as_yaml()
     send_event(str(build), build_msg, tags=['build'])
     try:
         # enter a temp folder
         with tmpdir() as here:
 
-            if app.buildpack:
-                build_data['buildpack_url'] = app.buildpack.repo_url
-            else:
-                buildpacks = BuildPack.objects.order_by('order')
-                urls = [bp.repo_url for bp in buildpacks]
-                build_data['buildpack_urls'] = urls
 
             # TODO: add image_url, image_md5, and image_name when we get there.
 
