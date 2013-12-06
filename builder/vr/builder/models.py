@@ -155,7 +155,16 @@ class lock_or_wait(object):
 
 
 def update_buildpack(url, packs_dir=PACKS_HOME, vcs_type=None):
-    dest = os.path.join(packs_dir, repo.basename(url))
+    """
+    Checkout/update a buildpack, given its URL.
+
+    Buildpacks are checked out into folders whose names start with something
+    nicely readable, followed by an MD5 hash of the full URL (thus
+    distinguishing two buildpacks with the same 'name' but different URLs).
+    """
+    just_url = url.partition('#')[0]
+    bpfolder = repo.basename(url) + '-' + hashlib.md5(just_url).hexdigest()
+    dest = os.path.join(packs_dir, bpfolder)
     # TODO: check for whether the buildpack in the folder is really the same as
     # the one we've been asked to add.
     mkdir(packs_dir)
@@ -165,7 +174,9 @@ def update_buildpack(url, packs_dir=PACKS_HOME, vcs_type=None):
 
 
 def update_app(name, url, version, repos_dir=REPO_HOME, vcs_type=None):
-    dest = os.path.join(repos_dir, name)
+    just_url = url.partition('#')[0]
+    appfolder = repo.basename(url) + '-' + hashlib.md5(just_url).hexdigest()
+    dest = os.path.join(repos_dir, appfolder)
     mkdir(repos_dir)
     app = App(dest, url, vcs_type=vcs_type)
     app.update(version)
