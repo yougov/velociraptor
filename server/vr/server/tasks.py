@@ -149,21 +149,26 @@ def deploy(release_id, config_name, hostname, proc, port):
 @event_on_exception(['build'])
 def build_app(build_id, callback=None):
     build = Build.objects.get(id=build_id)
-    send_event(str(build), "Started build %s" % build, tags=['build'])
     app = build.app
     # remember when we started building
     build.status = 'started'
     build.start_time = timezone.now()
     build.save()
+
+    build_data = {
+        'app_name': app.name,
+        'app_repo_url': app.repo_url,
+        'app_repo_type': app.repo_type,
+        'version': build.tag,
+    }
+
+    build_msg = "Started build %s" % build
+
+    build_msg += '\n\n' + yaml.safe_dump(build_data, default_flow_style=False)
+    send_event(str(build), build_msg, tags=['build'])
     try:
         # enter a temp folder
         with tmpdir() as here:
-            build_data = {
-                'app_name': app.name,
-                'app_repo_url': app.repo_url,
-                'app_repo_type': app.repo_type,
-                'version': build.tag,
-            }
 
             if app.buildpack:
                 build_data['buildpack_url'] = app.buildpack.repo_url

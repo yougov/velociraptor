@@ -57,6 +57,36 @@ One by one, here's what those config values mean:
   if you don't need to customize it.
 - hosts: The list of nginx hosts whose config should be updated.
 
+If you were to select this balancer under the swarm form's Routing tab and
+provide a pool name of "my_app", Velociraptor would create a
+"/etc/nginx/sites-enabled/my_app.conf" file on each of the specified balancer
+hosts, with these contents::
+
+    upstream my_app {
+      server host3.my-squad.somewhere.com:5010;
+      server host7.my-squad.somewhere.com:5011;
+    }
+
+(The hosts and port numbers were automatically selected by Velociraptor while
+swarming.)
+
+Though Velociraptor creates that nginx routing pool for you, it will not
+automatically create an nginx 'server' directive mapping that pool to a
+publicly exposed hostname, directory, or port.  You can do that in
+/etc/nginx/sites-enabled/default, like this::
+
+    server{
+      listen 80;
+      server_name my-app.my-public-domain.com;
+      location / {
+        proxy_pass http://my_app;
+      }
+    }
+
+You will only have to create that server directive the first time you swarm
+my_app.  In subsequent swarmings, Velociraptor will automatically reload the
+nginx config after writing the new my_app.conf file.
+
 Varnish
 -------
 
