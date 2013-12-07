@@ -74,7 +74,9 @@ cd $APP_DIR
 $BUILDPACK_DIR/bin/compile $APP_DIR $CACHE_DIR
 
 # Record the output of the release script.
+echo "Writing $BUILDPACK_DIR/bin/release $APP_DIR to $APP_DIR/.release.yaml"
 $BUILDPACK_DIR/bin/release $APP_DIR > $APP_DIR/.release.yaml
 
 # Record which buildpack was used.
+echo "Recording $BUILDPACK_DIR in $APP_DIR/.buildpack"
 echo "$BUILDPACK_DIR" > $APP_DIR/.buildpack
