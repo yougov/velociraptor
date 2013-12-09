@@ -124,7 +124,14 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
             chowntree(slash_app, username=user)
             subprocess.check_call([runner, runner_cmd, 'buildproc.yaml'])
         finally:
-            subprocess.check_call([runner, 'teardown', 'buildproc.yaml'])
+            try:
+                # Copy compilation log into outfolder
+                compile_log_path = os.path.join(app_folder, '.compile.log')
+                shutil.copyfile(compile_log_path, os.path.join(outfolder,
+                                                               'compile.log'))
+            finally:
+                # Clean up
+                subprocess.check_call([runner, 'teardown', 'buildproc.yaml'])
 
         with lock_or_wait(cachefolder):
             shutil.rmtree(cachefolder, ignore_errors=True)
@@ -152,6 +159,7 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
             print "Writing", build_data_path
             with open(build_data_path, 'wb') as f:
                 f.write(build_data.as_yaml())
+
 
 
 def recover_release_data(app_folder):
