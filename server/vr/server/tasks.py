@@ -34,7 +34,7 @@ from vr.builder.main import BuildData
 logger = logging.getLogger('velociraptor')
 
 def send_event(title, msg, tags=None):
-    logging.info(msg)
+    logger.info(msg)
     # Create and discard connections when needed.  More robust than trying to
     # hold them open for a long time.
     sender = events.EventSender(
@@ -213,6 +213,8 @@ def build_app(build_id, callback=None):
                 with open('compile.log', 'rb') as f:
                     logname = 'builds/build_%s_compile.log' % build.id
                     build.compile_log.save(logname, File(f))
+            except:
+                logger.info('Could not retrieve compile.log for %s' % build)
             finally:
                 build.end_time = timezone.now()
                 build.save()

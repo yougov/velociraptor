@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 setup(
     name='vr.builder',
     namespace_packages=['vr'],
-    version='0.0.13',
+    version='0.0.14',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
     packages=find_packages(),

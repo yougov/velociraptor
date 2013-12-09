@@ -126,9 +126,10 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
         finally:
             try:
                 # Copy compilation log into outfolder
-                compile_log_src = os.path.join(app_folder, '.compile.log')
-                compile_log_dest = os.path.join(outfolder, 'compile.log')
-                shutil.copyfile(compile_log_src, compile_log_dest)
+                if make_tarball:
+                    compile_log_src = os.path.join(app_folder, '.compile.log')
+                    compile_log_dest = os.path.join(outfolder, 'compile.log')
+                    shutil.copyfile(compile_log_src, compile_log_dest)
             finally:
                 # Clean up
                 subprocess.check_call([runner, 'teardown', 'buildproc.yaml'])
