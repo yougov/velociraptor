@@ -146,6 +146,7 @@ class Build(models.Model):
     app = models.ForeignKey(App)
     tag = models.CharField(max_length=50)
     file = models.FileField(upload_to='builds', null=True, blank=True)
+    compile_log = models.FileField(upload_to='builds', null=True, blank=True)
 
     start_time = models.DateTimeField(null=True)
     end_time = models.DateTimeField(null=True)

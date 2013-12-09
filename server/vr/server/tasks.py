@@ -16,7 +16,7 @@ import fabric.network
 import redis
 from celery.task import subtask, chord, task
 from fabric.api import env
-from django.core.files.storage import default_storage
+from django.core.files.storage import default_storage, File
 from django.conf import settings
 from django.utils import timezone
 from django.core.files import File
@@ -210,8 +210,14 @@ def build_app(build_id, callback=None):
         build.status = 'failed'
         raise
     finally:
-        build.end_time = timezone.now()
-        build.save()
+        try:
+            # grab and store the compile log.
+            with open('compile.log', 'rb') as f:
+                logname = 'builds/build_%s_compile.log' % build.id
+                build.compile_log.save(logname, File(f))
+        finally:
+            build.end_time = timezone.now()
+            build.save()
 
     send_event(str(build), "Completed build %s" % build, tags=['build',
                                                                'success'])

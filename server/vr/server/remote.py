@@ -312,7 +312,10 @@ def build_app(build_yaml_path):
                 BuildData(yaml.safe_load(f))
             get(posixpath.join(remote_tmp, 'build.tar.gz'), 'build.tar.gz')
         finally:
-            sudo('rm -rf ' + remote_tmp)
+            try:
+                get(posixpath.join(remote_tmp, 'compile.log'), 'compile.log')
+            finally:
+                sudo('rm -rf ' + remote_tmp)
 
 
 @contextlib.contextmanager
