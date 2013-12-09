@@ -417,7 +417,7 @@ class Swarm(models.Model):
 
     def __unicode__(self):
         # app-version-swarmname-release_hash-procname
-        return u'-'.join([
+        return u'-'.join(str(x) for x in [
             self.app.name,
             self.release.build.tag,
             self.config_name,
