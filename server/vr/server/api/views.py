@@ -80,6 +80,7 @@ def swarm_procs(request, swarm_id):
         'objects': [p.as_dict() for p in swarm.get_procs(check_cache=True)]
     })
 
+
 @auth_required
 @csrf_exempt
 def host_proc(request, hostname, procname):

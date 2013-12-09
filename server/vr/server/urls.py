@@ -29,6 +29,8 @@ urlpatterns = patterns('',
     url(r'^logout/$', 'vr.server.views.logout', name='logout'),
     url(r'^admin/', include(admin.site.urls)),
 
+    url(r'^files/(?P<path>.+)', 'vr.server.storages.serve_file', name='serve_file'),
+
     url(r'^api/', include('api.urls')),
 
     # Ingredient CRUD

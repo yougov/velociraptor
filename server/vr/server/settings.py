@@ -163,13 +163,14 @@ USE_I18N = False
 USE_L10N = False
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
-# Example: "/home/media/media.lawrence.com/media/"
+# Example: "/home/media/media.lawrence.com/media/"  NOTE that we don't actually
+# use this in Velociraptor, because the default storage class is GridFS (Mongo)
 MEDIA_ROOT = os.path.join(here, 'uploads/')
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash.
 # Examples: "http://media.lawrence.com/media/", "http://example.com/media/"
-MEDIA_URL = 'http://localhost:8001/'
+MEDIA_URL = 'http://localhost:8000/files/'
 
 # Store files using mongodb gridfs by default.
 DEFAULT_FILE_STORAGE = 'vr.server.storages.GridFSStorage'
