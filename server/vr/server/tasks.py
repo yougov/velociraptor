@@ -155,6 +155,7 @@ def build_app(build_id, callback=None):
     build.start_time = timezone.now()
     build.save()
 
+    # TODO: add image_url, image_md5, and image_name when we get there.
     build_data = {
         'app_name': app.name,
         'app_repo_url': app.repo_url,
@@ -173,13 +174,10 @@ def build_app(build_id, callback=None):
 
     build_msg += '\n\n' + BuildData(build_data).as_yaml()
     send_event(str(build), build_msg, tags=['build'])
-    try:
-        # enter a temp folder
-        with tmpdir() as here:
 
-
-            # TODO: add image_url, image_md5, and image_name when we get there.
-
+    # enter a temp folder
+    with tmpdir() as here:
+        try:
             with open('build_job.yaml', 'wb') as f:
                 f.write(BuildData(build_data).as_yaml())
             # call the fabric build task to ssh to self and do the build
@@ -206,18 +204,18 @@ def build_app(build_id, callback=None):
             build.buildpack_url = build_result.buildpack_url
             build.buildpack_version = build_result.buildpack_version
             build.status = 'success'
-    except:
-        build.status = 'failed'
-        raise
-    finally:
-        try:
-            # grab and store the compile log.
-            with open('compile.log', 'rb') as f:
-                logname = 'builds/build_%s_compile.log' % build.id
-                build.compile_log.save(logname, File(f))
+        except:
+            build.status = 'failed'
+            raise
         finally:
-            build.end_time = timezone.now()
-            build.save()
+            try:
+                # grab and store the compile log.
+                with open('compile.log', 'rb') as f:
+                    logname = 'builds/build_%s_compile.log' % build.id
+                    build.compile_log.save(logname, File(f))
+            finally:
+                build.end_time = timezone.now()
+                build.save()
 
     send_event(str(build), "Completed build %s" % build, tags=['build',
                                                                'success'])
