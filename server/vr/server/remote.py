@@ -306,16 +306,14 @@ def build_app(build_yaml_path):
             sudo('vbuild build ' + remote_build_yaml_path)
             # relies on the build being named build.tar.gz and the manifest being named
             # build_result.yaml.
+            get(posixpath.join(remote_tmp, 'compile.log'), 'compile.log')
             get(posixpath.join(remote_tmp, 'build_result.yaml'),
                 'build_result.yaml')
             with open('build_result.yaml', 'rb') as f:
                 BuildData(yaml.safe_load(f))
             get(posixpath.join(remote_tmp, 'build.tar.gz'), 'build.tar.gz')
         finally:
-            try:
-                get(posixpath.join(remote_tmp, 'compile.log'), 'compile.log')
-            finally:
-                sudo('rm -rf ' + remote_tmp)
+            sudo('rm -rf ' + remote_tmp)
 
 
 @contextlib.contextmanager
