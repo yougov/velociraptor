@@ -71,7 +71,8 @@ fi
 echo "Compiling app with $BUILDPACK_DIR"
 set -eo pipefail
 cd $APP_DIR
-$BUILDPACK_DIR/bin/compile $APP_DIR $CACHE_DIR
+$BUILDPACK_DIR/bin/compile $APP_DIR $CACHE_DIR 2>&1 | tee $APP_DIR/.compile.log
+echo "Compilation complete"
 
 # Record the output of the release script.
 echo "Writing $BUILDPACK_DIR/bin/release $APP_DIR to $APP_DIR/.release.yaml"
