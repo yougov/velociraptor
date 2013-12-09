@@ -3,6 +3,7 @@ mock
 
 -e ./common
 -e ./runners
+-e ./builder
 -e ./server
 -e ./agent
 
