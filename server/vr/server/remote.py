@@ -11,7 +11,8 @@ import re
 import contextlib
 
 import yaml
-from fabric.api import sudo as sudo_, get, put, task, env
+from fabric.api import (sudo as sudo_, get, put, task, env, settings as
+                        fab_settings)
 from fabric.contrib import files
 from fabric.context_managers import cd
 
@@ -314,7 +315,10 @@ def build_app(build_yaml_path):
         finally:
             try:
                 # try to get compile.log even if build fails.
-                get(posixpath.join(remote_tmp, 'compile.log'), 'compile.log')
+                with fab_settings(warn_only=True):
+                    get(posixpath.join(remote_tmp, 'compile.log'), 'compile.log')
+            except:
+                print "Could not retrieve compile.log"
             finally:
                 sudo('rm -rf ' + remote_tmp)
 

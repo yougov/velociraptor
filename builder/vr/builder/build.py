@@ -128,8 +128,11 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
                 # Copy compilation log into outfolder
                 if make_tarball:
                     compile_log_src = os.path.join(app_folder, '.compile.log')
-                    compile_log_dest = os.path.join(outfolder, 'compile.log')
-                    shutil.copyfile(compile_log_src, compile_log_dest)
+                    if os.path.isfile(compile_log_src):
+                        compile_log_dest = os.path.join(outfolder, 'compile.log')
+                        shutil.copyfile(compile_log_src, compile_log_dest)
+                    else:
+                        print "No file at %s" % compile_log_src
             finally:
                 # Clean up
                 subprocess.check_call([runner, 'teardown', 'buildproc.yaml'])
