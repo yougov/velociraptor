@@ -34,15 +34,15 @@ The yaml file given to vbuild should have the following keys
 - app_name: Should be both filesystem-safe and have no dashes or spaces.
 - app_repo_type: Should be either 'git' or 'hg'.
 - app_repo_url: The location of the app's Git or Mercurial repository.
+- version: The tag, branch, or revision hash to check out from the app
+  repository.  *This must be a string.*  If your version number looks like a
+  float (e.g. 9.0) then you must enclose it in quotes to make YAML treat it as
+  a string.
 - buildpack_urls: A list of URLs to the buildpacks that are allowed to build
   the app.  Each buildpack's 'detect' script will be run against the app in
   order to determine which buildpack to run.  If none matches, the vbuild
   command will exit with an error.  To specify a particular version of a
   buildpack, include the revision hash as the fragment portion of the URL.
-- version: The tag, branch, or revision hash to check out from the buildpack
-  repository.  *This must be a string.*  If your version number looks like a
-  float (e.g. 9.0) then you must enclose it in quotes to make YAML treat it as
-  a string.
 
 Here's an example of a valid build yaml file::
 
