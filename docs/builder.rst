@@ -14,9 +14,10 @@ normal Python package::
   pip install vr.builder
 
 That package provides a 'vbuild' command line tool that takes two arguments:
+
 1. A subcommand of either 'build' or 'shell'.
-2. The path to a yaml file that specifies the app, version, and buildpacks to
-   be used to do the build.
+2. The path to a yaml file that specifies the app, version, and buildpacks to 
+be used to do the build.
 
 Here's an example invocation of the vbuild command::
 
@@ -127,4 +128,4 @@ same name.
 It is safe to delete the app repos, buildpacks, or caches saved by vbuild.  The
 vbuild tool will re-download any repositories or re-create any directories it
 needs.  Deletion of buildpack caches in particular is sometimes necessary if
-the buildpack gets the cache into a weird state.
+a buildpack gets a cache into a weird state.
