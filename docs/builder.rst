@@ -16,8 +16,8 @@ normal Python package::
 That package provides a 'vbuild' command line tool that takes two arguments:
 
 1. A subcommand of either 'build' or 'shell'.
-2. The path to a yaml file that specifies the app, version, and buildpacks to 
-be used to do the build.
+2. The path to a yaml file that specifies the app, version, and buildpacks to
+   be used to do the build.
 
 Here's an example invocation of the vbuild command::
 
