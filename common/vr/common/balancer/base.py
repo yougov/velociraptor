@@ -5,12 +5,14 @@ import string
 import warnings
 import abc
 
+import six
+
 import paramiko
 from django.conf import settings
 
 
+six.add_metaclass(abc.ABCMeta)
 class Balancer(object):
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def __init__(self, config):
@@ -75,11 +77,11 @@ class SshBasedBalancer(Balancer):
         # write file to temporary location
         tmppath = posixpath.join(self.tmpdir,
                                  ''.join(random.choice(string.lowercase) for x
-                                         in xrange(10)))
+                                         in range(10)))
         f = sftp.open(tmppath, 'wb')
         f.write(contents)
         f.close()
-        sftp.chmod(tmppath, 0644)
+        sftp.chmod(tmppath, 0o644)
         # run sudo cmd to copy file to production location, and set owner/perms
         self._sudo(con, 'mv %s %s' % (tmppath, path))
         self._sudo(con, 'chown root %s' % path)
