@@ -25,7 +25,7 @@ class FixArrayPlugin(MessagePlugin):
                     'disableNodes',
                     'enableNodes',
                     'addPool',
-                   )
+                    )
         if command.name in affected:
             context.envelope.addPrefix('xsd', 'http://www.w3.org/1999/XMLSchema')
             child_spec = collections.defaultdict(lambda: 'values',
