@@ -22,6 +22,7 @@ params = dict(
         'six>=1.4.1',
         'utc',
         'requests',
+        'pyyaml',
     ] + py2_reqs,
     description='Libraries and for deploying with Velociraptor',
 )
