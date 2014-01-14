@@ -1,5 +1,6 @@
 import os
 import time
+import collections
 
 import suds.xsd.doctor
 import suds.client
@@ -24,14 +25,12 @@ class FixArrayPlugin(MessagePlugin):
                     'disableNodes',
                     'enableNodes',
                     'addPool',
-                   )
+                    )
         if command.name in affected:
             context.envelope.addPrefix('xsd', 'http://www.w3.org/1999/XMLSchema')
-            # SO UGLY :(
-            if command.name in ('addPool', 'disableNodes'):
-                values = command.getChild('nodes')
-            else:
-                values = command.getChild('values')
+            child_spec = collections.defaultdict(lambda: 'values',
+                addPool='nodes', disableNodes='nodes')
+            values = command.getChild(child_spec[command.name])
             values.set('SOAP-ENC:arrayType', 'xsd:list[1]')
             values.set('xsi:type', 'SOAP-ENC:Array')
             item = values[0]
