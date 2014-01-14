@@ -1,3 +1,5 @@
+import json
+
 from django.conf.urls.defaults import url
 from django.http import (HttpResponse, HttpResponseNotAllowed,
                          HttpResponseNotFound, HttpResponseRedirect)
@@ -12,7 +14,7 @@ from tastypie.constants import ALL_WITH_RELATIONS, ALL
 from tastypie.utils import trailing_slash
 
 from vr.server import models
-from vr.server.views import do_swarm, do_build
+from vr.server.views import do_swarm, do_build, do_deploy
 from vr.server.api.views import auth_required
 
 
@@ -240,7 +242,10 @@ class ReleaseResource(ModelResource):
             except models.Swarm.DoesNotExist:
                 return HttpResponseNotFound()
 
-            deploy_release(release, request.user)
+            data = json.loads(request.raw_post_data)
+            print "data", data
+            do_deploy(release, request.user, data['config_name'], data['host'],
+                      data['proc'], data['port'])
 
             # Status 202 means "The request has been accepted for processing, but
             # the processing has not been completed."

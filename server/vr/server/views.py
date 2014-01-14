@@ -97,13 +97,13 @@ def deploy(request):
         data = form.cleaned_data
 
         release = models.Release.objects.get(id=data['release_id'])
-        deploy_release(release, request.user, **data)
+        do_deploy(release, request.user, **data)
         return redirect('dash')
 
     return render(request, 'basic_form.html', vars())
 
 
-def deploy_release(release, user, config_name, hostname, proc, port, **kwargs):
+def do_deploy(release, user, config_name, hostname, proc, port):
     """
     Given a release object and a user, put a deploy job on the work queue, and
     an notification about it on the events pubsub.
