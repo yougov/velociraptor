@@ -105,8 +105,8 @@ def deploy(request):
 
 def do_deploy(release, user, config_name, hostname, proc, port):
     """
-    Given a release object and a user, put a deploy job on the work queue, and
-    an notification about it on the events pubsub.
+    Put a deploy job on the work queue, and a notification about it on the
+    events pubsub.
     """
     tasks.deploy.delay(release_id=release.id, config_name=config_name,
                        hostname=hostname, proc=proc, port=port)

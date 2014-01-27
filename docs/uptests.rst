@@ -72,6 +72,7 @@ Uptests do not replace the unit or functional tests that you write in the
 course of normal development.  You still need those!
 
 Uptests should test what those other tests can't:
+
 - They can let you know if the production version pulled in a different (and
   buggy) dependency than staging.
 - They can tell you if there's some system level dependency that's not met in
