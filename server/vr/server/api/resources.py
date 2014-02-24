@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import json
 
 from django.conf.urls.defaults import url
@@ -243,7 +245,7 @@ class ReleaseResource(ModelResource):
                 return HttpResponseNotFound()
 
             data = json.loads(request.raw_post_data)
-            print "data", data
+            print("data", data)
             do_deploy(release, request.user, data['config_name'], data['host'],
                       data['proc'], data['port'])
 
@@ -257,7 +259,7 @@ v1.register(ReleaseResource())
 
 class TestResultResource(ModelResource):
     testrun = fields.ToOneField('api.resources.TestRunResource', 'run',
-                                 related_name='tests')
+                                related_name='tests')
 
     class Meta:
         queryset = models.TestResult.objects.all()
