@@ -96,7 +96,7 @@ def deploy(request):
         # task, so we can just use that dict for kwargs
         data = form.cleaned_data
 
-        release = models.Release.objects.get(id=data['release_id'])
+        release = models.Release.objects.get(id=data.pop('release_id'))
         do_deploy(release, request.user, **data)
         return redirect('dash')
 
