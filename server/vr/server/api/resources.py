@@ -4,8 +4,7 @@ import json
 
 from django.conf.urls.defaults import url
 from django.http import (HttpResponse, HttpResponseNotAllowed,
-                         HttpResponseNotFound, HttpResponseRedirect)
-from django.core.urlresolvers import reverse
+                         HttpResponseNotFound)
 
 from tastypie.resources import ModelResource
 from tastypie import fields
