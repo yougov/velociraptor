@@ -585,6 +585,7 @@ class Release(object):
         self.__dict__.update(obj)
 
     def load(self, url):
+        url = self._vr._build_url(self.base, url)
         resp = self._vr.session.get(url)
         resp.raise_for_status()
         self.__dict__.update(resp.json())
