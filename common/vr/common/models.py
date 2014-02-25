@@ -593,5 +593,5 @@ class Release(object):
     def deploy(self, host, port, proc, config_name):
         url = self._vr._build_url(self.resource_uri, 'deploy/')
         data = dict(host=host, port=port, proc=proc, config_name=config_name)
-        resp = self._vr.session.post(url, data=data)
+        resp = self._vr.session.post(url, data=json.dumps(data))
         resp.raise_for_status()
