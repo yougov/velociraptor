@@ -575,3 +575,22 @@ class Build(object):
 
 class App(object):
     base='/api/v1/apps/'
+
+
+class Release(object):
+    base='/api/v1/releases/'
+
+    def __init__(self, vr, obj={}):
+        self._vr = vr
+        self.__dict__.update(obj)
+
+    def load(self, url):
+        resp = self._vr.session.get(url)
+        resp.raise_for_status()
+        self.__dict__.update(resp.json())
+
+    def deploy(self, host, port, proc, config_name):
+        url = self.resource_uri + '/deploy/'
+        data = dict(host=host, port=port, proc=proc, config_name=config_name)
+        resp = self._vr.session.post(url, data=data)
+        resp.raise_for_status()
