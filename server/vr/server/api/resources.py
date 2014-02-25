@@ -236,23 +236,23 @@ class ReleaseResource(ModelResource):
         ]
 
     def deploy_release(self, request, **kwargs):
+        if request.method != 'POST':
+            return HttpResponseNotAllowed(["POST"])
 
-        if request.method == 'POST':
-            try:
-                release = models.Release.objects.get(id=int(kwargs['pk']))
-            except models.Swarm.DoesNotExist:
-                return HttpResponseNotFound()
+        try:
+            release = models.Release.objects.get(id=int(kwargs['pk']))
+        except models.Swarm.DoesNotExist:
+            return HttpResponseNotFound()
 
-            data = json.loads(request.raw_post_data)
-            print("data", data)
-            do_deploy(release, request.user, data['config_name'], data['host'],
-                      data['proc'], data['port'])
+        data = json.loads(request.raw_post_data)
+        print("data", data)
+        do_deploy(release, request.user, data['config_name'], data['host'],
+                  data['proc'], data['port'])
 
-            # Status 202 means "The request has been accepted for processing, but
-            # the processing has not been completed."
-            return HttpResponse(status=202)
+        # Status 202 means "The request has been accepted for processing, but
+        # the processing has not been completed."
+        return HttpResponse(status=202)
 
-        return HttpResponseNotAllowed(["POST"])
 v1.register(ReleaseResource())
 
 
