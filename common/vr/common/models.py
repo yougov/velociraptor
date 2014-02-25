@@ -590,7 +590,7 @@ class Release(object):
         self.__dict__.update(resp.json())
 
     def deploy(self, host, port, proc, config_name):
-        url = self.resource_uri + '/deploy/'
+        url = self._vr._build_url(self.resource_uri, 'deploy/')
         data = dict(host=host, port=port, proc=proc, config_name=config_name)
         resp = self._vr.session.post(url, data=data)
         resp.raise_for_status()
