@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import stat
 import hashlib
@@ -8,9 +10,9 @@ import tarfile
 
 import yaml
 
-from vr.common.utils import tmpdir, mkdir, randchars, file_md5, chowntree
+from vr.common.utils import tmpdir, mkdir, file_md5, chowntree
 from vr.builder.models import (BuildPack, update_buildpack, update_app,
-                               lock_or_wait, CACHE_HOME, OUTPUT_HOME)
+                               lock_or_wait, CACHE_HOME)
 from vr.common.models import ProcData
 from vr.common.paths import get_container_path
 from vr.builder.slugignore import clean_slug_dir
@@ -44,7 +46,6 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
                               vcs_type=build_data.app_repo_type)
         chowntree(app_folder, username=user)
 
-
         volumes = [
             [os.path.join(here, app_folder), '/build']
         ]
@@ -66,7 +67,7 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
         if os.path.isdir(cachefolder):
             with lock_or_wait(cachefolder):
                 mkdir('cache')
-                shutil.copytree(cachefolder, 'cache/buildpack_cache', symlinks=True) 
+                shutil.copytree(cachefolder, 'cache/buildpack_cache', symlinks=True)
         else:
             mkdir('cache/buildpack_cache')
             # Maybe we're on a brand new host that's never had CACHE_HOME
@@ -132,7 +133,7 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
                         compile_log_dest = os.path.join(outfolder, 'compile.log')
                         shutil.copyfile(compile_log_src, compile_log_dest)
                     else:
-                        print "No file at %s" % compile_log_src
+                        print("No file at %s" % compile_log_src)
             finally:
                 # Clean up
                 subprocess.check_call([runner, 'teardown', 'buildproc.yaml'])
@@ -160,10 +161,9 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
             shutil.move('build.tar.gz', tardest)
 
             build_data_path = os.path.join(outfolder, 'build_result.yaml')
-            print "Writing", build_data_path
+            print("Writing", build_data_path)
             with open(build_data_path, 'wb') as f:
                 f.write(build_data.as_yaml())
-
 
 
 def recover_release_data(app_folder):

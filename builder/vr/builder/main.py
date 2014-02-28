@@ -8,7 +8,6 @@ from vr.builder.build import cmd_build
 from vr.common.models import ConfigData
 
 
-
 def cmd_shell(build_data):
     cmd_build(build_data, runner_cmd='shell', make_tarball=False)
 
@@ -52,7 +51,7 @@ class BuildData(ConfigData):
                              'buildpack_urls')
 
     def __repr__(self):
-        print '<BuildData: %s-%s>' % (self.app_name, self.version)
+        print('<BuildData: %s-%s>' % (self.app_name, self.version))
 
 
 def main():
