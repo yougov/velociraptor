@@ -2,10 +2,9 @@ from __future__ import print_function
 
 import os
 
-import requests
 from vr.common.paths import (get_container_name, get_proc_path,
                              get_container_path, VR_ROOT)
-from vr.runners.base import (BaseRunner, mkdir, file_md5, ensure_file, untar,
+from vr.runners.base import (BaseRunner, mkdir, ensure_file, untar,
                              get_template)
 
 
@@ -39,7 +38,6 @@ class ImageRunner(BaseRunner):
         self.write_proc_sh()
         self.write_env_sh()
 
-
     def ensure_image(self):
         """
         Ensure that config.image_url has been downloaded and unpacked.
@@ -64,7 +62,6 @@ class ImageRunner(BaseRunner):
 
     def get_image_folder(self):
         return os.path.join(IMAGES_ROOT, self.config.image_name, 'contents')
-
 
     def write_proc_lxc(self):
         print("Writing proc.lxc")

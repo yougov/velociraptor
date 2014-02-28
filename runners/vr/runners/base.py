@@ -2,12 +2,9 @@ from __future__ import print_function
 
 import os
 import stat
-import fcntl
-import errno
 import pwd
 import grp
 import shutil
-import hashlib
 import tarfile
 import pkg_resources
 import argparse
@@ -146,7 +143,6 @@ class BaseRunner(object):
             ensure_file(self.config.build_url, path, build_md5)
 
             # Now untar.
-            outfolder = get_app_path(self.config)
             self.untar()
 
     def write_settings_yaml(self):
@@ -267,7 +263,7 @@ def untar(tarpath, outfolder, owners=None, overwrite=True, fixperms=True):
     already exists and overwrite=False, IOError will be raised.
     """
     # make a folder to untar to
-    with tmpdir() as here:
+    with tmpdir():
         _, _, ext = tarpath.rpartition('.')
 
         if ext not in ('gz', 'bz2'):
@@ -330,7 +326,7 @@ def ensure_file(url, path, md5sum=None):
 
 
 def download_file(url, path):
-    with tmpdir() as here:
+    with tmpdir():
         print("Downloading %s" % url)
         base = os.path.basename(path)
         with open(base, 'wb') as f:

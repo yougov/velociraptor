@@ -9,7 +9,7 @@ import os
 import pwd
 
 from vr.common.paths import get_container_path, get_proc_path
-from vr.runners.base import BaseRunner, mkdir, get_template
+from vr.runners.base import BaseRunner, mkdir
 
 
 def main():
