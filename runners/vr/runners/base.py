@@ -97,7 +97,7 @@ class BaseRunner(object):
         }
         sh_path = os.path.join(get_container_path(self.config), 'proc.sh')
         rendered = get_template('proc.sh') % context
-        with open(sh_path, 'wb') as f:
+        with open(sh_path, 'w') as f:
             f.write(rendered)
         st = os.stat(sh_path)
         os.chmod(sh_path, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
