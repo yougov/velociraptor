@@ -38,7 +38,7 @@ class BaseRunner(object):
 
         # We intentionally don't close the file.  We leave it open and grab a lock
         # to ensure that two runners aren't trying to run the same proc.
-        self.file = open(args.file, 'rwb')
+        self.file = open(args.file, 'r+b')
 
         self.config = ProcData(yaml.safe_load(self.file))
 
