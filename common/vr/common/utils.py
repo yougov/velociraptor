@@ -148,7 +148,7 @@ def lock_file(f, block=False):
     """
     try:
         flags = fcntl.LOCK_EX
-        if block:
+        if not block:
             flags |= fcntl.LOCK_NB
         fcntl.flock(f.fileno(), flags)
     except IOError as e:
