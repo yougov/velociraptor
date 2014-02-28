@@ -45,15 +45,14 @@ class BaseRunner(object):
         with open(args.file, 'r+b') as file:
             self.config = ProcData(yaml.safe_load(file))
 
-            # Commands that have a lock=False attribute won't try to lock the
-            # proc.yaml file.  'uptest' and 'shell' are in this category.
-            if getattr(cmd, 'lock', True):
-                # Grab a lock to ensure that two runners aren't trying to run
-                # the same proc.
-                lock_file(file)
-            else:
-                file.close()
+            # Lock the file for exclusive access. Some commands (such as shell
+            # or uptest) may override the behavior by providing a 'lock'
+            # attribute on the method.
+            getattr(cmd, 'lock', lock_file)(file)
             cmd()
+
+    def __close_file(file):
+        file.close()
 
     def setup(self):
         print("Setting up", get_container_name(self.config))
@@ -73,7 +72,7 @@ class BaseRunner(object):
         print("Running shell for", get_container_name(self.config))
         args = self.get_lxc_args(special_cmd='/bin/bash')
         os.execve(which('lxc-start')[0], args, {})
-    shell.lock = False
+    shell.lock = __close_file
 
     def untar(self):
         tarpath = get_buildfile_path(self.config)
@@ -207,7 +206,7 @@ class BaseRunner(object):
             else:
                 # There are no uptests for this proc.  Output an empty JSON list.
                 print("[]")
-    uptest.lock = False
+    uptest.lock = __close_file
 
     def teardown(self):
         # Everything should have been put in the proc path, so delete that.
