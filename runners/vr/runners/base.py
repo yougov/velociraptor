@@ -44,15 +44,16 @@ class BaseRunner(object):
 
         try:
             cmd = self.commands[args.command]
-            # Commands that have a lock=False attribute won't try to lock the
-            # proc.yaml file.  'uptest' and 'shell' are in this category.
-            if getattr(cmd, 'lock', True):
-                lock_file(self.file)
-            else:
-                self.file.close()
         except KeyError:
             raise SystemExit("Command must be one of: %s" %
                              ', '.join(self.commands.keys()))
+
+        # Commands that have a lock=False attribute won't try to lock the
+        # proc.yaml file.  'uptest' and 'shell' are in this category.
+        if getattr(cmd, 'lock', True):
+            lock_file(self.file)
+        else:
+            self.file.close()
         cmd()
 
     def setup(self):
