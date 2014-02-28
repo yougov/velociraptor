@@ -106,7 +106,7 @@ class BaseRunner(object):
         print("Writing env.sh")
         envsh_path = os.path.join(get_container_path(self.config), 'env.sh')
 
-        with open(envsh_path, 'wb') as f:
+        with open(envsh_path, 'w') as f:
             def format_var(key, val):
                 return 'export %s="%s"' % (key, val)
             e = self.config.env
