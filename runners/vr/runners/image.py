@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 
 import requests
@@ -27,7 +29,7 @@ class ImageRunner(BaseRunner):
     lxc_template_name = 'image.lxc'
 
     def setup(self):
-        print "Setting up", get_container_name(self.config)
+        print("Setting up", get_container_name(self.config))
         mkdir(IMAGES_ROOT)
         self.ensure_image()
         self.make_proc_dirs()
@@ -65,7 +67,7 @@ class ImageRunner(BaseRunner):
 
 
     def write_proc_lxc(self):
-        print "Writing proc.lxc"
+        print("Writing proc.lxc")
 
         proc_path = get_proc_path(self.config)
         container_path = get_container_path(self.config)

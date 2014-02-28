@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import stat
 import fcntl
@@ -38,7 +40,7 @@ class BaseRunner(object):
         args = parser.parse_args()
 
         # We intentionally don't close the file.  We leave it open and grab a lock
-        # to ensure that two runners aren't trying to run the same proc. 
+        # to ensure that two runners aren't trying to run the same proc.
         self.file = open(args.file, 'rwb')
 
         self.config = ProcData(yaml.safe_load(self.file))
@@ -57,7 +59,7 @@ class BaseRunner(object):
         cmd()
 
     def setup(self):
-        print "Setting up", get_container_name(self.config)
+        print("Setting up", get_container_name(self.config))
         self.make_proc_dirs()
         self.ensure_build()
         self.write_proc_lxc()
@@ -66,19 +68,19 @@ class BaseRunner(object):
         self.write_env_sh()
 
     def run(self):
-        print "Running", get_container_name(self.config)
+        print("Running", get_container_name(self.config))
         args = self.get_lxc_args()
         os.execve(which('lxc-start')[0], args, {})
 
     def shell(self):
-        print "Running shell for", get_container_name(self.config)
+        print("Running shell for", get_container_name(self.config))
         args = self.get_lxc_args(special_cmd='/bin/bash')
         os.execve(which('lxc-start')[0], args, {})
     shell.lock = False
 
     def untar(self):
         tarpath = get_buildfile_path(self.config)
-        print "Untarring", tarpath
+        print("Untarring", tarpath)
         outfolder = get_app_path(self.config)
         owners = (self.config.user, self.config.group)
         untar(tarpath, outfolder, owners)
@@ -88,7 +90,7 @@ class BaseRunner(object):
         Write the script that is the first thing called inside the container.  It
         sets env vars and then calls the real program.
         """
-        print "Writing proc.sh"
+        print("Writing proc.sh")
         context = {
             'tmp': '/tmp',
             'home': '/app',
@@ -105,7 +107,7 @@ class BaseRunner(object):
         os.chmod(sh_path, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
     def write_env_sh(self):
-        print "Writing env.sh"
+        print("Writing env.sh")
         envsh_path = os.path.join(get_container_path(self.config), 'env.sh')
 
         with open(envsh_path, 'wb') as f:
@@ -148,7 +150,7 @@ class BaseRunner(object):
             self.untar()
 
     def write_settings_yaml(self):
-        print "Writing settings.yaml"
+        print("Writing settings.yaml")
         path = os.path.join(get_container_path(self.config), 'settings.yaml')
         with open(path, 'wb') as f:
             f.write(yaml.safe_dump(self.config.settings, default_flow_style=False))
@@ -208,7 +210,7 @@ class BaseRunner(object):
                 os.execve(which('lxc-start')[0], args, {})
             else:
                 # There are no uptests for this proc.  Output an empty JSON list.
-                print "[]"
+                print("[]")
     uptest.lock = False
 
     def teardown(self):
@@ -218,7 +220,7 @@ class BaseRunner(object):
         shutil.rmtree(get_proc_path(self.config))
 
     def make_proc_dirs(self):
-        print "Making directories"
+        print("Making directories")
         proc_path = get_proc_path(self.config)
         container_path = get_container_path(self.config)
         mkdir(proc_path)
@@ -229,7 +231,7 @@ class BaseRunner(object):
             mkdir(os.path.join(container_path, inside.lstrip('/')))
 
     def write_proc_lxc(self):
-        print "Writing proc.lxc"
+        print("Writing proc.lxc")
 
         proc_path = get_proc_path(self.config)
         container_path = get_container_path(self.config)
@@ -264,7 +266,7 @@ def untar(tarpath, outfolder, owners=None, overwrite=True, fixperms=True):
     outfolder will be deleted before the new one is put in place. If outfolder
     already exists and overwrite=False, IOError will be raised.
     """
-    # make a folder to untar to 
+    # make a folder to untar to
     with tmpdir() as here:
         _, _, ext = tarpath.rpartition('.')
 
@@ -287,7 +289,7 @@ def untar(tarpath, outfolder, owners=None, overwrite=True, fixperms=True):
                     path = os.path.join(root, d)
                     # chown user:group
                     os.chown(path, user.pw_uid, group.gr_gid)
-                    # chmod ug+xr 
+                    # chmod ug+xr
                     st = os.stat(path)
                     os.chmod(path, st.st_mode | stat.S_IXUSR
                                               | stat.S_IXGRP
@@ -329,7 +331,7 @@ def ensure_file(url, path, md5sum=None):
 
 def download_file(url, path):
     with tmpdir() as here:
-        print "Downloading %s" % url
+        print("Downloading %s" % url)
         base = os.path.basename(path)
         with open(base, 'wb') as f:
             resp = requests.get(url, stream=True)
@@ -344,4 +346,3 @@ def get_template(name):
     path = pkg_resources.resource_filename('vr.runners', 'templates/' + name)
     with open(path, 'rb') as f:
         return f.read()
-

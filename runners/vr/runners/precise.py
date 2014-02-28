@@ -2,6 +2,9 @@
 Start a proc inside a container with essential system folders bind-mounted in.
 Supports Ubuntu 12.04 (Precise).
 """
+
+from __future__ import print_function
+
 import os
 import pwd
 
@@ -19,7 +22,7 @@ class PreciseRunner(BaseRunner):
     lxc_template_name = 'precise.lxc'
 
     def make_proc_dirs(self):
-        print "Making directories"
+        print("Making directories")
         proc_path = get_proc_path(self.config)
         container_path = get_container_path(self.config)
         mkdir(proc_path)
