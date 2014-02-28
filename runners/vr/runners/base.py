@@ -36,17 +36,17 @@ class BaseRunner(object):
 
         args = parser.parse_args()
 
-        # We intentionally don't close the file.  We leave it open and grab a lock
-        # to ensure that two runners aren't trying to run the same proc.
-        self.file = open(args.file, 'r+b')
-
-        self.config = ProcData(yaml.safe_load(self.file))
-
         try:
             cmd = self.commands[args.command]
         except KeyError:
             raise SystemExit("Command must be one of: %s" %
                              ', '.join(self.commands.keys()))
+
+        # We intentionally don't close the file.  We leave it open and grab a lock
+        # to ensure that two runners aren't trying to run the same proc.
+        self.file = open(args.file, 'r+b')
+
+        self.config = ProcData(yaml.safe_load(self.file))
 
         # Commands that have a lock=False attribute won't try to lock the
         # proc.yaml file.  'uptest' and 'shell' are in this category.
