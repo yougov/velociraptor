@@ -124,7 +124,7 @@ class BaseRunner(object):
             return self.config.cmd
 
         procfile_path = os.path.join(get_app_path(self.config), 'Procfile')
-        with open(procfile_path, 'rb') as f:
+        with open(procfile_path, 'r') as f:
             procs = yaml.safe_load(f)
         return procs[self.config.proc_name]
 
