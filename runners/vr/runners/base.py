@@ -240,7 +240,7 @@ class BaseRunner(object):
         content += self.get_lxc_volume_str()
 
         filepath = os.path.join(proc_path, 'proc.lxc')
-        with open(filepath, 'wb') as f:
+        with open(filepath, 'w') as f:
             f.write(content)
 
 
@@ -339,5 +339,5 @@ def get_template(name):
     Look for 'name' in the vr.runners.templates folder.  Return its contents.
     """
     path = pkg_resources.resource_filename('vr.runners', 'templates/' + name)
-    with open(path, 'rb') as f:
+    with open(path, 'r') as f:
         return f.read()
