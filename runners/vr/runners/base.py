@@ -147,7 +147,7 @@ class BaseRunner(object):
     def write_settings_yaml(self):
         print("Writing settings.yaml")
         path = os.path.join(get_container_path(self.config), 'settings.yaml')
-        with open(path, 'wb') as f:
+        with open(path, 'w') as f:
             f.write(yaml.safe_dump(self.config.settings, default_flow_style=False))
 
     def get_lxc_args(self, special_cmd=None):
