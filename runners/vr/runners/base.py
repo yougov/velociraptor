@@ -42,19 +42,18 @@ class BaseRunner(object):
             raise SystemExit("Command must be one of: %s" %
                              ', '.join(self.commands.keys()))
 
-        # We intentionally don't close the file.  We leave it open and grab a lock
-        # to ensure that two runners aren't trying to run the same proc.
-        file = open(args.file, 'r+b')
+        with open(args.file, 'r+b') as file:
+            self.config = ProcData(yaml.safe_load(file))
 
-        self.config = ProcData(yaml.safe_load(file))
-
-        # Commands that have a lock=False attribute won't try to lock the
-        # proc.yaml file.  'uptest' and 'shell' are in this category.
-        if getattr(cmd, 'lock', True):
-            lock_file(file)
-        else:
-            file.close()
-        cmd()
+            # Commands that have a lock=False attribute won't try to lock the
+            # proc.yaml file.  'uptest' and 'shell' are in this category.
+            if getattr(cmd, 'lock', True):
+                # Grab a lock to ensure that two runners aren't trying to run
+                # the same proc.
+                lock_file(file)
+            else:
+                file.close()
+            cmd()
 
     def setup(self):
         print("Setting up", get_container_name(self.config))
