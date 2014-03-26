@@ -171,9 +171,12 @@ class Listener(object):
             sender = Sender(self.rcon, channel, buffer_key=None)
             sender.flush()
 
+    def _has_buffer(self):
+        return self.buffer_key and self.last_event_id
+
     def get_buffer(self):
         # Only return anything from buffer if we've been given a last event ID
-        if not (self.buffer_key and self.last_event_id):
+        if not self._has_buffer():
             return []
 
         buffered_events = self.rcon.lrange(self.buffer_key, 0, -1)
@@ -223,26 +226,8 @@ class EventListener(Listener):
     then default to playing back the whole buffer.
     """
 
-    def get_buffer(self):
-        if not (self.buffer_key):
-            return []
-
-        buffered_events = self.rcon.lrange(self.buffer_key, 0, -1)
-
-        # check whether msg with last_event_id is still in buffer.  If so,
-        # trim buffered_events to have only newer messages.
-        if self.last_event_id:
-            # Note that we're looping through most recent messages first,
-            # here
-            counter = 0
-            for msg in buffered_events:
-                if (json.loads(msg)['id'] == self.last_event_id):
-                    break
-                counter += 1
-            buffered_events = buffered_events[:counter]
-
-        # Return oldest messages first
-        return reversed(list(buffered_events))
+    def _has_buffer(self):
+        return self.buffer_key
 
 
 def eventify(user, action, obj, detail=None):
