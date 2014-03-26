@@ -171,12 +171,9 @@ class Listener(object):
             sender = Sender(self.rcon, channel, buffer_key=None)
             sender.flush()
 
-    def _has_buffer(self):
-        return self.buffer_key
-
     def get_buffer(self):
         # Only return anything from buffer if we've been given a last event ID
-        if not self._has_buffer():
+        if not self.buffer_key:
             return []
 
         buffered_events = self.rcon.lrange(self.buffer_key, 0, -1)
