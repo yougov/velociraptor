@@ -130,8 +130,6 @@ class Listener(object):
             self.rcon = rcon_or_url
         elif isinstance(rcon_or_url, six.string_types):
             self.rcon = redis.StrictRedis(**utils.parse_redis_url(rcon_or_url))
-        if channels is None:
-            channels = [settings.EVENTS_PUBSUB_CHANNEL]
         self.channels = channels
         self.buffer_key = buffer_key
         self.last_event_id = last_event_id
