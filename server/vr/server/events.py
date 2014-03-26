@@ -172,7 +172,7 @@ class Listener(object):
             sender.flush()
 
     def _has_buffer(self):
-        return self.buffer_key and self.last_event_id
+        return self.buffer_key
 
     def get_buffer(self):
         # Only return anything from buffer if we've been given a last event ID
@@ -218,16 +218,6 @@ class Listener(object):
 
     def close(self):
         self.rcon.connection_pool.disconnect()
-
-
-class EventListener(Listener):
-    """
-    Listener with special buffer behavior.  If no last_event_id is provided,
-    then default to playing back the whole buffer.
-    """
-
-    def _has_buffer(self):
-        return self.buffer_key
 
 
 def eventify(user, action, obj, detail=None):

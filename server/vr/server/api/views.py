@@ -147,7 +147,7 @@ def event_stream(request):
     """
     Stream worker events out to browser.
     """
-    return http.HttpResponse(events.EventListener(
+    return http.HttpResponse(events.Listener(
         settings.EVENTS_PUBSUB_URL,
         channels=[settings.EVENTS_PUBSUB_CHANNEL],
         buffer_key=settings.EVENTS_BUFFER_KEY,
