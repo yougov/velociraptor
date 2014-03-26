@@ -26,6 +26,7 @@ import datetime
 import uuid
 import logging
 
+import six
 import redis
 import sseclient
 from django.conf import settings
@@ -38,7 +39,7 @@ class Sender(object):
                  buffer_length=100):
         if isinstance(rcon_or_url, redis.StrictRedis):
             self.rcon = rcon_or_url
-        elif isinstance(rcon_or_url, basestring):
+        elif isinstance(rcon_or_url, six.string_types):
             self.rcon = redis.StrictRedis(**utils.parse_redis_url(rcon_or_url))
         self.channel = channel
         self.buffer_key = buffer_key
@@ -96,7 +97,7 @@ class ProcListener(object):
     def __init__(self, rcon_or_url, channel):
         if isinstance(rcon_or_url, redis.StrictRedis):
             self.rcon = rcon_or_url
-        elif isinstance(rcon_or_url, basestring):
+        elif isinstance(rcon_or_url, six.string_types):
             self.rcon = redis.StrictRedis(**utils.parse_redis_url(rcon_or_url))
         self.channel = channel
         self.pubsub = self.rcon.pubsub()
@@ -127,7 +128,7 @@ class Listener(object):
                  last_event_id=None):
         if isinstance(rcon_or_url, redis.StrictRedis):
             self.rcon = rcon_or_url
-        elif isinstance(rcon_or_url, basestring):
+        elif isinstance(rcon_or_url, six.string_types):
             self.rcon = redis.StrictRedis(**utils.parse_redis_url(rcon_or_url))
         if channels is None:
             channels = [settings.EVENTS_PUBSUB_CHANNEL]
@@ -205,7 +206,7 @@ class Listener(object):
 
         # data comes last.  It may be str or an iterable representing multiple
         # lines
-        if isinstance(data, basestring):
+        if isinstance(data, six.string_types):
             out += 'data: %s\n' % data
         else:
             out += '\n'.join('data: %s' % l for l in data) + '\n'

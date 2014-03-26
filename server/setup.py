@@ -32,6 +32,7 @@ setup(
         'setproctitle',
         'South==0.7.6',
         'sseclient==0.0.6',
+        'six>=1.4',
 
         # These will normally be installed from the source code repo as part of
         # buildpack compilation.  Their folders are specified in
