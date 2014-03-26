@@ -54,8 +54,7 @@ class Sender(object):
         # get a list of recent events as well as seeing current ones.
         if self.buffer_key:
             self.rcon.lpush(self.buffer_key, message)
-            self.rcon.ltrim(self.buffer_key, 0, self.buffer_length -
-                                        1)
+            self.rcon.ltrim(self.buffer_key, 0, self.buffer_length - 1)
 
     def flush(self):
         self.rcon.publish(self.channel, 'flush')
@@ -121,7 +120,6 @@ class ProcListener(object):
 
     def close(self):
         self.rcon.connection_pool.disconnect()
-
 
 
 class Listener(object):
