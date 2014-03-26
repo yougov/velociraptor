@@ -12,6 +12,7 @@ from django.core.urlresolvers import reverse
 import sseclient
 import requests
 
+import vr.events
 from vr.server import utils, tasks, events, models
 
 
@@ -147,7 +148,7 @@ def event_stream(request):
     """
     Stream worker events out to browser.
     """
-    return http.HttpResponse(events.Listener(
+    return http.HttpResponse(vr.events.Listener(
         settings.EVENTS_PUBSUB_URL,
         channels=[settings.EVENTS_PUBSUB_CHANNEL],
         buffer_key=settings.EVENTS_BUFFER_KEY,
