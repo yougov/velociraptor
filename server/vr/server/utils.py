@@ -52,19 +52,6 @@ def task_to_dict(task):
            k.startswith('_')}
 
 
-def parse_redis_url(url):
-    """
-    Given a url like redis://localhost:6379/0, return a dict with host, port,
-    and db members.
-    """
-    parsed = urlparse.urlsplit(url)
-    return {
-        'host': parsed.hostname,
-        'port': parsed.port,
-        'db': int(parsed.path.replace('/', '')),
-    }
-
-
 def yamlize(dct):
     "Shortcut so I don't have to type all the YAML options so much."
     return yaml.safe_dump(dct, default_flow_style=False)

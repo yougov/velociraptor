@@ -31,7 +31,7 @@ import redis
 import sseclient
 from django.conf import settings
 
-from vr.server import utils
+from vr.common import utils
 
 
 class Sender(object):

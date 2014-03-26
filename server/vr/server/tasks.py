@@ -21,8 +21,9 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.files import File
 
-from vr.server import events, utils, balancer, models, remote
+from vr.server import events, balancer, models, remote
 from vr.common.slugignore import clean_slug_dir
+from vr.common import utils
 from vr.server.models import (Release, Build, Swarm, Host, PortLock, App,
                                TestRun, TestResult, BuildPack)
 from vr.common import repo, build as rbuild
