@@ -103,7 +103,7 @@ class pipdeps {
         command => "easy_install-2.7 pip",
         require => Package['python-setuptools'];
       custom_supervisor:
-        command => "/usr/local/bin/pip-2.7 install https://bitbucket.org/yougov/velociraptor/downloads/supervisor-3.0b2-dev-vr4.tar.gz",
+        command => "/usr/local/bin/pip2.7 install https://bitbucket.org/yougov/velociraptor/downloads/supervisor-3.0b2-dev-vr4.tar.gz",
         require => Exec[pip27];  
     }
 
