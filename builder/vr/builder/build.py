@@ -19,7 +19,7 @@ from vr.builder.slugignore import clean_slug_dir
 
 
 def cmd_build(build_data, runner_cmd='run', make_tarball=True):
-    # runner_cmd maybe be 'run' or 'shell'.
+    # runner_cmd may be 'run' or 'shell'.
 
     outfolder = os.getcwd()
 
