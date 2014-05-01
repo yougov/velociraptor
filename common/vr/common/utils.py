@@ -91,8 +91,7 @@ def run(command, verbose=False):
     Run a shell command.  Capture the stdout and stderr as a single stream.
     Capture the status code.
 
-    If verbose=True (the default), then print command and the output to the
-    terminal.
+    If verbose=True, then print command and the output to the terminal.
 
     """
     p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE,
