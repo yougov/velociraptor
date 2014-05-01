@@ -121,7 +121,7 @@ Buildpacks
 
 In order to build and deploy your apps, Velociraptor needs to be told where
 they are and how to build them.  The 'how to build them' part is done with
-Heroku buildpacks.  Go to http://localhost:8000/admin/deployment/buildpack/add/
+Heroku buildpacks.  Go to http://localhost:8000/admin/server/buildpack/add/
 in your browser in order to add a buildpack.  You will need to enter the git
 (or mercurial) repository URL, as well as an integer for the 'order'.  See the
 `Heroku buildpack documentation`_ to understand more about how buildpacks work
@@ -136,7 +136,7 @@ Squads and Hosts
 In order to know where to deploy your application, you'll need to give
 Velociraptor some hostnames.  Velociraptor does load balanced deployments
 across a group of hosts, which it calls a "Squad".  Go to
-http://localhost:8000/admin/deployment/squad/add/ to create a new squad.  Call
+http://localhost:8000/admin/server/squad/add/ to create a new squad.  Call
 it whatever you like (I call my development squad 'local'.  Squad names must be
 unique.  Give the squad a single host named 'precise64', which is the hostname
 of the Vagrant VM itself.
@@ -144,7 +144,7 @@ of the Vagrant VM itself.
 Apps
 ----
 
-Now tell Velociraptor about your code!  Go to http://localhost:8000/admin/deployment/app/add/
+Now tell Velociraptor about your code!  Go to http://localhost:8000/admin/server/app/add/
 and give the name, repo url, and repo type (git or hg) of your application.  If
 you don't have one around, try the vr_node_example_ app.  The name you give to
 your app should have only letters, numbers, and underscores (no dashes or
