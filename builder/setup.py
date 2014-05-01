@@ -10,7 +10,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'vr.runners>=0.0.13,<1',
+        'vr.runners>=2.0.4,<3',
         'PyYAML>=3.10',
     ],
     entry_points={
