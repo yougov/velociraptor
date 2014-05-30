@@ -1,13 +1,12 @@
 import os
 import stat
 import subprocess
-import shutil
 import pkg_resources
 import tarfile
 
-from vr.common.utils import tmpdir, mkdir, file_md5, chowntree, which
-from vr.runners.image import ensure_image, IMAGES_ROOT, get_image_folder
-from vr.runners.base import (mkdir, ensure_file, untar)
+from vr.common.utils import tmpdir
+from vr.runners.image import ensure_image, IMAGES_ROOT
+from vr.runners.base import ensure_file
 
 
 def cmd_build(image_data):
@@ -28,7 +27,7 @@ def run_image(image_data, cmd=None, user='root', make_tarball=False):
                      image_data.base_image_url,
                      IMAGES_ROOT,
                      image_data.base_image_md5,
-                     unzip_to=image_path)
+                     untar_to=image_path)
 
         # write LXC config file
         tmpl = get_template('base_image.lxc')
@@ -44,12 +43,15 @@ def run_image(image_data, cmd=None, user='root', make_tarball=False):
 
         script_path = None
         if cmd is None:
-            # download/copy bootstrap script into place and ensure it's executable.
+            # copy bootstrap script into place and ensure it's executable.
             script = os.path.basename(image_data.script_url)
             script_path = os.path.join(image_path, script)
             ensure_file(image_data.script_url, script_path)
             st = os.stat(script_path)
-            os.chmod(script_path, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+            os.chmod(
+                script_path,
+                st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+            )
             real_cmd = '/' + script
         else:
             real_cmd = cmd
@@ -64,7 +66,8 @@ def run_image(image_data, cmd=None, user='root', make_tarball=False):
             real_cmd,
         ]
         env = {
-            'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games',
+            'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:'
+                    '/sbin:/bin:/usr/games',
             'HOME': '/root',
         }
         env.update(image_data.env or {})
@@ -81,7 +84,6 @@ def run_image(image_data, cmd=None, user='root', make_tarball=False):
                                    image_data.new_image_name)
             with tarfile.open(tardest, 'w:gz') as tar:
                 tar.add(image_path, arcname='')
-
 
 
 def get_template(name):

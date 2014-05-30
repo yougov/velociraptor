@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 setup(
     name='vr.server',
     namespace_packages=['vr'],
-    version='3.10.1',
+    version='3.10.2',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
     packages=find_packages(),
@@ -17,7 +17,7 @@ setup(
         'django-picklefield==0.2.0',
         'django-redis-cache==0.9.5',
         'django-reversion==1.6.1',
-        'django-tastypie==0.9.12-alpha',
+        'django-tastypie==0.9.12',
         'django-yamlfield==0.2',
         'Fabric==1.8.0',
         'gevent>=1.0rc2,<2',
@@ -42,7 +42,6 @@ setup(
         'vr.builder',
     ],
     dependency_links = [
-        'https://bitbucket.org/yougov/velociraptor/downloads/django-tastypie-0.9.12-alpha.tar.gz#egg=django-tastypie-0.9.12-alpha',
         'https://github.com/downloads/surfly/gevent/gevent-1.0rc2.tar.gz#egg=gevent-1.0rc2'
     ],
     entry_points = {
