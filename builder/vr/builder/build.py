@@ -40,14 +40,20 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
             buildpack_folders = pull_buildpacks(build_data.buildpack_urls)
 
         # clone/pull repo to latest
-        app_folder = pull_app(build_data.app_name,
+        build_folder = os.path.join(here, 'build')
+        mkdir(build_folder)
+        app_folder = pull_app(build_folder,
+                              build_data.app_name,
                               build_data.app_repo_url,
                               build_data.version,
                               vcs_type=build_data.app_repo_type)
-        chowntree(app_folder, username=user)
+        chowntree(build_folder, username=user)
+
+        app_folder_inside = os.path.join('/build',
+                                         os.path.basename(app_folder))
 
         volumes = [
-            [os.path.join(here, app_folder), '/build']
+            [build_folder, '/build']
         ]
 
         if buildpack_url:
@@ -76,6 +82,9 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
         chowntree('cache', username=user)
         volumes.append([os.path.join(here, 'cache'), '/cache'])
 
+
+        cmd = '/builder.sh %s /cache/buildpack_cache' % app_folder_inside
+
         buildproc = ProcData({
             'app_name': build_data.app_name,
             'app_repo_url': '',
@@ -90,7 +99,7 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
             'release_hash': '',
             'settings': {},
             'user': user,
-            'cmd': '/builder.sh /build /cache/buildpack_cache',
+            'cmd': cmd,
             'volumes': volumes,
             'proc_name': 'build',
             'image_name': build_data.image_name,
@@ -124,6 +133,10 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
             mkdir(os.path.join(slash_app, 'vendor'))
             chowntree(slash_app, username=user)
             subprocess.check_call([runner, runner_cmd, 'buildproc.yaml'])
+            build_data.release_data = recover_release_data(app_folder)
+            bp = recover_buildpack(app_folder)
+            build_data.buildpack_url = bp.url + '#' + bp.version
+            build_data.buildpack_version = bp.version
         finally:
             try:
                 # Copy compilation log into outfolder
@@ -143,12 +156,6 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
             shutil.move('cache/buildpack_cache', cachefolder)
 
         if make_tarball:
-            build_data.release_data = recover_release_data(app_folder)
-
-            bp = recover_buildpack(app_folder)
-            build_data.buildpack_url = bp.url + '#' + bp.version
-            build_data.buildpack_version = bp.version
-
             # slugignore
             clean_slug_dir(app_folder)
 
@@ -197,11 +204,12 @@ def recover_buildpack(app_folder):
     return BuildPack(buildpack_picked)
 
 
-def pull_app(name, url, version, vcs_type):
+def pull_app(parent_folder, name, url, version, vcs_type):
     just_url = url.partition('#')[0]
     with lock_or_wait(just_url):
         app = update_app(name, url, version, vcs_type=vcs_type)
-        dest = name + '-' + hashlib.md5(just_url).hexdigest()
+        dest = os.path.join(parent_folder,
+                            name + '-' + hashlib.md5(just_url).hexdigest())
         shutil.copytree(app.folder, dest)
     return dest
 
