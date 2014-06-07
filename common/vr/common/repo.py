@@ -118,7 +118,11 @@ class Repo(object):
             elif self.vcs_type == 'git':
                 # NOTE: We don't need the url for git b/c the pull
                 #       didn't prompt for a password.
-                self.run('git pull origin master --tags')
+                # NOTE: Use `git fetch` instead `git pull` to avoid a
+                #       merge. Use `--tags` to fetch all available
+                #       tags.
+                self.run('git fetch --tags')
+                self.run('git fetch')
                 self.run('git checkout %s' % rev)
 
     @property
