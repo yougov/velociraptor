@@ -49,7 +49,8 @@ v1.register(SquadResource())
 
 
 class IngredientResource(ModelResource):
-    swarms = fields.ToManyField('api.resources.SwarmResource', 'swarms', blank=True, null=True)
+    swarms = fields.ToManyField('api.resources.SwarmResource', 'swarms',
+                                blank=True, null=True, readonly=True)
 
     class Meta:
         queryset = models.ConfigIngredient.objects.all()
