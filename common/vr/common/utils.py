@@ -27,8 +27,9 @@ class tmpdir(object):
     """Context manager for putting you into a temporary directory on enter
     and deleting the directory on exit
     """
-    def __init__(self):
+    def __init__(self, cleanup=True):
         self.orig_path = os.getcwd()
+        self.cleanup = cleanup
 
     def __enter__(self):
         self.temp_path = tempfile.mkdtemp()
@@ -37,7 +38,8 @@ class tmpdir(object):
 
     def __exit__(self, type, value, traceback):
         os.chdir(self.orig_path)
-        shutil.rmtree(self.temp_path, ignore_errors=True)
+        if self.cleanup:
+            shutil.rmtree(self.temp_path, ignore_errors=True)
 
 
 class chdir(object):

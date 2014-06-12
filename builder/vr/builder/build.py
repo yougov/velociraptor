@@ -47,10 +47,10 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
                               build_data.app_repo_url,
                               build_data.version,
                               vcs_type=build_data.app_repo_type)
+        app_basename = os.path.basename(app_folder)
         chowntree(build_folder, username=user)
 
-        app_folder_inside = os.path.join('/build',
-                                         os.path.basename(app_folder))
+        app_folder_inside = os.path.join('/build', app_basename)
 
         volumes = [
             [build_folder, '/build']
@@ -69,7 +69,7 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
         # Some buildpacks (Node) like to rm -rf the whole cache folder they're
         # given.  They can't do that to a mountpoint, so we have to provide a
         # buildpack_cache folder nested inside the /cache mountpoint.
-        cachefolder = os.path.join(CACHE_HOME, app_folder)
+        cachefolder = os.path.join(CACHE_HOME, app_basename)
         if os.path.isdir(cachefolder):
             with lock_or_wait(cachefolder):
                 mkdir('cache')
@@ -148,7 +148,7 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
                     else:
                         print("No file at %s" % compile_log_src)
             finally:
-                # Clean up
+                # Clean up container
                 subprocess.check_call([runner, 'teardown', 'buildproc.yaml'])
 
         with lock_or_wait(cachefolder):
