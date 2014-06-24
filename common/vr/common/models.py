@@ -71,10 +71,9 @@ class Host(object):
                 url = 'http://%s:%s@%s:%s' %
                                             (self.username,self.password, name,
                                              rpc_or_port)
-                self.rpc = xmlrpc_client.Server(url)
             else:
                 url = 'http://%s:%s' % (name, rpc_or_port)
-                self.rpc = xmlrpc_client.Server(url)
+            self.rpc = xmlrpc_client.Server(url)
         else:
             self.rpc = rpc_or_port
         self.supervisor = self.rpc.supervisor
