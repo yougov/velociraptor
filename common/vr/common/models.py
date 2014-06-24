@@ -105,7 +105,11 @@ class Host(object):
             raise ProcError('host %s has no proc named %s' % (self.name, name))
 
     def _get_and_cache_procs(self):
-        proc_list = self.supervisor.getAllProcessInfo()
+        try:
+            proc_list = self.supervisor.getAllProcessInfo()
+        except Exception:
+            log.error("Failed to connect to %s", self)
+            raise
         # getAllProcessInfo returns a list of dicts.  Reshape that into a dict
         # of dicts, keyed by proc name.
         proc_dict = {d['name']: d for d in proc_list}
