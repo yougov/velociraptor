@@ -240,6 +240,11 @@ The Django parts are inside the 'vr' folder.  The non-Django parts are in
 the 'libraptor' folder.  This may be moved into a separate repository in the
 future.
 
+Some dependent projects are hosted in separate repos:
+
+ - `vr.events <https://bitbucket.org/yougov/vr.events>`_
+ - `vr.cli <https://bitbucket.org/yougov/vr.cli>`_
+
 UI
 ~~
 
