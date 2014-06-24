@@ -68,11 +68,13 @@ class Host(object):
         # Allow passing in an RPC connection, or a port number for making one
         if isinstance(rpc_or_port, int):
             if self.username:
-                self.rpc = xmlrpc_client.Server('http://%s:%s@%s:%s' %
+                url = 'http://%s:%s@%s:%s' %
                                             (self.username,self.password, name,
-                                             rpc_or_port))
+                                             rpc_or_port)
+                self.rpc = xmlrpc_client.Server(url)
             else:
-                self.rpc = xmlrpc_client.Server('http://%s:%s' % (name, rpc_or_port))
+                url = 'http://%s:%s' % (name, rpc_or_port)
+                self.rpc = xmlrpc_client.Server(url)
         else:
             self.rpc = rpc_or_port
         self.supervisor = self.rpc.supervisor
