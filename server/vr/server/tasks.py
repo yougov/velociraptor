@@ -641,7 +641,6 @@ def post_uptest_all_procs(results, test_run_id):
         # Show output for each failed test in each failed result
         msg = '\n\n'.join(f.get_formatted_fails() for f in fail_results)
 
-
         send_event('scheduled uptest failures', msg,
                    tags=['scheduled', 'failed'])
 
@@ -697,7 +696,6 @@ def clean_old_builds():
             return rcnt
         old_builds.difference_update([b for b in old_builds if is_recent(b)])
 
-
         # OK, we now have a set of builds that are older than both our cutoffs,
         # and definitely not in use.  Delete their files to free up space.
         for build in old_builds:
@@ -716,7 +714,6 @@ def always_disconnect():
         yield
     finally:
         fabric.network.disconnect_all()
-
 
 
 class tmpredis(object):
