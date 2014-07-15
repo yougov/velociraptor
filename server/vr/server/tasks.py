@@ -227,18 +227,6 @@ def build_app(build_id, callback=None):
 
 
 @task
-def update_tags():
-    env.linewise = True
-    for app in App.objects.filter(repo_url__isnull=False):
-        if app.repo_url:
-            tags = paver_build.get_latest_tags(app.repo_url, app.id)
-            tags = tags.split()
-            app.tag_set.all().delete()
-            for tag in tags:
-                app.tag_set.create(name=tag)
-
-
-@task
 @event_on_exception(['proc', 'deleted'])
 def delete_proc(host, proc, callback=None):
     env.host_string = host
