@@ -164,8 +164,8 @@ class Build(models.Model):
 
     hash = models.CharField(max_length=32, blank=True, null=True)
 
-    env_yaml = YAMLDictField(help_text=("YAML dict of env vars from "
-                                        "buildpack"), null=True, blank=True)
+    help_text = "YAML dict of env vars from buildpack"
+    env_yaml = YAMLDictField(help_text=help_text, null=True, blank=True)
 
     buildpack_url = models.CharField(max_length=200, null=True, blank=True)
     buildpack_version = models.CharField(max_length=50, null=True, blank=True)
