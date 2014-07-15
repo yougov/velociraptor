@@ -11,6 +11,8 @@ import functools
 import hashlib
 from collections import defaultdict
 
+from six.moves import range
+
 import yaml
 import fabric.network
 import redis
@@ -343,7 +345,7 @@ def swarm_release(swarm_id):
         # Build up a dictionary where the keys are hostnames, and the
         # values are lists of ports.
         new_procs_by_host = defaultdict(list)
-        for x in xrange(procs_needed):
+        for x in range(procs_needed):
             host = hosts[x % hostcount]
             port = host.get_next_port()
             new_procs_by_host[host.name].append(port)
@@ -375,7 +377,7 @@ def swarm_release(swarm_id):
         hosts.reverse()
         hostcount = len(hosts)
         subtasks = []
-        for x in xrange(procs_needed * -1):
+        for x in range(procs_needed * -1):
             host = hosts[x % hostcount]
             proc = host.swarm_procs.pop()
             subtasks.append(
