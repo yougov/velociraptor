@@ -2,6 +2,8 @@ import sys
 import hashlib
 import datetime
 
+import six
+
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
@@ -205,11 +207,12 @@ def stringify(thing, acc=''):
     Turn things into strings that are consistent regardless of Python
     implementation or hash seed.
     """
+    scalar_types = six.string_types + (int, float)
     if isinstance(thing, dict):
         return str([stringify(x) for x in sorted(thing.items())])
     elif isinstance(thing, (list, tuple)):
         return str([stringify(x) for x in thing])
-    elif isinstance(thing, (basestring, int, float)) or thing is None:
+    elif isinstance(thing, scalar_types) or thing is None:
         return str(thing)
     elif isinstance(thing, set):
         return stringify(sorted(thing))
@@ -551,7 +554,6 @@ class Swarm(models.Model):
 
             # Note: there's currently no way of ensuring that the build was
             # done by a particular version of the buildpack.
-
 
         build = get_current_build(self.app, tag)
         if build is None:
