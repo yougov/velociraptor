@@ -177,7 +177,7 @@ def build_app(build_id, callback=None):
     send_event(str(build), build_msg, tags=['build'])
 
     # enter a temp folder
-    with tmpdir() as here:
+    with tmpdir():
         try:
             with open('build_job.yaml', 'wb') as f:
                 f.write(BuildData(build_data).as_yaml())
