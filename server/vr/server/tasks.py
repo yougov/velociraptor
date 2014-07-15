@@ -511,7 +511,7 @@ def swarm_post_uptest(uptest_results, swarm_id):
                 test_counter += 1
                 # This checking/formatting relies on each uptest result being a
                 # dict with 'Passed', 'Name', and 'Output' keys.
-                if result['Passed'] != True:
+                if result['Passed'] is not True:
                     msg = (proc + ": {Name} failed:"
                            "{Output}".format(**result))
                     send_event(str(swarm), msg, tags=['failed', 'uptest'])
