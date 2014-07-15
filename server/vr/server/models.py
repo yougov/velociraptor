@@ -231,7 +231,7 @@ volumes_help = (
     'YAML list of directory,mountpoint pairs to be exposed '
     'inside the container. E.g. "- [/var/data, /data]"'
 )
-config_help = ("Config for settings.yaml. Must be valid YAML dict.")
+config_help = "Config for settings.yaml. Must be valid YAML dict."
 
 
 class Release(models.Model):
