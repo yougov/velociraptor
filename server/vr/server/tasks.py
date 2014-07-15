@@ -1,14 +1,8 @@
 import logging
-import tempfile
-import os
-import shutil
-import posixpath
 import datetime
 import contextlib
-import re
 import traceback
 import functools
-import hashlib
 from collections import defaultdict
 
 from six.moves import range
@@ -18,19 +12,18 @@ import fabric.network
 import redis
 from celery.task import subtask, chord, task
 from fabric.api import env
-from django.core.files.storage import default_storage, File
 from django.conf import settings
 from django.utils import timezone
 from django.core.files import File
 
-from vr.server import events, balancer, models, remote
-from vr.common.slugignore import clean_slug_dir
+from vr.server import events, balancer, remote
 from vr.common import utils
-from vr.server.models import (Release, Build, Swarm, Host, PortLock, App,
-                               TestRun, TestResult, BuildPack)
-from vr.common import repo, build as rbuild
+from vr.server.models import (
+    Release, Build, Swarm, Host, PortLock, App, TestRun, TestResult,
+    BuildPack,
+)
 from vr.common.models import Proc
-from vr.common.utils import tmpdir, run
+from vr.common.utils import tmpdir
 from vr.builder.main import BuildData
 
 
