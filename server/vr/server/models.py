@@ -1,6 +1,7 @@
 import sys
 import hashlib
 import datetime
+import logging
 
 import six
 
@@ -15,6 +16,8 @@ import redis
 from vr.server.fields import YAMLDictField, YAMLListField
 from vr.common import repo, build, models as raptor_models
 from vr.common.utils import parse_redis_url
+
+log = logging.getLogger(__name__)
 
 
 # If we're actually running (not just collecting static files), and there's not
@@ -575,6 +578,7 @@ class Swarm(models.Model):
         try:
             release = next(r for r in releases if release_eq(r, config, env,
                                                              self.volumes))
+            log.info("Found existing release %s", release.hash)
             return release
         except StopIteration:
             pass
@@ -584,6 +588,7 @@ class Swarm(models.Model):
         release = Release(build=build, config_yaml=config, env_yaml=env,
                           volumes=self.volumes, run_as=self.run_as)
         release.save()
+        log.info("Created new release %s", release.hash)
         return release
 
     def get_version(self):
