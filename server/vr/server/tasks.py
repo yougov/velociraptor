@@ -19,8 +19,7 @@ from django.core.files import File
 from vr.server import events, balancer, remote
 from vr.common import utils
 from vr.server.models import (
-    Release, Build, Swarm, Host, PortLock, App, TestRun, TestResult,
-    BuildPack,
+    Release, Build, Swarm, Host, PortLock, TestRun, TestResult, BuildPack,
 )
 from vr.common.models import Proc
 from vr.common.utils import tmpdir
