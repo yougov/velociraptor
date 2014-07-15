@@ -227,8 +227,10 @@ def make_hash(*args):
 
 
 env_help = "YAML dict of env vars to be set at runtime"
-volumes_help = ('YAML list of directory,mountpoint pairs to be exposed '
-                   'inside the container. E.g. "- [/var/data, /data]"')
+volumes_help = (
+    'YAML list of directory,mountpoint pairs to be exposed '
+    'inside the container. E.g. "- [/var/data, /data]"'
+)
 config_help = ("Config for settings.yaml. Must be valid YAML dict.")
 
 
