@@ -1,7 +1,8 @@
 import os
+import pkg_resources
+import shutil
 import stat
 import subprocess
-import pkg_resources
 import tarfile
 
 from vr.common.utils import tmpdir
@@ -46,7 +47,10 @@ def run_image(image_data, cmd=None, user='root', make_tarball=False):
             # copy bootstrap script into place and ensure it's executable.
             script = os.path.basename(image_data.script_url)
             script_path = os.path.join(image_path, script)
-            ensure_file(image_data.script_url, script_path)
+            if os.path.exists(image_data.script_url):
+                shutil.copy(image_data.script_url, script_path)
+            else:
+                ensure_file(image_data.script_url, script_path)
             st = os.stat(script_path)
             os.chmod(
                 script_path,
