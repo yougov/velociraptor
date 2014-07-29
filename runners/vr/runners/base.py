@@ -33,8 +33,13 @@ class BaseRunner(object):
         cmd_help = "One of: %s" % ', '.join(self.commands.keys())
         parser.add_argument('command', help=cmd_help)
         parser.add_argument('file', help="Path to proc.yaml file.")
+        parser.add_argument('--mem_limit', dest="mem_limit",
+                            help="Memory limit in bytes")
+        parser.add_argument('--memsw_limit', dest="memsw_limit",
+                            help="Memory plus swap limit in bytes")
 
         args = parser.parse_args()
+        self.cmd_args = args
 
         try:
             cmd = self.commands[args.command]
@@ -225,6 +230,25 @@ class BaseRunner(object):
         for outside, inside in volumes:
             mkdir(os.path.join(container_path, inside.lstrip('/')))
 
+    def get_lxc_memory_limits(self):
+        lines = ['# Memory limits']
+        args = self.cmd_args
+        if args.mem_limit:
+            lines.append(
+                'lxc.cgroup.memory.limit_in_bytes = {limit}'.format(
+                    limit=args.mem_limit))
+        if args.memsw_limit:
+            lines.append(
+                'lxc.cgroup.memory.memsw.limit_in_bytes = {limit}'.format(
+                    limit=args.memsw_limit))
+
+        return '\n'.join(lines)
+
+    def get_proc_lxc_tmpl_ctx(self):
+        return {
+            'proc_path': get_container_path(self.config),
+        }
+
     def write_proc_lxc(self):
         print("Writing proc.lxc")
 
@@ -233,10 +257,8 @@ class BaseRunner(object):
 
         tmpl = get_template(self.lxc_template_name)
 
-        content = tmpl % {
-            'proc_path': container_path,
-        }
-
+        content = tmpl % self.get_proc_lxc_tmpl_ctx()
+        content += self.get_lxc_memory_limits()
         content += self.get_lxc_volume_str()
 
         filepath = os.path.join(proc_path, 'proc.lxc')
