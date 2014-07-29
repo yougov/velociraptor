@@ -262,6 +262,10 @@ $(function() {
                     _.each(results, function(el) {
                         $('.ingredients-list').append('<li><a href="/ingredient/' + el.id + '/">' + el.name + '</a></li>');
                     });
+                    if(results.length < 50)
+                        $('ul.pager').hide();
+                    else
+                        $('ul.pager').show();
                 }
             });
         }, 500);
