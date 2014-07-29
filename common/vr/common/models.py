@@ -355,6 +355,8 @@ class ProcData(ConfigData):
         'image_md5',
         'build_md5',
         'volumes',
+        'mem_limit',
+        'memsw_limit',
     ]
 
     # for compatibility, don't require any config yet
