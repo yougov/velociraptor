@@ -102,6 +102,8 @@ def build_proc_info(release, config_name, hostname, proc, port):
         'user': release.run_as or 'nobody',
         'group': 'nogroup',
         'volumes': release.volumes or [],
+        'mem_limit': release.mem_limit,
+        'memsw_limit': release.memsw_limit,
     }
 
 

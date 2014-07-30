@@ -238,6 +238,8 @@ volumes_help = (
     'inside the container. E.g. "- [/var/data, /data]"'
 )
 config_help = "Config for settings.yaml. Must be valid YAML dict."
+mem_limit_help = "Maximum amount of RAM for the app. E.g. 256M"
+memsw_limit_help = "Maximum amount of RAM and swap for the app. E.g. 1G"
 
 
 class Release(models.Model):
@@ -253,13 +255,19 @@ class Release(models.Model):
     hash = models.CharField(max_length=32, blank=True, null=True)
 
     run_as = models.CharField(max_length=32, default='nobody')
+    mem_limit = models.CharField(max_length=32, null=True, blank=True,
+                                 help_text=mem_limit_help)
+    memsw_limit = models.CharField(max_length=32, null=True, blank=True,
+                                   help_text=memsw_limit_help)
 
     def __unicode__(self):
         return u'-'.join([self.build.app.name, self.build.tag, self.hash or ''])
 
     def compute_hash(self):
-        return make_hash(self.build.hash, self.config_yaml,
-                         self.env_yaml, self.volumes, self.run_as)[:8]
+        return make_hash(
+            self.build.hash, self.config_yaml,
+            self.env_yaml, self.volumes, self.run_as,
+            self.mem_limit, self.memsw_limit)[:8]
 
     def parsed_config(self):
         return yaml.safe_load(self.config_yaml or '')
@@ -407,6 +415,10 @@ class Swarm(models.Model):
     env_yaml = YAMLDictField(help_text=env_help, blank=True, null=True)
     volumes = YAMLListField(help_text=volumes_help, null=True, blank=True)
     run_as = models.CharField(max_length=32, default='nobody')
+    mem_limit = models.CharField(max_length=32, null=True,
+                                 help_text=mem_limit_help)
+    memsw_limit = models.CharField(max_length=32, null=True,
+                                 help_text=memsw_limit_help)
 
     ing_help = "Optional config shared with other swarms."
     config_ingredients = models.ManyToManyField(ConfigIngredient,
@@ -440,6 +452,14 @@ class Swarm(models.Model):
             'version': self.release.build.tag,
             'proc': self.proc_name
         }
+
+    def get_memory_limit_str(self):
+        s = []
+        if self.mem_limit:
+            s.append('RAM=%s' % self.mem_limit)
+        if self.memsw_limit:
+            s.append('RAM+Swap=%s' % self.memsw_limit)
+        return '/'.join(s)
 
     def get_procs(self, check_cache=False):
         """
@@ -568,8 +588,12 @@ class Swarm(models.Model):
 
         # If there's a release with the build and config we need, re-use it.
         # First filter by build in the DB query...
-        releases = Release.objects.filter(build=build,
-                                          run_as=self.run_as).order_by('-id')
+        releases = Release.objects.filter(
+            build=build,
+            run_as=self.run_as,
+            mem_limit=self.mem_limit,
+            memsw_limit=self.memsw_limit,
+        ).order_by('-id')
 
         # ...then filter in Python for equivalent config (identical keys/values
         # in different order are treated as the same, since we're comparing
@@ -586,7 +610,9 @@ class Swarm(models.Model):
         # We didn't find a release with the right build+config+env+volumes. Go
         # ahead and make one.
         release = Release(build=build, config_yaml=config, env_yaml=env,
-                          volumes=self.volumes, run_as=self.run_as)
+                          volumes=self.volumes, run_as=self.run_as,
+                          mem_limit=self.mem_limit,
+                          memsw_limit=self.memsw_limit)
         release.save()
         log.info("Created new release %s", release.hash)
         return release

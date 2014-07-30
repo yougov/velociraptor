@@ -116,6 +116,12 @@ class SwarmForm(forms.Form):
                                widget=forms.widgets.Textarea(attrs={'class':
                                                                     'codearea'}))
     run_as = forms.CharField(max_length=32, required=False)
+    mem_limit = forms.CharField(max_length=32, required=False,
+                                label='Memory',
+                                help_text=models.mem_limit_help)
+    memsw_limit = forms.CharField(max_length=32, required=False,
+                                  label='Memory + Swap',
+                                  help_text=models.memsw_limit_help)
     proc_name = forms.CharField(max_length=50)
     squad_id = forms.ChoiceField(choices=[], label='Squad')
     size = forms.IntegerField()
