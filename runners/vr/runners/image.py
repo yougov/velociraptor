@@ -81,21 +81,8 @@ class ImageRunner(BaseRunner):
     def get_image_folder(self):
         return os.path.join(IMAGES_ROOT, self.config.image_name, 'contents')
 
-    def write_proc_lxc(self):
-        print("Writing proc.lxc")
-
-        proc_path = get_proc_path(self.config)
-        container_path = get_container_path(self.config)
-
-        tmpl = get_template(self.lxc_template_name)
-
-        content = tmpl % {
-            'proc_path': container_path,
+    def get_proc_lxc_tmpl_ctx(self):
+        return {
+            'proc_path': get_container_path(self.config),
             'image_path': self.get_image_folder(),
         }
-
-        content += self.get_lxc_volume_str()
-
-        filepath = os.path.join(proc_path, 'proc.lxc')
-        with open(filepath, 'wb') as f:
-            f.write(content)
