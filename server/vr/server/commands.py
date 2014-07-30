@@ -14,3 +14,6 @@ def start_celerybeat():
 def run_migrations():
     args = shlex.split(os.getenv('MIGRATE_ARGS', ''))
     management.call_command('migrate', *args)
+
+    if os.getenv('SLEEP_FOREVER') == 'true':
+        raw_input()
