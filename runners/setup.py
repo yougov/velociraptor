@@ -4,14 +4,14 @@ from setuptools import setup, find_packages
 setup(
     name='vr.runners',
     namespace_packages=['vr'],
-    version='2.1.0',
+    version='2.1.1',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
     packages=find_packages(),
     include_package_data=True,
     url='https://bitbucket.org/yougov/velociraptor',
     install_requires=[
-        'vr.common>=3.8.0,<4',
+        'vr.common>=3.9.0,<4',
         'requests>=1.2.0',
         'PyYAML>=3.10',
     ],
