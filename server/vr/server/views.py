@@ -133,6 +133,8 @@ def edit_swarm(request, swarm_id=None):
             'env_yaml': yamlize(swarm.env_yaml),
             'volumes': yamlize(swarm.volumes),
             'run_as': swarm.run_as or 'nobody',
+            'mem_limit': swarm.mem_limit,
+            'memsw_limit': swarm.memsw_limit,
             'proc_name': swarm.proc_name,
             'size': swarm.size,
             'pool': swarm.pool or '',
@@ -154,6 +156,8 @@ def edit_swarm(request, swarm_id=None):
         swarm.env_yaml = data['env_yaml']
         swarm.volumes = data['volumes']
         swarm.run_as = data['run_as']
+        swarm.mem_limit = data['mem_limit']
+        swarm.memsw_limit = data['memsw_limit']
         swarm.proc_name = data['proc_name']
         swarm.size = data['size']
         swarm.pool = data['pool'] or None
@@ -188,6 +192,7 @@ def do_swarm(swarm, user):
         Config Name: %(config_name)s
         Proc Name: %(proc_name)s
         Squad: %(squad)s
+        Memory: %(memory)s
         Size: %(size)s
         Balancer: %(balancer)s
         Pool: %(pool)s
@@ -199,6 +204,7 @@ def do_swarm(swarm, user):
             'config_name': swarm.config_name,
             'proc_name': swarm.proc_name,
             'squad': swarm.squad,
+            'memory': swarm.get_memory_limit_str(),
             'size': swarm.size,
             'balancer': swarm.balancer,
             'pool': swarm.pool,
