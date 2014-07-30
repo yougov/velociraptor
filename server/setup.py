@@ -48,6 +48,7 @@ setup(
         'console_scripts': [
             'vr_worker = vr.server.commands:start_celery',
             'vr_beat = vr.server.commands:start_celerybeat',
+            'vr_migrate = vr.server.commands:run_migrations',
         ],
     },
     description=("Velociraptor's Django and Celery components."),

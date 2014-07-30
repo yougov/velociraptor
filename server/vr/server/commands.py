@@ -1,4 +1,5 @@
 import os
+import shlex
 
 # Make sure Django settings are loaded.
 os.environ['DJANGO_SETTINGS_MODULE'] = 'vr.server.settings'
@@ -9,3 +10,7 @@ def start_celery():
 
 def start_celerybeat():
     management.call_command('celerybeat', pidfile=None)
+
+def run_migrations():
+    args = shlex.split(os.getenv('MIGRATE_ARGS', ''))
+    management.call_command('migrate', *args)
