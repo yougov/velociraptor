@@ -243,8 +243,8 @@ future.
 
 Some dependent projects are hosted in separate repos:
 
- - `vr.events <https://bitbucket.org/yougov/vr.events>`_
- - `vr.cli <https://bitbucket.org/yougov/vr.cli>`_
+ - `vr.events`_ <https://bitbucket.org/yougov/vr.events>
+ - `vr.cli`_ <https://bitbucket.org/yougov/vr.cli>
 
 UI
 ~~
@@ -294,3 +294,6 @@ Google Group: https://groups.google.com/forum/?fromgroups#!forum/velociraptor-de
 .. _nginx: http://wiki.nginx.org/Main
 .. _Varnish: https://www.varnish-cache.org/
 .. _Stingray: http://www.riverbed.com/products-solutions/products/application-delivery-stingray/
+.. _Heroku buildpack documentation: https://devcenter.heroku.com/articles/buildpacks
+.. _vr.cli: https://bitbucket.org/yougov/vr.cli
+.. _vr.events: https://bitbucket.org/yougov/vr.events
