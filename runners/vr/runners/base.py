@@ -225,6 +225,26 @@ class BaseRunner(object):
         for outside, inside in volumes:
             mkdir(os.path.join(container_path, inside.lstrip('/')))
 
+    def get_lxc_memory_limits(self):
+        lines = []
+        mem_limit = getattr(self.config, 'mem_limit', None)
+        if mem_limit:
+            lines.append(
+                'lxc.cgroup.memory.limit_in_bytes = {limit}'.format(
+                    limit=mem_limit))
+        memsw_limit = getattr(self.config, 'memsw_limit', None)
+        if memsw_limit:
+            lines.append(
+                'lxc.cgroup.memory.memsw.limit_in_bytes = {limit}'.format(
+                    limit=memsw_limit))
+
+        return '\n'.join(lines)
+
+    def get_proc_lxc_tmpl_ctx(self):
+        return {
+            'proc_path': get_container_path(self.config),
+        }
+
     def write_proc_lxc(self):
         print("Writing proc.lxc")
 
@@ -233,11 +253,11 @@ class BaseRunner(object):
 
         tmpl = get_template(self.lxc_template_name)
 
-        content = tmpl % {
-            'proc_path': container_path,
-        }
-
-        content += self.get_lxc_volume_str()
+        content = '\n'.join((
+            tmpl % self.get_proc_lxc_tmpl_ctx(),
+            self.get_lxc_memory_limits(),
+            self.get_lxc_volume_str(),
+        ))
 
         filepath = os.path.join(proc_path, 'proc.lxc')
         with open(filepath, 'w') as f:
