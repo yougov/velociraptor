@@ -242,4 +242,33 @@ $(function() {
         }
     });
 
+    // function to delay callback by specified 'ms'
+    var delay = (function(){
+        var timer = 0;
+        return function(callback, ms){
+            clearTimeout (timer);
+            timer = setTimeout(callback, ms);
+        };
+    })();
+
+    // watch filter input and make delayed requests
+    $('.filterBy').on('keyup', function(e) {
+        delay(function(){
+            var resource = $(e.currentTarget).data('resource');
+            $.getJSON(VR.Urls.root + resource + '/?'+ e.currentTarget.name + '=' + e.currentTarget.value, function(data, status, xhr) {
+                if("success" === status) {
+                    var results = data.objects;
+                    $('.ingredients-list').empty();
+                    _.each(results, function(el) {
+                        $('.ingredients-list').append('<li><a href="/ingredient/' + el.id + '/">' + el.name + '</a></li>');
+                    });
+                    if(results.length < 50)
+                        $('ul.pager').hide();
+                    else
+                        $('ul.pager').show();
+                }
+            });
+        }, 500);
+    });
+
 });

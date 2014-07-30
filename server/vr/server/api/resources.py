@@ -54,6 +54,9 @@ class IngredientResource(ModelResource):
 
     class Meta:
         queryset = models.ConfigIngredient.objects.all()
+        filtering = {
+            'name': ALL,
+        }
         resource_name = 'ingredients'
         authentication = auth.MultiAuthentication(
             auth.BasicAuthentication(),
