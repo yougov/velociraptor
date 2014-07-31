@@ -1,15 +1,67 @@
 {% extends 'base.html' %}
+{% load static from staticfiles %}
 {% block title %}Deployment Log{% endblock title %}
 {% block content %}
+<link rel="stylesheet" href="{% static 'css/jquery-ui.min.css' %}">
 <div class="row-fluid">
 
 <h1 class="float">Deployment Log</h1>
 
-<div class="header-labels">
-<span class="label label-swarm">Swarms</span>
-<span class="label label-build">Builds</span>
-<span class="label label-release">Releases</span>
-<span class="label label-deployment">Deployments</span>
+<div class="filters-container">
+  <div class="header">
+    <h4>Filter log</h4>
+    <button class="pull-right minimize" type="button" data-toggle="collapse" data-target="#formCollapse">&mdash;</button>
+  </div>
+  <div id="formCollapse" class="collapse in">
+    <form name="filterForm" id="filterForm">
+      <div class="row-fluid">
+        <h4 class="span12">By type:</h4>
+      </div>
+      <div class="header-labels row-fluid">
+        <label class="pull-left"><span class="label label-swarm"><input type="radio" name="type__icontains" value="swarm" /> Swarms</span></label>
+        <label class="pull-left"><span class="label label-build"><input type="radio" name="type__icontains" value="build" /> Builds</span></label>
+        <label class="pull-left"><span class="label label-release"><input type="radio" name="type__icontains" value="release" /> Releases</span></label>
+        <label class="pull-left"><span class="label label-deployment"><input type="radio" name="type__icontains" value="deployment" /> Deployments</span></label>
+      </div>
+      <div class="row-fluid">
+        <h4 class="span12">By user:</h4>
+        <select name="user__username__icontains" id="user__username__icontains" class="span12">
+          <option value="">-------</option>
+          {% for user in users_list %}
+          <option value="{{ user.username }}">{{ user.username }}</option>
+          {% endfor %} 
+        </select>
+      </div>
+      <div class="row-fluid">
+        <h4 class="span12">By app:</h4>
+        <select name="message__icontains" id="app-list" class="span12">
+          <option value="">-------</option>
+          {% for app in apps_list %}
+          <option value="{{ app.name }}">{{ app.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="row-fluid">
+        <h4 class="span12">Date range:</h4>
+        <label>
+          <strong>Start:</strong>
+          <input type="text" class="time__gt" placeholder="yy-mm-dd" style="width:85px">
+          <input type="text" id="start_time" placeholder="hh:mm:ss" style="width:100px">
+        </label>
+        <label>
+          <strong>End:</strong>
+          <input type="text" class="time__lt" placeholder="yy-mm-dd" style="width:85px">
+          <input type="text" id="end_time" placeholder="hh:mm:ss" style="width:100px">
+        </label>
+        <input type="hidden" id="time__gt" />
+        <input type="hidden" id="time__lt" />
+      </div>
+      <div class="button-container row-fluid">
+        <button class="pull-left btn btn-success btn-small" type="submit">Apply</button>
+        <button class="pull-right btn btn-link btn-small clear">Clear all</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <ul class="deployment-log">
@@ -31,3 +83,57 @@
     </ul>
 {% endif %}
 {% endblock content %}
+
+{% block script %}
+<script src="{% static 'js/jquery-ui.min.js' %}"></script>
+<script src="{% static 'js/jquery.maskedinput.min.js' %}"></script>
+<script>
+jQuery(function() {
+  jQuery('button.clear').on('click', function(e) {
+    window.location.reload();
+  });
+
+  jQuery('.time__gt, .time__lt').datepicker();
+  jQuery('.time__gt, .time__lt').datepicker( 'option', 'dateFormat', 'yy-mm-dd' );
+  jQuery('.time__gt, .time__lt').on('change', function(e) {
+    jQuery('input[id=' + e.currentTarget.classList[0] + ']').attr('value', jQuery(this).val());
+  });
+
+  jQuery('#start_time, #end_time').mask('99:99:99');
+
+  jQuery('#filterForm').on('submit', function(e) {
+    e.preventDefault();
+    
+    var time__gt, time__lt;
+    if( jQuery('#time__gt').val() ) time__gt = jQuery('#time__gt').val();
+    if( jQuery('#time__lt').val() ) time__lt = jQuery('#time__lt').val();
+    if( jQuery('#start_time').val() ) time__gt += ' ' + jQuery('#start_time').val();    
+    if( jQuery('#end_time').val() ) time__lt += ' ' + jQuery('#end_time').val();
+    
+    var payload = jQuery(this).serialize();
+    if(time__gt) payload += '&time__gt=' + time__gt;
+    if(time__lt) payload += '&time__lt=' + time__lt;
+
+    $.getJSON(VR.Urls.root + 'logs/?'+ payload, function(data, status, xhr) {
+        if("success" === status) {
+            var results = data.objects;
+            $('.deployment-log').empty();
+            if(results.length > 0) {
+              _.each(results, function(el) {
+                var time = new Date(el.time).format('ddd mmm dd, h:MM TT', true);
+                $('.deployment-log').append('<li><span class="label label-' + el.type + '">' + time + ' UTC</span> ' + el.user.username + ': ' + el.message + '</li>');
+              });
+            } else {
+              $('.deployment-log').append('<li>No results found</li>');
+            }
+
+            if(results.length < 100)
+                $('ul.pager').hide();
+            else
+                $('ul.pager').show();
+        }
+    });
+  });
+});
+</script>
+{% endblock script %}

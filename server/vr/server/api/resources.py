@@ -5,6 +5,7 @@ import json
 from django.conf.urls.defaults import url
 from django.http import (HttpResponse, HttpResponseNotAllowed,
                          HttpResponseNotFound)
+from django.contrib.auth.models import User
 
 from tastypie.resources import ModelResource
 from tastypie import fields
@@ -313,3 +314,38 @@ class HostResource(ModelResource):
                                 bundle.obj.get_procs(check_cache=True)]
         return bundle
 v1.register(HostResource())
+
+
+class LogResource(ModelResource):
+    user = fields.ToOneField('api.resources.UserResource', 'user', full=True)
+
+    class Meta:
+        queryset = models.DeploymentLogEntry.objects.all()
+        resource_name = 'logs'
+        filtering = {
+            'type': ALL,
+            'time': ALL,
+            'user': ALL_WITH_RELATIONS,
+            'message': ALL,
+        }
+        authentication = auth.MultiAuthentication(
+            auth.BasicAuthentication(),
+            auth.SessionAuthentication(),
+        )
+        authorization = Authorization()
+v1.register(LogResource())
+
+class UserResource(ModelResource):
+    class Meta:
+        queryset = User.objects.all()
+        resource_name = 'user'
+        excludes = ['email', 'password', 'is_active', 'is_staff', 'is_superuser']
+        filtering = {
+            'username': ALL,
+        }
+        authentication = auth.MultiAuthentication(
+            auth.BasicAuthentication(),
+            auth.SessionAuthentication(),
+        )
+        authorization = Authorization()
+v1.register(UserResource())

@@ -42,6 +42,29 @@ clickable-text {
   font-size: 15px;
 }
 
+.btn-default {
+  color: #333 !important;
+  background: #fff !important;
+  border-color: #ccc;
+}
+
+.btn-link, .btn-link:active, .btn-link[disabled] {
+  background-color: transparent;
+  background-image: none;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  box-shadow: none;
+}
+
+.btn-link {
+  color: #0088cc !important;
+  cursor: pointer;
+  border-color: transparent;
+  -webkit-border-radius: 0;
+  -moz-border-radius: 0;
+  border-radius: 0;
+}
+
 .btn-primary {
   background-color: hsl(201, 100%, 47%) !important;
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#05a7ff", endColorstr="#009bef");
@@ -124,8 +147,81 @@ clickable-text {
   float: left;
 }
 
+.filters-container {
+  position: fixed;
+  right: 20px;
+  top: 80px;
+  max-width: 340px;
+  width: 100%;
+  background: rgba(255,255,255,0.7);
+  border: 1px solid #eee;
+  padding: 15px 15px 20px 15px;
+}
+
+.filters-container .header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: #eee;
+}
+
+.filters-container .header h4 {
+  padding-left: 15px;
+  color: #333;
+}
+
+.filters-container .minimize {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  -webkit-border-radius: 2px;
+  -moz-border-radius: 2px;
+  border-radius: 2px;
+  background: #ddd;
+  border: none;
+  outline: none;
+  z-index: 100;
+}
+
+.filters-container h4 {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #999;
+  line-height: 1.5;
+  min-height: 100% !important;
+}
+
+.filters-container form {
+  margin: 21px 0 0 0;
+}
+
+.filters-container form label {
+  font-size: 11px;
+}
+
+.filters-container form label strong {
+  text-align: right;
+  width: 50px;
+  display: inline-block;
+  float: left;
+  vertical-align: middle;
+  line-height: 32px;
+  margin-right: 5px;  
+}
+
 .header-labels {
-  float: right;
+  margin-bottom: 10px
+}
+
+.header-labels .label {
+  font-size: 11px;
+  margin-right: 6px;
+}
+
+.header-labels label input[type="radio"],
+.header-labels label input[type="checkbox"] {
+  margin: 3px 0;
 }
 
 /* deployment log styles */

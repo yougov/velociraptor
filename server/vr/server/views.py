@@ -3,6 +3,7 @@ import textwrap
 from django.conf import settings
 from django.contrib.auth import login as django_login, logout as django_logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse, reverse_lazy
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
@@ -218,6 +219,12 @@ class ListLogEntry(ListView):
     template_name = 'log.html'
     model = models.DeploymentLogEntry
     paginate_by = 50
+
+    def get_context_data(self, **kwargs):
+        context = super(ListLogEntry, self).get_context_data(**kwargs)
+        context['apps_list'] = models.App.objects.all()
+        context['users_list'] = User.objects.all()
+        return context
 
 
 class UpdateConfigIngredient(edit.UpdateView):
