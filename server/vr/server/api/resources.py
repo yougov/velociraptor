@@ -103,7 +103,7 @@ v1.register(BuildPackResource())
 class BuildResource(ModelResource):
     app = fields.ToOneField('api.resources.AppResource', 'app')
     class Meta:
-        queryset = models.Build.objects.all()
+        queryset = models.Build.objects.all().prefetch_related('app')
         resource_name = 'builds'
         authentication = auth.MultiAuthentication(
             auth.BasicAuthentication(),
@@ -154,7 +154,8 @@ class SwarmResource(ModelResource):
     version = fields.CharField('version')
 
     class Meta:
-        queryset = models.Swarm.objects.all()
+        queryset = models.Swarm.objects.all().prefetch_related(
+            'app', 'squad', 'release', 'config_ingredients')
         resource_name = 'swarms'
         filtering = {
             'ingredients': ALL_WITH_RELATIONS,
@@ -224,7 +225,7 @@ class ReleaseResource(ModelResource):
     build = fields.ToOneField('api.resources.BuildResource', 'build')
 
     class Meta:
-        queryset = models.Release.objects.all()
+        queryset = models.Release.objects.all().prefetch_related('build')
         resource_name = 'releases'
         authentication = auth.MultiAuthentication(
             auth.BasicAuthentication(),
