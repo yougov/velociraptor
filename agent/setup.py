@@ -14,7 +14,7 @@ setup(
         'redis>=2.6.2',
         'requests>=1.0.4',
         'psutil',
-        'PyYAML>=3.10',
+        'PyYAML==3.10',
     ],
     entry_points={
         'console_scripts': [
