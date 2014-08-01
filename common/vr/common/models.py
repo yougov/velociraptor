@@ -90,13 +90,13 @@ class Host(object):
 
         redis_spec may be None, a Redis URL, or a StrictRedis instance
         """
-        if not redis_spec or not redis:
+        if not redis_spec:
             return
         if isinstance(redis_spec, six.string_types):
             redis_params = parse_redis_url(redis_spec)
             return redis.StrictRedis(**redis_params)
-        if isinstance(redis_spec, redis.StrictRedis):
-            return redis
+        # assume any other value is a valid instance
+        return redis
 
     def get_proc(self, name, check_cache=False):
         if check_cache:
