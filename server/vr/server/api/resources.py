@@ -163,6 +163,7 @@ class SwarmResource(ModelResource):
             'app': ALL_WITH_RELATIONS,
             'proc_name': ALL,
             'config_name': ALL,
+            'pool': ALL,
 
         }
         authentication = auth.MultiAuthentication(
@@ -218,6 +219,19 @@ class SwarmResource(ModelResource):
             return HttpResponse(status=202)
 
         return HttpResponseNotAllowed(["POST"])
+
+    def apply_filters(self, request, applicable_filters):
+        base_object_list = super(SwarmResource, self).apply_filters(
+            request, applicable_filters
+        )
+
+        # Allow filtering Swarms on pool name, like so:
+        # /api/v1/swarms/?pool=[pool_name]
+        pool = request.GET.get('pool', None)
+        if pool:
+            base_object_list = base_object_list.filter(pool=pool)
+
+        return base_object_list
 v1.register(SwarmResource())
 
 

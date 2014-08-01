@@ -21,6 +21,10 @@ Swarm.init = function(swarmId, container) {
     }
   );
 
+  // check for pool name hijacking on form submit.
+  var form = findForm(container.get(0));
+  Swarm.checkPoolName(form);
+
   // bind proc event stream to handler
   var procEvents = new EventSource(VR.Urls.procEvents);
   procEvents.onmessage = $.proxy(function(e) {
@@ -40,6 +44,50 @@ Swarm.init = function(swarmId, container) {
 Swarm.addProcView = function(proc) {
   var view = new VR.Views.Proc(proc);
   Swarm.container.append(view.el);
+};
+
+Swarm.checkPoolName = function(form) {
+  // intercept the Swarm form's submit event, in order to warn about
+  // hijacking a routing pool
+  $(form).on('submit', function (e) {
+    var currentPool = $('#id_pool').val();
+    var poolSearchUrl = VR.Urls.getTasty('swarms') + '?pool=' + currentPool;
+    var hijackedPoolOwners = [];
+
+    // synchronous AJAX call to determine if we are about to hijack a pool
+    $.ajax({
+      type: 'GET',
+      url: poolSearchUrl,
+      dataType: 'json',
+      success: function(data, sts, xhr) {
+        if (data.meta.total_count > 0) {
+          var currentResourceUri = null;
+          if (_.has(Swarm, 'swarm')) {
+            currentResourceUri = Swarm.swarm.get('resource_uri');
+          }
+          _.each(data.objects, function(element, index, list) {
+            if (currentResourceUri != element.resource_uri) {
+              hijackedPoolOwners.push(element.shortname);
+            }
+          });
+        }
+      },
+      async: false
+    });
+
+    if (hijackedPoolOwners.length) {
+      var confirmationMsg = "WARNING!\n\n" +
+      "You're about to hijack pool name '" + currentPool + "'. " +
+      "It is currently being used by: " + hijackedPoolOwners.join(',') +
+      "\n\nIf you are unsure about this, click cancel immediately, " +
+      "as unintentionally taking over the pool name of some other Swarm " +
+      "may lead to disastrous scenarios.\n\n" +
+      "Are you sure you want to proceed?";
+      return confirm(confirmationMsg);
+    }
+
+    return true;
+  });
 };
 
 })();
