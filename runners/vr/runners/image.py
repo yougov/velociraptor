@@ -70,6 +70,12 @@ class ImageRunner(BaseRunner):
         """
         Ensure that config.image_url has been downloaded and unpacked.
         """
+        image_folder = self.get_image_folder()
+        if os.path.exists(image_folder):
+            print('OS image directory {} exists...not overwriting' \
+                .format(image_folder))
+            return
+
         ensure_image(
             self.config.image_name,
             self.config.image_url,
