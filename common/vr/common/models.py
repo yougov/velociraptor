@@ -96,7 +96,7 @@ class Host(object):
             redis_params = parse_redis_url(redis_spec)
             return redis.StrictRedis(**redis_params)
         # assume any other value is a valid instance
-        return redis
+        return redis_spec
 
     def get_proc(self, name, check_cache=False):
         if check_cache:
