@@ -100,7 +100,7 @@ class Host(object):
 
     def get_proc(self, name, check_cache=False):
         if check_cache:
-            # Note that if self.redis=None, and check_cache=True, an
+            # Note that if self.redis is None and check_cache is True, an
             # AttributeError will be raised.
             cached_json = self.redis.hget(self.cache_key, name)
             if cached_json:
