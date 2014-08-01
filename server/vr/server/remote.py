@@ -21,7 +21,6 @@ from vr.common.paths import (BUILDS_ROOT, PROCS_ROOT, get_proc_path,
                              get_container_name, get_container_path)
 from vr.common.utils import randchars
 from vr.builder.main import BuildData
-from . import settings
 
 
 def get_template(name):
@@ -65,17 +64,14 @@ def deploy_proc(proc_yaml_path):
     Given a path to a proc.yaml file, get that proc set up on the remote host.
     The runner's "setup" command will do most of the work.
     """
-    with open(proc_yaml_path, 'rb') as f:
-        settings = ProcData(yaml.safe_load(f))
+    settings = load_proc_data(proc_yaml_path)
     proc_path = get_proc_path(settings)
     sudo('mkdir -p ' + proc_path)
 
     remote_proc_yaml = posixpath.join(proc_path, 'proc.yaml')
     put(proc_yaml_path, remote_proc_yaml, use_sudo=True)
 
-    # FIXME: When we have other runners, we'll need to be told which one to
-    # run.
-    sudo('vrun_precise setup ' + remote_proc_yaml)
+    sudo(get_runner(settings) + ' setup ' + remote_proc_yaml)
     write_proc_conf(settings)
     sudo('supervisorctl reread')
     sudo('supervisorctl add ' + get_container_name(settings))
@@ -88,6 +84,7 @@ def write_proc_conf(settings):
         'container_name': get_container_name(settings),
         'container_path': get_container_path(settings),
         'log': posixpath.join(proc_path, 'log'),
+        'runner': get_runner(settings),
         'user': 'root',
     }
     proc_conf_tmpl = get_template('proc.conf')
@@ -98,23 +95,18 @@ def write_proc_conf(settings):
         use_sudo=True)
 
 
-# FIXME: This function should accept a dict or ProcData object or proc.yaml
-# path.  Probably the latter, so it's reasonably easy to use from a command
-# line.
 @task
-def run_uptests(proc, user='nobody'):
-    procdata = Proc.parse_name(proc)
-    procname = procdata['proc_name']
-    build_name = '%(app_name)s-%(version)s' % procdata
-    build_path = posixpath.join(BUILDS_ROOT, build_name)
-    proc_path = posixpath.join(PROCS_ROOT, proc)
+def run_uptests(proc_yaml_path, user='nobody'):
+    settings = load_proc_data(proc_yaml_path)
+    proc_path = get_proc_path(settings)
 
     new_container_path = posixpath.join(proc_path, 'rootfs')
     if files.exists(new_container_path, use_sudo=True):
         tests_path = posixpath.join(new_container_path, 'app/uptests',
-                                    procname)
+                                    settings.proc_name)
     else:
-        tests_path = posixpath.join(build_path, 'uptests', procname)
+        build_path = get_build_path(settings)
+        tests_path = posixpath.join(build_path, 'uptests', settings.proc_name)
     try:
         if files.exists(tests_path, use_sudo=True):
 
@@ -124,10 +116,10 @@ def run_uptests(proc, user='nobody'):
             # differently
             if files.exists(new_container_path, use_sudo=True):
                 proc_yaml_path = posixpath.join(proc_path, 'proc.yaml')
-                cmd = 'vrun_precise uptest ' + proc_yaml_path
+                cmd = get_runner(settings) + ' uptest ' + proc_yaml_path
             else:
-                cmd = legacy_uptests_command(proc_path, procname,
-                                             env.host_string, procdata['port'],
+                cmd = legacy_uptests_command(proc_path, settings.proc_name,
+                                             env.host_string, settings.port,
                                              user)
             result = sudo(cmd)
             # Though the uptester emits JSON to stdout, it's possible for the
@@ -191,6 +183,7 @@ def run_uptests(proc, user='nobody'):
             'Passed': False,
         }]
 
+
 def legacy_uptests_command(proc_path, proc, host, port, user):
     """
     Build the command string for uptesting the given proc inside its lxc
@@ -222,7 +215,8 @@ def delete_proc(proc):
 
     proc_yaml_path = posixpath.join(proc_dir, 'proc.yaml')
     if files.exists(proc_yaml_path, use_sudo=True):
-        sudo('vrun_precise teardown ' + proc_yaml_path)
+        settings = load_proc_data(proc_yaml_path)
+        sudo(get_runner(settings) + ' teardown ' + proc_yaml_path)
 
     # delete the proc dir
     if files.exists(proc_dir, use_sudo=True):
@@ -343,3 +337,20 @@ def shell_env(**env_vars):
         yield
     finally:
         env['shell'] = orig_shell
+
+
+def load_proc_data(proc_yaml_path):
+    with open(proc_yaml_path, 'rb') as f:
+        return ProcData(yaml.safe_load(f))
+
+
+def get_build_path(settings):
+    build_name = '{0.app_name}-{0.version}-{0.image_name}'.format(settings)
+    return posixpath.join(BUILDS_ROOT, build_name)
+
+
+def get_runner(settings):
+    """
+    Return the appropriate VR runner command to use with the given settings.
+    """
+    return 'vrun' if settings.image_url is not None else 'vrun_precise'
