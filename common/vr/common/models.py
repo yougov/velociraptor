@@ -21,7 +21,8 @@ import requests
 try:
     import redis
 except ImportError:
-    redis = None  # optional dependency
+    # optional dependency
+    redis = None
 
 try:
     import keyring
