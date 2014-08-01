@@ -79,14 +79,24 @@ class Host(object):
             self.rpc = rpc_or_port
         self.supervisor = self.rpc.supervisor
 
-        self.redis = None
-        if redis is not None:
-            if isinstance(redis_or_url, redis.StrictRedis):
-                self.redis = redis_or_url
-            elif isinstance(redis_or_url, six.string_types):
-                self.redis = redis.StrictRedis(**parse_redis_url(redis_or_url))
+        self.redis = self._init_redis(redis_or_url)
         self.cache_key = ':'.join([redis_cache_prefix, name])
         self.cache_lifetime = redis_cache_lifetime
+
+    @staticmethod
+    def _init_redis(redis_spec):
+        """
+        Return a StrictRedis instance or None based on redis_spec.
+
+        redis_spec may be None, a Redis URL, or a StrictRedis instance
+        """
+        if not redis_spec or not redis:
+            return
+        if isinstance(redis_spec, six.string_types):
+            redis_params = parse_redis_url(redis_spec)
+            return redis.StrictRedis(**redis_params)
+        if isinstance(redis_spec, redis.StrictRedis):
+            return redis
 
     def get_proc(self, name, check_cache=False):
         if check_cache:
