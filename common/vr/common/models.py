@@ -21,7 +21,7 @@ import requests
 try:
     import redis
 except ImportError:
-    pass # optional dependency
+    redis = None  # optional dependency
 
 try:
     import keyring
@@ -78,12 +78,12 @@ class Host(object):
             self.rpc = rpc_or_port
         self.supervisor = self.rpc.supervisor
 
-        if isinstance(redis_or_url, redis.StrictRedis):
-            self.redis = redis_or_url
-        elif isinstance(redis_or_url, six.string_types):
-            self.redis = redis.StrictRedis(**parse_redis_url(redis_or_url))
-        else:
-            self.redis = None
+        self.redis = None
+        if redis is not None:
+            if isinstance(redis_or_url, redis.StrictRedis):
+                self.redis = redis_or_url
+            elif isinstance(redis_or_url, six.string_types):
+                self.redis = redis.StrictRedis(**parse_redis_url(redis_or_url))
         self.cache_key = ':'.join([redis_cache_prefix, name])
         self.cache_lifetime = redis_cache_lifetime
 
