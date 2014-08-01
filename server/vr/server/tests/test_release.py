@@ -21,12 +21,11 @@ class TestCurrentRelease(object):
         self.config = {'b': 2}
         self.volumes = [['/foo', '/bar'], ['/baz', '/quux']]
 
-
     def test_save_creates_hash(self):
         release = Release(build=self.build, env_yaml=self.env,
-                               config_yaml=self.config, volumes=self.volumes)
+                          config_yaml=self.config, volumes=self.volumes)
         release.save()
-        assert release.hash # must not be None or blank.
+        assert release.hash  # must not be None or blank.
 
     def test_release_eq(self):
         r = Release(build=self.build, env_yaml=self.env,
@@ -47,10 +46,8 @@ class TestCurrentRelease(object):
         squad.save()
 
         release = Release(build=self.build, env_yaml=self.env,
-                               config_yaml=self.config, volumes=self.volumes)
+                          config_yaml=self.config, volumes=self.volumes)
         release.save()
-
-        release_count = Release.objects.count()
 
         swarm = Swarm(
             app=self.app,
@@ -67,7 +64,6 @@ class TestCurrentRelease(object):
 
         assert swarm.get_current_release(self.version) == release
 
-
     def test_swarm_creates_release(self):
 
         # Make an existing release to save with the swarm.
@@ -75,7 +71,7 @@ class TestCurrentRelease(object):
         squad.save()
 
         release = Release(build=self.build, env_yaml=self.env,
-                               config_yaml=self.config, volumes=self.volumes)
+                          config_yaml=self.config, volumes=self.volumes)
         release.save()
 
         release_count = Release.objects.count()
