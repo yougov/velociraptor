@@ -1,6 +1,8 @@
+import mock
 from django.utils import timezone
 
-from vr.server.models import App, Build, Release, Swarm, Squad, release_eq
+from vr.server.models import (
+    App, Build, OSImage, Release, Swarm, Squad, release_eq)
 from vr.common.utils import randchars
 
 
@@ -10,10 +12,16 @@ class TestCurrentRelease(object):
         self.app = App(name=randchars(), repo_url=randchars(), repo_type='hg')
         self.app.save()
 
+        self.os_image = OSImage(name=randchars(), file=randchars())
+        with mock.patch.object(OSImage, '_compute_file_md5',
+                               return_value='abcdef1234567890'):
+            self.os_image.save()
+
         self.version = 'v1'
-        self.build = Build(app=self.app, start_time=timezone.now(),
-                           end_time=timezone.now(), tag=self.version,
-                           status='success', buildpack_url=randchars(),
+        self.build = Build(app=self.app, os_image=self.os_image,
+                           start_time=timezone.now(), end_time=timezone.now(),
+                           tag=self.version, status='success',
+                           buildpack_url=randchars(),
                            buildpack_version=randchars(), hash=randchars())
         self.build.save()
 
@@ -62,7 +70,8 @@ class TestCurrentRelease(object):
         )
         swarm.save()
 
-        assert swarm.get_current_release(self.version) == release
+        assert swarm.get_current_release(
+            self.os_image, self.version) == release
 
     def test_swarm_creates_release(self):
 
@@ -95,6 +104,6 @@ class TestCurrentRelease(object):
 
         # get_current_release should make a new release for us from the new
         # config.
-        r = swarm.get_current_release(self.version)
+        r = swarm.get_current_release(self.os_image, self.version)
         assert Release.objects.count() == release_count + 1
         assert r.id != release.id
