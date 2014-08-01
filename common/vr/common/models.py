@@ -22,7 +22,7 @@ try:
     import redis
 except ImportError:
     # optional dependency
-    redis = None
+    pass
 
 try:
     import keyring
