@@ -28,7 +28,11 @@ def build_app(request):
     form = forms.BuildForm(request.POST or None)
     if form.is_valid():
         app = models.App.objects.get(id=form.cleaned_data['app_id'])
-        build = models.Build(app=app, tag=form.cleaned_data['tag'])
+        os_image_id = form.cleaned_data['os_image_id']
+        os_image = models.OSImage.objects.get(id=os_image_id) \
+            if os_image_id is not None else None
+        build = models.Build(app=app, tag=form.cleaned_data['tag'],
+                             os_image=os_image)
         build.save()
         do_build(build, request.user)
         return redirect('dash')
@@ -127,6 +131,7 @@ def edit_swarm(request, swarm_id=None):
         swarm = models.Swarm.objects.get(id=swarm_id)
         initial = {
             'app_id': swarm.app.id,
+            'os_image_id': getattr(swarm.release.build.os_image, 'id', None),
             'squad_id': swarm.squad.id,
             'tag': swarm.release.build.tag,
             'config_name': swarm.config_name,
@@ -150,6 +155,9 @@ def edit_swarm(request, swarm_id=None):
     form = forms.SwarmForm(request.POST or None, initial=initial)
     if form.is_valid():
         data = form.cleaned_data
+        os_image = models.OSImage.objects.get(id=data['os_image_id']) \
+            if data['os_image_id'] is not None else None
+
         swarm.app = models.App.objects.get(id=data['app_id'])
         swarm.squad = models.Squad.objects.get(id=data['squad_id'])
         swarm.config_name = data['config_name']
@@ -163,7 +171,7 @@ def edit_swarm(request, swarm_id=None):
         swarm.size = data['size']
         swarm.pool = data['pool'] or None
         swarm.balancer = data['balancer'] or None
-        swarm.release = swarm.get_current_release(data['tag'])
+        swarm.release = swarm.get_current_release(os_image, data['tag'])
         swarm.save()
         swarm.config_ingredients.clear()
         for ingredient in data['config_ingredients']:
