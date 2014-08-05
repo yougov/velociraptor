@@ -6,7 +6,6 @@
 <form method='post' class='raptorform'{% if enctype %}enctype="{{ enctype }}"{% endif %}>{% csrf_token %}
 <div class="row">
 <div class="span12">
-
     {% if swarm.id %}
     <h1 class="float">Swarm: {{ swarm.shortname }}
       <span id="swarm-container" class="row-fluid">
@@ -51,18 +50,18 @@
           {% formfield form.memsw_limit %}
           {% formfield form.config_ingredients %}
           </div>
-        </div>          
+        </div>
       </div>
       <div class="tab-pane form-horizontal span8" id="preview">
         <div class="row">
           <div class="span8">
             <h4>Compiled Config</h4>
-			<pre id="compiled_config"></pre>
+            <pre id="compiled_config"></pre>
 
             <h4>Compiled Env</h4>
             <pre id="compiled_env"></pre>
           </div>
-        </div>          
+        </div>
       </div>
       <div class="tab-pane form-horizontal span4" id="routing">
           {% formfield form.pool %}
@@ -89,13 +88,19 @@ $(function() {
   // enable using tabs in the textareas
   $('.codearea').tabby({tabString:'  '});
 
-
-  jQuery.each($("select[multiple]"), function () {  
-    // "Locations" can be any label you want  
-  SelectFilter.init(this.id, "Ingredients", 0, "/static/");  
-}); 
+  jQuery.each($("select[multiple]"), function () {
+    // "Locations" can be any label you want
+    SelectFilter.init(this.id, "Ingredients", 0, "/static/");
+  });
 });
 
+</script>
+{% else %}
+<script>
+$(function() {
+  // make sure that pool name checking also works for new swarms
+  VR.Swarm.checkPoolName($('form.raptorform'));
+});
 </script>
 {% endif %}
 {% endblock script %}
