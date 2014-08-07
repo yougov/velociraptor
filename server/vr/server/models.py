@@ -1,7 +1,8 @@
-import sys
-import hashlib
 import datetime
+import hashlib
 import logging
+import os.path
+import sys
 
 import six
 
@@ -25,7 +26,8 @@ log = logging.getLogger(__name__)
 # save it here.  redis-py implements an internal conection pool, so this
 # should be thread safe and gevent safe.
 if 'collectstatic' not in sys.argv and 'events_redis' not in globals():
-    events_redis = redis.StrictRedis(**parse_redis_url(settings.EVENTS_PUBSUB_URL))
+    kwargs = parse_redis_url(settings.EVENTS_PUBSUB_URL)
+    events_redis = redis.StrictRedis(**kwargs)
 
 LOG_ENTRY_TYPES = (
     ('build', 'Build'),
@@ -114,7 +116,7 @@ class App(models.Model):
     namehelp = ("Used in release name.  Good app names are short and use "
                 "no spaces or dashes (underscores are OK).")
     name = models.CharField(max_length=50, help_text=namehelp,
-        validators=[validate_app_name], unique=True)
+                            validators=[validate_app_name], unique=True)
     repo_url = models.CharField(max_length=200)
     repo_type = models.CharField(max_length=10, choices=repo_choices)
 
@@ -126,6 +128,41 @@ class App(models.Model):
     class Meta:
         ordering = ('name',)
         db_table = 'deployment_app'
+
+OS_IMAGES_BASE = 'images'
+
+
+def build_os_image_path(instance, filename):
+    return os.path.join(OS_IMAGES_BASE, instance.name, filename)
+
+
+class OSImage(models.Model):
+    """An OS image within which a build can be created and run."""
+    name = models.CharField(max_length=200, unique=True)
+    file = models.FileField(upload_to=build_os_image_path)
+    file_md5 = models.CharField(max_length=32, null=True, editable=False)
+
+    def __unicode__(self):
+        return self.name
+
+    class Meta:
+        ordering = ('name',)
+        db_table = 'deployment_os_image'
+
+    def save(self):
+        super(OSImage, self).save()
+        if self.file and not self.file_md5:
+            self.file_md5 = self._compute_file_md5()
+            super(OSImage, self).save()
+
+    def _compute_file_md5(self):
+        """Return the MD5 hash of the contents of this image's archive file."""
+        md5 = hashlib.md5()
+        with self.file.file as f:
+            for chunk in iter(lambda: f.read(8192), b''):
+                md5.update(chunk)
+
+        return md5.hexdigest()
 
 
 class Tag(models.Model):
@@ -150,9 +187,10 @@ BUILD_EXPIRED = 'expired'
 class Build(models.Model):
     app = models.ForeignKey(App)
     tag = models.CharField(max_length=50)
+    os_image = models.ForeignKey(OSImage, null=True, blank=True)
     file = models.FileField(upload_to='builds', null=True, blank=True)
+    file_md5 = models.CharField(max_length=32, blank=True, null=True)
     compile_log = models.FileField(upload_to='builds', null=True, blank=True)
-
     start_time = models.DateTimeField(null=True)
     end_time = models.DateTimeField(null=True)
 
@@ -196,6 +234,11 @@ class Build(models.Model):
 
         return True
 
+    def start(self):
+        """Mark this build as having been started."""
+        self.status = 'started'
+        self.start_time = timezone.now()
+
     def __unicode__(self):
         # Return the app name and version
         return u'-'.join([self.app.name, self.tag])
@@ -203,6 +246,17 @@ class Build(models.Model):
     class Meta:
         ordering = ['-id']
         db_table = 'deployment_build'
+
+    def save(self):
+        # Compute hash on save only if it hasn't already been done and the
+        # build is complete.
+        if self.status == BUILD_SUCCESS and not self.hash:
+            self.hash = self.compute_hash()
+        super(Build, self).save()
+
+    def compute_hash(self):
+        return make_hash(
+            self.file_md5, getattr(self.os_image, 'file_md5', None))
 
 
 def stringify(thing, acc=''):
@@ -261,7 +315,7 @@ class Release(models.Model):
                                    help_text=memsw_limit_help)
 
     def __unicode__(self):
-        return u'-'.join([self.build.app.name, self.build.tag, self.hash or ''])
+        return u'-'.join([str(self.build), self.hash or ''])
 
     def compute_hash(self):
         return make_hash(
@@ -336,7 +390,7 @@ class Host(models.Model):
         user = getattr(settings, 'SUPERVISOR_USERNAME', None)
         pwd = getattr(settings, 'SUPERVISOR_PASSWORD', None)
         self.raw_host = raptor_models.Host(self.name, settings.SUPERVISOR_PORT,
-                                          redis_or_url=events_redis,
+                                           redis_or_url=events_redis,
                                            supervisor_username=user,
                                            supervisor_password=pwd)
 
@@ -436,20 +490,18 @@ class Swarm(models.Model):
         db_table = 'deployment_swarm'
 
     def __unicode__(self):
-        # app-version-swarmname-release_hash-procname
+        # app-version-swarm_config_name-release_hash-procname
         return u'-'.join(str(x) for x in [
-            self.app.name,
-            self.release.build.tag,
+            self.release.build,
             self.config_name,
             self.release.hash,
-            self.proc_name
+            self.proc_name,
         ])
 
     def shortname(self):
-        return u'%(app)s-%(version)s-%(configname)s-%(proc)s' % {
-            'app': self.app.name,
+        return u'%(build)s-%(configname)s-%(proc)s' % {
+            'build': self.release.build,
             'configname': self.config_name,
-            'version': self.release.build.tag,
             'proc': self.proc_name
         }
 
@@ -547,26 +599,26 @@ class Swarm(models.Model):
 
         return env
 
-    def get_current_release(self, tag):
+    def get_current_release(self, os_image, tag):
         """
         Retrieve or create a Release that has current config and a successful
-        or pending build with the specified tag.
+        or pending build with the specified OS image and tag.
         """
 
-        def get_current_build(app, tag):
+        def get_current_build(app, os_image, tag):
             """
-            Given an app and a tag, look for a build that matches both, and was
-            successfully built (or is currently building).  If not found, return
-            None.
+            Given an app, OS image,  and a tag, look for a build that matches
+            all three, and was successfully built (or is currently building).
+            If not found, return None.
             """
-            # First check if there's a build for our app and the given tag
+            # check if there's a build for the given app, OS image, and tag
             builds = Build.objects.filter(
-                    app=app, tag=tag
-                ).exclude(
-                    status='expired'
-                ).exclude(
-                    status='failed'
-                ).order_by('-id')
+                app=app, os_image=os_image, tag=tag
+            ).exclude(
+                status='expired'
+            ).exclude(
+                status='failed'
+            ).order_by('-id')
 
             if not builds:
                 return None
@@ -578,9 +630,9 @@ class Swarm(models.Model):
             # Note: there's currently no way of ensuring that the build was
             # done by a particular version of the buildpack.
 
-        build = get_current_build(self.app, tag)
+        build = get_current_build(self.app, os_image, tag)
         if build is None:
-            build = Build(app=self.app, tag=tag)
+            build = Build(app=self.app, os_image=os_image, tag=tag)
             build.save()
 
         env = self.get_env(build)
@@ -621,7 +673,8 @@ class Swarm(models.Model):
         return self.release.build.tag
 
     def set_version(self, version):
-        self.release = self.get_current_release(version)
+        os_image = self.release.build.os_image
+        self.release = self.get_current_release(os_image, version)
 
     version = property(get_version, set_version)
 
@@ -728,7 +781,7 @@ class TestResult(models.Model):
         containing just the failed tests.
         """
         parsed = yaml.safe_load(self.results)
-        return [t for t in parsed if t['Passed'] == False]
+        return [t for t in parsed if t['Passed'] is False]
 
     def format_fail(self, result):
         """

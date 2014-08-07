@@ -16,7 +16,6 @@ class ConfigIngredientForm(forms.ModelForm):
             'js/jquery.textarea.min.js',
         )
 
-
     def clean_config_yaml(self):
         config_yaml = self.cleaned_data.get('config_yaml', None)
         if config_yaml:
@@ -40,11 +39,15 @@ class BuildForm(forms.Form):
 
     app_id = forms.ChoiceField(choices=[], label='App')
     tag = forms.CharField()
+    os_image_id = forms.TypedChoiceField(choices=[], label='OS Image',
+                                         required=False, empty_value=None)
 
     def __init__(self, *args, **kwargs):
         super(BuildForm, self).__init__(*args, **kwargs)
         self.fields['app_id'].choices = [(a.id, a) for a in
                                          models.App.objects.all()]
+        self.fields['os_image_id'].choices = [('', '-------')] + [
+            (image.id, image) for image in models.OSImage.objects.all()]
 
 
 class BuildUploadForm(forms.ModelForm):
@@ -83,8 +86,8 @@ class DeploymentForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(DeploymentForm, self).__init__(*args, **kwargs)
-        self.fields['hostname'].choices = [(h.name, h.name) for h in
-                                       models.Host.objects.filter(active=True)]
+        self.fields['hostname'].choices = \
+            [(h.name, h.name) for h in models.Host.objects.filter(active=True)]
 
 
 class LoginForm(forms.Form):
@@ -104,17 +107,19 @@ class SwarmForm(forms.Form):
     """
     app_id = forms.ChoiceField(choices=[], label='App')
     tag = forms.CharField(max_length=50)
+    os_image_id = forms.TypedChoiceField(choices=[], label='OS Image',
+                                         required=False, empty_value=None)
     config_name = forms.CharField(max_length=50,
                                   help_text=models.config_name_help)
-    config_yaml = forms.CharField(required=False,
-                                  widget=forms.widgets.Textarea(attrs={'class':
-                                                                       'codearea'}))
-    env_yaml = forms.CharField(required=False,
-                               widget=forms.widgets.Textarea(attrs={'class':
-                                                                    'codearea'}))
-    volumes = forms.CharField(required=False,
-                               widget=forms.widgets.Textarea(attrs={'class':
-                                                                    'codearea'}))
+    config_yaml = forms.CharField(
+        required=False,
+        widget=forms.widgets.Textarea(attrs={'class': 'codearea'}))
+    env_yaml = forms.CharField(
+        required=False,
+        widget=forms.widgets.Textarea(attrs={'class': 'codearea'}))
+    volumes = forms.CharField(
+        required=False,
+        widget=forms.widgets.Textarea(attrs={'class': 'codearea'}))
     run_as = forms.CharField(max_length=32, required=False)
     mem_limit = forms.CharField(max_length=32, required=False,
                                 label='Memory',
@@ -146,9 +151,11 @@ class SwarmForm(forms.Form):
 
         super(SwarmForm, self).__init__(data, *args, **kwargs)
         self.fields['squad_id'].choices = [(s.id, s) for s in
-                                            models.Squad.objects.all()]
+                                           models.Squad.objects.all()]
         self.fields['app_id'].choices = [(a.id, a) for a in
-                                            models.App.objects.all()]
+                                         models.App.objects.all()]
+        self.fields['os_image_id'].choices = [('', '-------')] + [
+            (image.id, image) for image in models.OSImage.objects.all()]
         self.fields['balancer'].choices = [('', '-------')] + [
             (b, b) for b in settings.BALANCERS]
 

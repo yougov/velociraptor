@@ -6,12 +6,11 @@ from django.contrib.auth.models import Group
 from vr.server import models
 from vr.server.forms import ConfigIngredientForm
 
-
-
 admin.site.register(models.Build)
 admin.site.register(models.BuildPack)
-admin.site.register(models.Host)
 admin.site.register(models.DeploymentLogEntry)
+admin.site.register(models.Host)
+admin.site.register(models.OSImage)
 admin.site.register(models.Swarm)
 
 # Unregister the Django 'group' model, as I don't think we'll be using it.
@@ -62,4 +61,3 @@ admin.site.register(models.TestRun, TestRunAdmin)
 class ReleaseAdmin(admin.ModelAdmin):
     search_fields = ['config_yaml', 'env_yaml', 'build__app__name']
 admin.site.register(models.Release, ReleaseAdmin)
-

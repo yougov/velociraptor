@@ -53,8 +53,9 @@ def auth_required(view_func):
 @auth_required
 def host(request):
     # list all hosts
-    return utils.json_response({'hosts': [h.name for h in
-                                    models.Host.objects.filter(active=True)]})
+    return utils.json_response({
+        'hosts': [h.name for h in models.Host.objects.filter(active=True)]
+    })
 
 
 @auth_required
@@ -180,7 +181,7 @@ class ProcTailer(object):
         self._connect()
 
     def _connect(self):
-        url = 'http://%s:%s/logtail/%s' % (self.hostname, self.port, self.procname)
+        url = 'http://{0.hostname}:{0.port}/logtail/{0.procname}'.format(self)
 
         auth = None
         if self.username:

@@ -1,6 +1,8 @@
+import mock
 from django.utils import timezone
 
-from vr.server.models import App, Build, Release, Swarm, Squad, release_eq
+from vr.server.models import (
+    App, Build, OSImage, Release, Swarm, Squad, release_eq)
 from vr.common.utils import randchars
 
 
@@ -10,10 +12,16 @@ class TestCurrentRelease(object):
         self.app = App(name=randchars(), repo_url=randchars(), repo_type='hg')
         self.app.save()
 
+        self.os_image = OSImage(name=randchars(), file=randchars())
+        with mock.patch.object(OSImage, '_compute_file_md5',
+                               return_value='abcdef1234567890'):
+            self.os_image.save()
+
         self.version = 'v1'
-        self.build = Build(app=self.app, start_time=timezone.now(),
-                           end_time=timezone.now(), tag=self.version,
-                           status='success', buildpack_url=randchars(),
+        self.build = Build(app=self.app, os_image=self.os_image,
+                           start_time=timezone.now(), end_time=timezone.now(),
+                           tag=self.version, status='success',
+                           buildpack_url=randchars(),
                            buildpack_version=randchars(), hash=randchars())
         self.build.save()
 
@@ -21,12 +29,11 @@ class TestCurrentRelease(object):
         self.config = {'b': 2}
         self.volumes = [['/foo', '/bar'], ['/baz', '/quux']]
 
-
     def test_save_creates_hash(self):
         release = Release(build=self.build, env_yaml=self.env,
-                               config_yaml=self.config, volumes=self.volumes)
+                          config_yaml=self.config, volumes=self.volumes)
         release.save()
-        assert release.hash # must not be None or blank.
+        assert release.hash  # must not be None or blank.
 
     def test_release_eq(self):
         r = Release(build=self.build, env_yaml=self.env,
@@ -47,10 +54,8 @@ class TestCurrentRelease(object):
         squad.save()
 
         release = Release(build=self.build, env_yaml=self.env,
-                               config_yaml=self.config, volumes=self.volumes)
+                          config_yaml=self.config, volumes=self.volumes)
         release.save()
-
-        release_count = Release.objects.count()
 
         swarm = Swarm(
             app=self.app,
@@ -65,8 +70,8 @@ class TestCurrentRelease(object):
         )
         swarm.save()
 
-        assert swarm.get_current_release(self.version) == release
-
+        assert swarm.get_current_release(
+            self.os_image, self.version) == release
 
     def test_swarm_creates_release(self):
 
@@ -75,7 +80,7 @@ class TestCurrentRelease(object):
         squad.save()
 
         release = Release(build=self.build, env_yaml=self.env,
-                               config_yaml=self.config, volumes=self.volumes)
+                          config_yaml=self.config, volumes=self.volumes)
         release.save()
 
         release_count = Release.objects.count()
@@ -99,6 +104,6 @@ class TestCurrentRelease(object):
 
         # get_current_release should make a new release for us from the new
         # config.
-        r = swarm.get_current_release(self.version)
+        r = swarm.get_current_release(self.os_image, self.version)
         assert Release.objects.count() == release_count + 1
         assert r.id != release.id

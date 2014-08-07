@@ -66,7 +66,7 @@ def eventify(user, action, obj, detail=None):
     all at once.
     """
     fragment = '%s %s' % (action, obj)
-    from vr.server import models # Imported late to avoid circularity
+    from vr.server import models  # Imported late to avoid circularity
     logentry = models.DeploymentLogEntry(
         type=action,
         user=user,

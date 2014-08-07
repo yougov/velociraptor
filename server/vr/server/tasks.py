@@ -1,8 +1,9 @@
-import logging
-import datetime
 import contextlib
-import traceback
+import datetime
 import functools
+import logging
+import posixpath
+import traceback
 from collections import defaultdict
 
 from six.moves import range
@@ -16,17 +17,19 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.files import File
 
-from vr.server import events, balancer, remote
+from vr.builder.main import BuildData
 from vr.common import utils
+from vr.common.models import Proc
+from vr.common.paths import PROCS_ROOT
+from vr.common.utils import tmpdir
+from vr.server import events, balancer, remote
 from vr.server.models import (
     Release, Build, Swarm, Host, PortLock, TestRun, TestResult, BuildPack,
 )
-from vr.common.models import Proc
-from vr.common.utils import tmpdir
-from vr.builder.main import BuildData
 
 
 logger = logging.getLogger('velociraptor')
+
 
 def send_event(title, msg, tags=None):
     logger.info(msg)
@@ -83,13 +86,13 @@ def build_proc_info(release, config_name, hostname, proc, port):
 
     build = release.build
     app = build.app
-    return {
+    proc_info = {
         'release_hash': release.hash,
         'config_name': config_name,
         'settings': release.config_yaml or {},
         'env': release.env_yaml or {},
         'version': build.tag,
-        'build_md5': build.hash,
+        'build_md5': build.file_md5,
         'build_url': build.file.url,
         'buildpack_url': build.buildpack_url,
         'buildpack_version': build.buildpack_version,
@@ -105,6 +108,15 @@ def build_proc_info(release, config_name, hostname, proc, port):
         'mem_limit': release.mem_limit,
         'memsw_limit': release.memsw_limit,
     }
+
+    if build.os_image is not None:
+        proc_info.update({
+            'image_name': build.os_image.name,
+            'image_url': build.os_image.file.url,
+            'image_md5': build.os_image.file_md5,
+        })
+
+    return proc_info
 
 
 @task
@@ -146,37 +158,29 @@ def deploy(release_id, config_name, hostname, proc, port):
 @event_on_exception(['build'])
 def build_app(build_id, callback=None):
     build = Build.objects.get(id=build_id)
-    app = build.app
-    # remember when we started building
-    build.status = 'started'
-    build.start_time = timezone.now()
+    build.start()
     build.save()
 
-    # TODO: add image_url, image_md5, and image_name when we get there.
-    build_data = {
-        'app_name': app.name,
-        'app_repo_url': app.repo_url,
-        'app_repo_type': app.repo_type,
-        'version': build.tag,
-    }
-
-    if app.buildpack:
-        build_data['buildpack_url'] = app.buildpack.repo_url
-    else:
-        buildpacks = BuildPack.objects.order_by('order')
-        urls = [bp.repo_url for bp in buildpacks]
-        build_data['buildpack_urls'] = urls
-
-    build_msg = "Started build %s" % build
-
-    build_msg += '\n\n' + BuildData(build_data).as_yaml()
+    build_yaml = BuildData(get_build_parameters(build)).as_yaml()
+    build_msg = "Started build %s" % build + '\n\n' + build_yaml
     send_event(str(build), build_msg, tags=['build'])
 
+    _do_build(build, build_yaml)
+
+    # start callback if there is one.
+    if callback is not None:
+        subtask(callback).delay()
+
+    # If there were any other swarms waiting on this build, kick them off
+    build_start_waiting_swarms(build.id)
+
+
+def _do_build(build, build_yaml):
     # enter a temp folder
     with tmpdir():
         try:
             with open('build_job.yaml', 'wb') as f:
-                f.write(BuildData(build_data).as_yaml())
+                f.write(build_yaml)
             # call the fabric build task to ssh to self and do the build
             env.host_string = 'localhost'
             env.abort_on_prompts = True
@@ -185,18 +189,21 @@ def build_app(build_id, callback=None):
             env.password = settings.DEPLOY_PASSWORD
             env.linewise = True
             remote.build_app('build_job.yaml')
+
             # store the build file and metadata in the database.  There should
             # now be a build.tar.gz and build_result.yaml in the current folder
-
             with open('build_result.yaml', 'rb') as f:
                 build_result = BuildData(yaml.safe_load(f))
 
-            filepath = ('builds/' + '-'.join([build_result.app_name,
-                                             build_result.version,
-                                             build_result.build_md5]) + '.tar.gz')
+            build_name = '-'.join([
+                build_result.app_name,
+                build_result.version,
+                build_result.build_md5
+            ])
+            filepath = 'builds/' + build_name + '.tar.gz'
             with open('build.tar.gz', 'rb') as localfile:
                 build.file.save(filepath, File(localfile))
-            build.hash = build_result.build_md5
+            build.file_md5 = build_result.build_md5
             build.env_yaml = build_result.release_data.get('config_vars', {})
             build.buildpack_url = build_result.buildpack_url
             build.buildpack_version = build_result.buildpack_version
@@ -219,12 +226,34 @@ def build_app(build_id, callback=None):
     send_event(str(build), "Completed build %s" % build, tags=['build',
                                                                'success'])
 
-    # start callback if there is one.
-    if callback is not None:
-        subtask(callback).delay()
 
-    # If there were any other swarms waiting on this build, kick them off
-    build_start_waiting_swarms(build.id)
+def get_build_parameters(build):
+    """Return a dictionary of Heroku-style build parameters."""
+    app = build.app
+    os_image = build.os_image
+
+    build_params = {
+        'app_name': app.name,
+        'app_repo_url': app.repo_url,
+        'app_repo_type': app.repo_type,
+        'version': build.tag,
+    }
+
+    if os_image is not None:
+        build_params.update({
+            'image_name': os_image.name,
+            'image_url': os_image.file.url,
+            'image_md5': os_image.file_md5,
+        })
+
+    if app.buildpack:
+        build_params['buildpack_url'] = app.buildpack.repo_url
+    else:
+        buildpacks = BuildPack.objects.order_by('order')
+        urls = [bp.repo_url for bp in buildpacks]
+        build_params['buildpack_urls'] = urls
+
+    return build_params
 
 
 @task
@@ -310,7 +339,7 @@ def swarm_release(swarm_id):
 
     # swarm.get_current_release(tag) will check whether there's a release with
     # the right build and config, and create one if not.
-    swarm.release = swarm.get_current_release(build.tag)
+    swarm.release = swarm.get_current_release(build.os_image, build.tag)
     swarm.save()
 
     # OK we have a release.  Next: see if we need to do a deployment.
@@ -449,7 +478,11 @@ def uptest_host_procs(hostname, procs):
     env.linewise = True
 
     with always_disconnect():
-        results = {p: remote.run_uptests(p, settings.PROC_USER) for p in procs}
+        results = {
+            p: remote.run_uptests(posixpath.join(PROCS_ROOT, p, 'proc.yaml'),
+                                  settings.PROC_USER)
+            for p in procs
+        }
     return hostname, results
 
 
