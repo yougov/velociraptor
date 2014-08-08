@@ -10,11 +10,11 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'vr.common>=2.15.2',
+        'PyYAML==3.10',
         'redis>=2.6.2',
         'requests>=1.0.4',
-        'psutil',
-        'PyYAML==3.10',
+        'supervisor',
+        'vr.common>=2.15.2',
     ],
     entry_points={
         'console_scripts': [
