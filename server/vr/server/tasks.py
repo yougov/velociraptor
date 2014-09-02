@@ -479,8 +479,7 @@ def uptest_host_procs(hostname, procs):
 
     with always_disconnect():
         results = {
-            p: remote.run_uptests(posixpath.join(PROCS_ROOT, p, 'proc.yaml'),
-                                  settings.PROC_USER)
+            p: remote.run_uptests(hostname, p, settings.PROC_USER)
             for p in procs
         }
     return hostname, results

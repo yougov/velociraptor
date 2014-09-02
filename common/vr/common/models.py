@@ -219,6 +219,10 @@ class Proc(object):
         self.jsname = self.name.replace('.', 'dot')
         self.id = '%s-%s' % (self.host.name, self.name)
 
+    @property
+    def settings(self):
+        return ProcData(self.host.rpc.vr.get_velociraptor_info(self.name))
+
     @staticmethod
     def parse_name(name):
         try:

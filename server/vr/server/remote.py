@@ -22,6 +22,7 @@ from vr.common.paths import (BUILDS_ROOT, PROCS_ROOT, get_proc_path,
 from vr.common.utils import randchars
 from vr.builder.main import BuildData
 
+from vr.server.models import Host
 
 def get_template(name):
     return pkg_resources.resource_filename('vr.common', 'templates/' + name)
@@ -96,8 +97,9 @@ def write_proc_conf(settings):
 
 
 @task
-def run_uptests(proc_yaml_path, user='nobody'):
-    settings = load_proc_data(proc_yaml_path)
+def run_uptests(hostname, proc, user='nobody'):
+    host = Host.objects.get(name=hostname)
+    settings = host.get_proc(proc).settings
     proc_path = get_proc_path(settings)
 
     new_container_path = posixpath.join(proc_path, 'rootfs')
