@@ -16,7 +16,7 @@ from fabric.api import (sudo as sudo_, get, put, task, env, settings as
 from fabric.contrib import files
 from fabric.context_managers import cd
 
-from vr.common.models import Proc, ProcData
+from vr.common.models import ProcData
 from vr.common.paths import (BUILDS_ROOT, PROCS_ROOT, get_proc_path,
                              get_container_name, get_container_path)
 from vr.common.utils import randchars
