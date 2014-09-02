@@ -198,12 +198,14 @@ class Proc(object):
         self.now = utcfromtimestamp(data['now']) if data['now'] else None
         self.pid = data['pid']
         self.spawnerr = data['spawnerr']
-        self.start_time = utcfromtimestamp(data['start']) if data['start'] else None
+        self.start_time = utcfromtimestamp(data['start']) \
+            if data['start'] else None
         self.state = data['state']
         self.statename = data['statename']
         self.stderr_logfile = data['stderr_logfile']
         self.stdout_logfile = data['stdout_logfile']
-        self.stop_time = utcfromtimestamp(data['stop']) if data['stop'] else None
+        self.stop_time = utcfromtimestamp(data['stop']) \
+            if data['stop'] else None
 
         # The names returned from Supervisor have a bunch of metadata encoded
         # in them (at least until we can get a Supervisor RPC plugin to return
@@ -220,7 +222,8 @@ class Proc(object):
     @staticmethod
     def parse_name(name):
         try:
-            app_name, version, config_name, rel_hash, proc_name, port = name.split('-')
+            app_name, version, config_name, rel_hash, proc_name, port = \
+                name.split('-')
 
             return {
                 'app_name': app_name,
@@ -389,6 +392,7 @@ class ProcData(ConfigData):
 
 Credential = collections.namedtuple('Credential', 'username password')
 
+
 class HashableDict(dict):
     def __hash__(self):
         return hash(tuple(sorted(self.items())))
@@ -407,9 +411,10 @@ class SwarmFilter(six.text_type):
     def match(self, swarm):
         return (
             not any(re.search(exclude, swarm.name, re.I)
-                for exclude in self.exclusions)
+                    for exclude in self.exclusions)
             and re.match(self, swarm.name)
         )
+
 
 class Velociraptor(object):
     """
@@ -591,12 +596,13 @@ class Build(object):
     def __eq__(self, other):
         return vars(self) == vars(other)
 
+
 class App(object):
-    base='/api/v1/apps/'
+    base = '/api/v1/apps/'
 
 
 class Release(object):
-    base='/api/v1/releases/'
+    base = '/api/v1/releases/'
 
     def __init__(self, vr, obj={}):
         self._vr = vr
