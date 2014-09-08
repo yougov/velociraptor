@@ -208,6 +208,9 @@ def legacy_uptests_command(proc_path, proc, host, port, user):
 def delete_proc(hostname, proc):
     if not proc:
         raise SystemExit("You must supply a proc name")
+    host = Host.objects.get(name=hostname)
+    settings = host.get_proc(proc).settings
+
     # stop the proc
     sudo('supervisorctl stop %s' % proc)
     # remove the proc
@@ -217,8 +220,6 @@ def delete_proc(hostname, proc):
 
     proc_yaml_path = posixpath.join(proc_dir, 'proc.yaml')
     if files.exists(proc_yaml_path, use_sudo=True):
-        host = Host.objects.get(name=hostname)
-        settings = host.get_proc(proc).settings
         sudo(get_runner(settings) + ' teardown ' + proc_yaml_path)
 
     # delete the proc dir
