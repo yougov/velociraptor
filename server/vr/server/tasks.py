@@ -265,7 +265,7 @@ def delete_proc(host, proc, callback=None):
     env.password = settings.DEPLOY_PASSWORD
     env.linewise = True
     with always_disconnect():
-        remote.delete_proc(proc)
+        remote.delete_proc(host, proc)
     send_event(Proc.name_to_shortname(proc), 'deleted %s on %s' % (proc, host), tags=['proc', 'deleted'])
 
     if callback:

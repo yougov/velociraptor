@@ -205,7 +205,7 @@ def legacy_uptests_command(proc_path, proc, host, port, user):
     }
 
 @task
-def delete_proc(proc):
+def delete_proc(hostname, proc):
     if not proc:
         raise SystemExit("You must supply a proc name")
     # stop the proc
@@ -217,7 +217,8 @@ def delete_proc(proc):
 
     proc_yaml_path = posixpath.join(proc_dir, 'proc.yaml')
     if files.exists(proc_yaml_path, use_sudo=True):
-        settings = load_proc_data(proc_yaml_path)
+        host = Host.objects.get(name=hostname)
+        settings = host.get_proc(proc).settings
         sudo(get_runner(settings) + ' teardown ' + proc_yaml_path)
 
     # delete the proc dir
