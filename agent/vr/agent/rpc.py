@@ -6,11 +6,11 @@ its built-in RPC interface, put the following in your Supervisor config:
 
 [rpcinterface:velociraptor]
 supervisor.rpcinterface_factory = vr.agent.rpc:make_interface
+
 """
-
 import os
-import posixpath
 
+import posixpath
 import yaml
 from supervisor.rpcinterface import SupervisorNamespaceRPCInterface
 
