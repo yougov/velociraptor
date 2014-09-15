@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 setup(
     name='vr.server',
     namespace_packages=['vr'],
-    version='3.13.3',
+    version='3.13.4',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
     packages=find_packages(),
