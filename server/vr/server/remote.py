@@ -100,6 +100,11 @@ def write_proc_conf(settings):
 def run_uptests(hostname, proc, user='nobody'):
     host = Host.objects.get(name=hostname)
     settings = host.get_proc(proc).settings
+    if settings is None:
+        print('{0.name} (pid {0.pid}) running on {0.hostname} '
+              'is not a VR process.  Skipping...'.format(proc))
+        return
+
     proc_path = get_proc_path(settings)
 
     new_container_path = posixpath.join(proc_path, 'rootfs')

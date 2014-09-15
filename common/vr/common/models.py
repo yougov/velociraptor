@@ -220,8 +220,15 @@ class Proc(object):
         self.id = '%s-%s' % (self.host.name, self.name)
 
     @property
+    def hostname(self):
+        return self.host.name
+
+    @property
     def settings(self):
-        return ProcData(self.host.rpc.vr.get_velociraptor_info(self.name))
+        settings = self.host.rpc.vr.get_velociraptor_info(self.name)
+        if not settings:
+            return None
+        return ProcData(settings)
 
     @staticmethod
     def parse_name(name):
