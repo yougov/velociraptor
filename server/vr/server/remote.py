@@ -104,7 +104,7 @@ def run_uptests(hostname, proc_name, user='nobody'):
     if settings is None:
         print('{0.name} (pid {0.pid}) running on {0.hostname} '
               'is not a VR process.  Skipping...'.format(proc))
-        return
+        return []
 
     proc_path = get_proc_path(settings)
 
