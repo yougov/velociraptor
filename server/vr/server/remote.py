@@ -97,9 +97,10 @@ def write_proc_conf(settings):
 
 
 @task
-def run_uptests(hostname, proc, user='nobody'):
+def run_uptests(hostname, proc_name, user='nobody'):
     host = Host.objects.get(name=hostname)
-    settings = host.get_proc(proc).settings
+    proc = host.get_proc(proc_name)
+    settings = proc.settings
     if settings is None:
         print('{0.name} (pid {0.pid}) running on {0.hostname} '
               'is not a VR process.  Skipping...'.format(proc))
