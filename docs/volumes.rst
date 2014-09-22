@@ -1,7 +1,7 @@
 Volumes
 =======
 
-Velociraptor's volumes features allows to to specify one or more directories on
+Velociraptor's volumes feature allows you to specify one or more directories on
 the host to be mounted inside the container.  
 
 Caution
