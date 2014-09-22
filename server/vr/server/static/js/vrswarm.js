@@ -51,8 +51,14 @@ Swarm.checkPoolName = function(form) {
   // hijacking a routing pool
   $(form).on('submit', function (e) {
     var currentPool = $('#id_pool').val();
+    var currentBalancer = $('#id_balancer').val();
     var poolSearchUrl = VR.Urls.getTasty('swarms') + '?pool=' + currentPool;
     var hijackedPoolOwners = [];
+
+    // normalize the value of the current balancer
+    if (currentBalancer == '') {
+      currentBalancer = 'default';
+    }
 
     // synchronous AJAX call to determine if we are about to hijack a pool
     $.ajax({
@@ -66,8 +72,10 @@ Swarm.checkPoolName = function(form) {
             currentResourceUri = Swarm.swarm.get('resource_uri');
           }
           _.each(data.objects, function(element, index, list) {
-            if (currentResourceUri != element.resource_uri) {
-              hijackedPoolOwners.push(element.shortname);
+            if (currentResourceUri != element.resource_uri
+                && currentBalancer == element.balancer) {
+              hijackedPoolOwners.push(element.shortname +
+                                      ' (balancer=' + element.balancer + ')');
             }
           });
         }
