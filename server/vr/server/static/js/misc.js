@@ -200,10 +200,12 @@ $(function() {
             return;
         } 
         var txt = $(this).val();
-        var visible = hideByStart($('#swarmlist li'), txt);
-        var selectedLi = visible.filter('[class*="active"]');
+        var visible, selectedLi, xhr;
 
         if (ev.keyCode === DOWN) {
+            visible = hideByStart($('#swarmlist li'), txt);
+            selectedLi = visible.filter('[class*="active"]');
+
             if (selectedLi.length) {
               selectedLi.next('li').addClass('active');
               selectedLi.removeClass('active');
@@ -212,23 +214,31 @@ $(function() {
             }
         }
         else if (ev.keyCode === UP) {
+            visible = hideByStart($('#swarmlist li'), txt);
+            selectedLi = visible.filter('[class*="active"]');
+
             if (selectedLi.length) {
                 selectedLi.prev('li').addClass('active');
                 selectedLi.removeClass('active');
             }
         }
         else if (ev.keyCode === ENTER) {
+            visible = hideByStart($('#swarmlist li'), txt);
+            selectedLi = visible.filter('[class*="active"]');
+
             if (selectedLi.length) {
                 window.location.href = selectedLi.find('a').attr('href');
             }
         }
-        else {
+        else if (txt.length > 2 && ev.keyCode !== 91) {
+            $('#swarmlist').html('<li><a>Searching...</a></li>');
+            // only search if we've entered text
             delay(function(){
                 var resource = 'swarms';
-                $('#swarmlist').empty();
 
                 // make api request for filtered swarms
                 $.getJSON(VR.Urls.root + resource + '/?app__name__icontains=' + txt, function(data, status, xhr) {
+                    $('#swarmlist').empty();
                     if("success" === status && data.objects.length > 0) {
                         var listItem;
                         for(var i = 0; i < data.objects.length; i++) {
@@ -239,9 +249,15 @@ $(function() {
                             $('#swarmlist').append(listItem);
                         }
                     } else {
-                        $('#swarmlist').append('<li><a href="javascript:;">No results</a></li>');
+                        $('#swarmlist').append('<li style="padding: 3px 20px;">No results</li>');
                     }
                 });
+            }, 800);
+        } else {
+            // reset the drop-down
+            delay(function(){
+                $('#swarmlist').empty();
+                $('#swarmlist').append('<li rel="new_swarm"><a href="{% url new_swarm %}">New</a></li>');
             }, 500);
         }
     });  
