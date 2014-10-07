@@ -52,14 +52,9 @@
                       <b class="caret"></b>
                   </a>
                   <div class="dropdown-menu">
-                      <input id="swarm-filter" type="text">
+                      <input id="swarm-filter" type="text" placeholder="Search...">
                       <ul id="swarmlist">
                           <li rel="new_swarm"><a href="{% url new_swarm %}">New</a></li>
-                          {% for swarm in swarms %}
-                          <li rel="{{ swarm.shortname.lower }}">
-                            <a href="{% url edit_swarm swarm.id %}">{{ swarm.shortname }}</a>
-                          </li>
-                          {% endfor %}
                       <ul>
                   </div>
               </li>

@@ -211,16 +211,38 @@ $(function() {
                 visible.filter(':first').addClass('active');
             }
         }
-        if (ev.keyCode === UP) {
+        else if (ev.keyCode === UP) {
             if (selectedLi.length) {
                 selectedLi.prev('li').addClass('active');
                 selectedLi.removeClass('active');
             }
         }
-        if (ev.keyCode === ENTER) {
+        else if (ev.keyCode === ENTER) {
             if (selectedLi.length) {
                 window.location.href = selectedLi.find('a').attr('href');
             }
+        }
+        else {
+            delay(function(){
+                var resource = 'swarms';
+                $('#swarmlist').empty();
+
+                // make api request for filtered swarms
+                $.getJSON(VR.Urls.root + resource + '/?app__name__icontains=' + txt, function(data, status, xhr) {
+                    if("success" === status && data.objects.length > 0) {
+                        var listItem;
+                        for(var i = 0; i < data.objects.length; i++) {
+                            listItem = ''+
+                            '<li rel="' + data.objects[i].shortname.toLowerCase() + '">'+
+                                '<a href="/swarm/' + data.objects[i].id + '/">' + data.objects[i].shortname + '</a>'+
+                            '</li>';
+                            $('#swarmlist').append(listItem);
+                        }
+                    } else {
+                        $('#swarmlist').append('<li><a href="javascript:;">No results</a></li>');
+                    }
+                });
+            }, 500);
         }
     });  
 
