@@ -2,7 +2,6 @@ import contextlib
 import datetime
 import functools
 import logging
-import posixpath
 import traceback
 from collections import defaultdict
 
@@ -20,7 +19,6 @@ from django.core.files import File
 from vr.builder.main import BuildData
 from vr.common import utils
 from vr.common.models import Proc
-from vr.common.paths import PROCS_ROOT
 from vr.common.utils import tmpdir
 from vr.server import events, balancer, remote
 from vr.server.models import (
