@@ -83,52 +83,54 @@
   <div class="swarm-details-modal">
         <div class="modal-header">
             <a class="close" data-dismiss="modal">×</a>
-            <h3>Swarm: <%shortname%></h3>
+            <%#id%><h3>Swarm: <%shortname%></h3><%/id%>
+            <%^id%><h3>Not a swarm</h3><%/id%>
         </div>
         <div class="modal-body">
-            <table class="attrs">
-              <tr>            
-                <th class="rowlabel">App:</th>
-                <td><%app_name%></td>
-              </tr>
-              <tr>            
-                <th class="rowlabel">Config Name:</th>
-                <td><%config_name%></td>
-              </tr>
-              <tr>            
-                <th class="rowlabel">Proc:</th>
-                <td><%proc_name%></td>
-              </tr>
-              <tr>            
-                <th class="rowlabel">Version:</th>
-                <td><%version%></td>
-              </tr>
-              <tr>            
-                <th class="rowlabel">Squad:</th>
-                <td><%squad_name%></td>
-              </tr>
-              <tr>            
-                <th class="rowlabel">Size:</th>
-                <td><%size%></td>
-              </tr>
-              <tr>
-                <th class="rowlabel">Procs:</th>
-                <td class="procboxes"></td>
-              </tr>
-              <tr>            
-                <th class="rowlabel">Pool:</th>
-                <td><%pool%></td>
-              </tr>
-              <tr>            
-                <th class="rowlabel">Balancer:</th>
-                <td><%balancer%></td>
-              </tr>
-            </table>
+          <table class="attrs">
+            <tr>
+              <th class="rowlabel">App:</th>
+              <td><%app_name%></td>
+            </tr>
+            <tr>
+              <th class="rowlabel">Config Name:</th>
+              <td><%config_name%></td>
+            </tr>
+            <tr>
+              <th class="rowlabel">Proc:</th>
+              <td><%proc_name%></td>
+            </tr>
+            <%#id%><tr>
+              <th class="rowlabel">Version:</th>
+              <td><%version%></td>
+            </tr>
+            <tr>
+              <th class="rowlabel">Squad:</th>
+              <td><%squad_name%></td>
+            </tr>
+            <tr>
+              <th class="rowlabel">Size:</th>
+              <td><%size%></td>
+            </tr><%/id%>
+            <tr>
+              <th class="rowlabel">Procs:</th>
+              <td class="procboxes"></td>
+            </tr>
+            <%#id%><tr>
+              <th class="rowlabel">Pool:</th>
+              <td><%pool%></td>
+            </tr>
+            <tr>
+              <th class="rowlabel">Balancer:</th>
+              <td><%balancer%></td>
+            </tr><%/id%>
+          </table>
         </div>
       <div class="modal-footer">
           <button class="swarm-stop btn btn-warning ifrunning">Stop All</button>
           <button class="swarm-restart btn btn-warning ifrunning">Restart All</button>
           <button class="swarm-start btn btn-success ifstopped">Start All</button>
+          <%#id%><a href="/swarm/<%id%>" class="btn btn-primary">Go to Swarm</a><%/id%>
       </div>
   </div>
 </script>

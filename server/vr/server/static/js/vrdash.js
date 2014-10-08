@@ -4,7 +4,8 @@
 VR.Dash = {};
 
 VR.Dash.Options = {
-    refreshInterval: 60000
+    refreshInterval: 60000,
+    apps: []
 };
 
 VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl) {
@@ -72,7 +73,16 @@ VR.Dash.getHostData = function() {
 VR.Dash.onHostList = function(data, stat, xhr) {
   _.each(data.objects, function(el) {
       _.each(el.procs, function(data) {
-        VR.ProcMessages.trigger('updateproc:'+data.id, data);
+        if(VR.Dash.Options.apps.length > 0) {
+          _.each(VR.Dash.Options.apps, function(app) {
+            if(data.app_name === app.name) {
+              VR.ProcMessages.trigger('updateproc:'+data.id, data);
+            }
+          });
+        }
+        else {
+          VR.ProcMessages.trigger('updateproc:'+data.id, data);
+        }
       });
   });
 
