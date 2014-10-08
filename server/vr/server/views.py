@@ -9,9 +9,32 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.views.generic import edit
 from django.views.generic import ListView
+from django.utils import simplejson
 
 from vr.server import forms, tasks, events, models
 from vr.server.utils import yamlize
+
+
+def json_response(func):
+    """
+    A decorator thats takes a view response and turns it
+    into json. If a callback is added through GET or POST
+    the response is JSONP.
+    """
+    def decorator(request, *args, **kwargs):
+        objects = func(request, *args, **kwargs)
+        if isinstance(objects, HttpResponse):
+            return objects
+        try:
+            data = simplejson.dumps(objects)
+            if 'callback' in request.REQUEST:
+                # a jsonp response!
+                data = '%s(%s);' % (request.REQUEST['callback'], data)
+                return HttpResponse(data, "text/javascript")
+        except:
+            data = simplejson.dumps(str(objects))
+        return HttpResponse(data, "application/json")
+    return decorator
 
 
 @login_required
@@ -186,6 +209,19 @@ def edit_swarm(request, swarm_id=None):
         'form': form,
         'btn_text': 'Swarm',
     })
+
+
+@login_required
+@json_response
+def search_swarm(request):
+    query = request.GET.get('query', None)
+
+    if query:
+        swarms = models.Swarm.objects.filter(app__name__icontains=query)
+    else:
+        swarms = models.Swarm.objects.all()
+
+    return [{'shortname': swarm.shortname(), 'id': swarm.id, 'app_name': swarm.app.name} for swarm in swarms]
 
 
 def do_swarm(swarm, user):

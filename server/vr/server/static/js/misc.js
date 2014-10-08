@@ -237,14 +237,14 @@ $(function() {
                 var resource = 'swarms';
 
                 // make api request for filtered swarms
-                $.getJSON(VR.Urls.root + resource + '/?app__name__icontains=' + txt, function(data, status, xhr) {
+                $.getJSON('/swarmsearch/?query=' + txt, function(data, status, xhr) {
                     $('#swarmlist').empty();
-                    if("success" === status && data.objects.length > 0) {
+                    if("success" === status && data.length > 0) {
                         var listItem;
-                        for(var i = 0; i < data.objects.length; i++) {
+                        for(var i = 0; i < data.length; i++) {
                             listItem = ''+
-                            '<li rel="' + data.objects[i].shortname.toLowerCase() + '">'+
-                                '<a href="/swarm/' + data.objects[i].id + '/">' + data.objects[i].shortname + '</a>'+
+                            '<li rel="' + data[i].shortname.toLowerCase() + '">'+
+                                '<a href="/swarm/' + data[i].id + '/">' + data[i].shortname + '</a>'+
                             '</li>';
                             $('#swarmlist').append(listItem);
                         }
