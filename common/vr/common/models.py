@@ -7,6 +7,7 @@ import logging
 import copy
 import functools
 import json
+
 from datetime import datetime
 
 try:
@@ -17,6 +18,7 @@ except ImportError:
 import six
 import yaml
 import requests
+import sseclient
 
 try:
     import redis
@@ -477,6 +479,10 @@ class Velociraptor(object):
         url += '?format=json&limit=9999'
         return self.session.get(url).json()
 
+    def query(self, path, query):
+        url = self._build_url(path)
+        return self.session.get(url, params=query).json()
+
     def cut(self, build, **kwargs):
         """
         Cut a release
@@ -486,6 +492,12 @@ class Velociraptor(object):
     def _build_url(self, *parts):
         joiner = six.moves.urllib.parse.urljoin
         return functools.reduce(joiner, parts, self.base)
+
+    def events(self):
+        url = self._build_url('api/streams/events/')
+        messages = sseclient.SSEClient(url, auth=self.session.auth)
+        for msg in messages:
+            yield msg
 
 
 class Swarm(object):
@@ -507,6 +519,16 @@ class Swarm(object):
 
     def __repr__(self):
         return self.name
+
+    @classmethod
+    def by_name(cls, vr, swarm_name):
+        app_name, config_name, proc_name = swarm_name.split('-')
+        doc = vr.query(cls.base, {
+            'app_name': app_name,
+            'config_name': config_name,
+            'proc_name': proc_name,
+        })
+        return cls(vr, doc['objects'][0])
 
     @classmethod
     def load_all(cls, vr):

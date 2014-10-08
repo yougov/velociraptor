@@ -23,6 +23,7 @@ params = dict(
         'utc',
         'requests',
         'PyYAML==3.10',
+        'sseclient',
     ] + py2_reqs,
     description='Libraries and for deploying with Velociraptor',
 )
