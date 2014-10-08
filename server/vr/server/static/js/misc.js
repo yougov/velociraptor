@@ -2,8 +2,13 @@
 
 // Ensure that AJAX posts to this domain include the CSRF token stored in the
 // cookies. See https://docs.djangoproject.com/en/dev/ref/contrib/csrf/#ajax
+var pendingAjaxRequests = [];
 
 jQuery(document).ajaxSend(function(event, xhr, settings) {
+    // build up a queue of pending ajax requests
+    // that we can work with
+    pendingAjaxRequests.push(settings);
+
     function getCookie(name) {
         var cookieValue = null;
         if (document.cookie && document.cookie != '') {
@@ -38,6 +43,13 @@ jQuery(document).ajaxSend(function(event, xhr, settings) {
     if (!safeMethod(settings.type) && sameOrigin(settings.url)) {
         xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
     }
+});
+
+jQuery(document).ajaxComplete(function(event, xhr, settings) {
+    // update our pending requets array
+    pendingAjaxRequests = pendingAjaxRequests.filter(function(object) {
+        return object.url !== settings.url;
+    });
 });
 
 
@@ -174,10 +186,15 @@ $(function() {
     var ESCAPE = 27, UP = 38, DOWN = 40, ENTER = 13;
 
     // filter-as-you-type on swarm dropdown in nav.
-    var swarmInput = $('#swarm-filter');
-    //swarmInput.on('keyup', function(ev) {
-    //});
+    var checker = setInterval(function(){
+        if(pendingAjaxRequests.length == 0){
+            clearInterval(checker);
+            // re-enable the swarm dropdown menu item
+            $('#swarm-dropdown').removeClass('disabled').css({'cursor': 'pointer'});
+        }
+    }, 500);
 
+    var swarmInput = $('#swarm-filter');
     var hideByStart = function(els, txt) {
       // take a jquery selector of elements.  Hide all the ones that don't
       // start with "start", and show all the rest.
@@ -200,7 +217,7 @@ $(function() {
             return;
         } 
         var txt = $(this).val();
-        var visible, selectedLi, xhr;
+        var visible, selectedLi;
 
         if (ev.keyCode === DOWN) {
             visible = hideByStart($('#swarmlist li'), txt);
@@ -265,6 +282,9 @@ $(function() {
     // replace bootstrap dropdown behavior with our own, since we customized it
     // with a type filter.
     $('#swarm-dropdown').on('click', function(ev) {
+        if($(this).hasClass('disabled')) {
+            return;
+        }
         var menu = $(this).next('.dropdown-menu');
         if (menu.is(':visible')) {
             menu.hide();
