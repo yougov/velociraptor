@@ -14,20 +14,20 @@
 {% endif %}
 
 <div class="row">
-  <div class="span6">
-<form method='post' class='well raptorform'{% if enctype %}enctype="{{ enctype }}"{% endif %}>{% csrf_token %}
-<table class="formrows">
-  {{ form }}
-  <tr>
-    <td class="buttoncell" colspan=2>
-    {% if object %}
-        <a class="btn btn-danger btn-destructive" href="{% url buildpack_delete object.id %}">Delete</a>
-    {% endif %}
-        <button type="submit" class="btn btn-primary">Save</button>
-    </td>
-  </tr>
-</form>
-</table>
+  <div class="col-sm-12 col-md-6">
+    <form method='post' class='well raptorform'{% if enctype %}enctype="{{ enctype }}"{% endif %}>{% csrf_token %}
+      <table class="formrows">
+        {{ form }}
+        <tr>
+          <td class="buttoncell" colspan=2>
+          {% if object %}
+              <a class="btn btn-danger btn-destructive" href="{% url buildpack_delete object.id %}">Delete</a>
+          {% endif %}
+              <button type="submit" class="btn btn-primary">Save</button>
+          </td>
+        </tr>
+      </table>
+    </form>
   </div>
 </div>
 {% endblock content %}
