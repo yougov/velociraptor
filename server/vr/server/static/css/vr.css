@@ -468,6 +468,14 @@ th.rowlabel {
   min-height: 30px;
 }
 
+.swarm-warning-modal .modal-footer {
+  min-height: 30px;
+}
+
+.swarm-warning-modal .modal-footer .swarm-warning-cancel {
+  float: left;
+}
+
 /* EVENTS */
 
 .event-wrapper {

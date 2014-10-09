@@ -214,6 +214,45 @@
 </div>
 </script>
 
+<script id="swarm-warning-tmpl" type="text/goatee">
+  <div class="swarm-warning-modal">
+        <div class="modal-header">
+            <a class="close" data-dismiss="modal">×</a>
+            <h3>WARNING</h3>
+        </div>
+        <div class="modal-body">
+            <p>
+                You're about to hijack pool name
+            </p>
+
+<pre><%current_pool%></pre>
+
+            <p>
+                It is currently being used by:
+            </p>
+
+<pre>
+<%#swarms%>
+<%name%>
+<%/swarms%></pre>
+
+            <p>
+                If you are unsure about this, click cancel immediately,
+                as unintentionally taking over the pool name of some other Swarm
+                may lead to disastrous scenarios.
+            </p>
+
+            <p>
+                Are you sure you want to proceed?
+            </p>
+        </div>
+      <div class="modal-footer">
+          <button class="swarm-warning-cancel btn btn-success">Cancel</button>
+          <button class="swarm-warning-proceed btn btn-warning">Proceed</button>
+      </div>
+  </div>
+</script>
+
 <script>
 // on DOM READY, make a library of all our templates
 $(function() {
@@ -225,6 +264,7 @@ VR.Templates = {
   Host: $('#host-tmpl'),
   Swarm: $('#swarm-tmpl'),
   SwarmModal: $('#swarm-details-tmpl'),
+  SwarmWarningModal: $('#swarm-warning-tmpl'),
   App: $('#app-tmpl'),
   AppModal: $('#app-details-tmpl'),
   Event: $('#event-tmpl'),

@@ -93,8 +93,10 @@ Swarm.checkPoolName = function(form) {
           _.each(data.objects, function(element, index, list) {
             if (currentResourceUri != element.resource_uri
                 && currentBalancer == element.balancer) {
-              hijackedPoolOwners.push(element.shortname +
-                                      ' (balancer=' + element.balancer + ')');
+              hijackedPoolOwners.push({
+                name: element.shortname
+                      + ' (balancer=' + element.balancer + ')'
+              });
             }
           });
         }
@@ -103,14 +105,21 @@ Swarm.checkPoolName = function(form) {
     });
 
     if (hijackedPoolOwners.length) {
-      var confirmationMsg = "WARNING!\n\n" +
-      "You're about to hijack pool name '" + currentPool + "'. " +
-      "It is currently being used by: " + hijackedPoolOwners.join(',') +
-      "\n\nIf you are unsure about this, click cancel immediately, " +
-      "as unintentionally taking over the pool name of some other Swarm " +
-      "may lead to disastrous scenarios.\n\n" +
-      "Are you sure you want to proceed?";
-      return confirm(confirmationMsg);
+      // show the pool hijacking warning dialog
+      var warningModal = new VR.Views.SwarmWarningModal({
+          current_pool: currentPool,
+          swarms: hijackedPoolOwners
+        },
+        function () {
+          // this callback is fired when the 'Proceed' button gets clicked
+          form.submit();
+        }
+      );
+      warningModal.show();
+
+      // prevent the normal form submit. The 'proceed' callback above takes
+      // care of the form's submission.
+      return false;
     }
 
     return true;
