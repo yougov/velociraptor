@@ -5,6 +5,7 @@ from django.contrib.auth import login as django_login, logout as django_logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse, reverse_lazy
+from django.db.models import Q
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import edit
@@ -244,7 +245,11 @@ def search_swarm(request):
     query = request.GET.get('query', None)
 
     if query:
-        swarms = models.Swarm.objects.filter(app__name__icontains=query)
+        swarms = models.Swarm.objects.filter(
+            Q(app__name__icontains=query) |
+            Q(config_name__icontains=query) |
+            Q(release__build__tag__icontains=query) |
+            Q(proc_name__icontains=query))
     else:
         swarms = models.Swarm.objects.all()
 
