@@ -802,7 +802,7 @@ class Dashboard(models.Model):
     name = models.CharField(max_length=50)
     slug = models.SlugField()
     apps = models.ManyToManyField(App)
-    editors = models.ManyToManyField(User)
+    editors = models.ManyToManyField(User, blank=True)
 
     def __unicode__(self):
         return self.name
@@ -810,5 +810,7 @@ class Dashboard(models.Model):
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User)
-    default_dashboard = models.ForeignKey(Dashboard, related_name='def+')
-    quick_dashboards = models.ManyToManyField(Dashboard, related_name='quick+')
+    default_dashboard = models.ForeignKey(Dashboard, related_name='def+',
+                                          null=True, blank=True)
+    quick_dashboards = models.ManyToManyField(Dashboard, related_name='quick+',
+                                              blank=True)
