@@ -5,11 +5,16 @@ from django.contrib.auth import login as django_login, logout as django_logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse, reverse_lazy
+from django.db.models import Q
 from django.http import HttpResponseRedirect, HttpResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import edit
 from django.views.generic import ListView
 from django.utils import simplejson
+
+from reversion import revision
+from reversion.models import Version
+from reversion.helpers import generate_patch
 
 from vr.server import forms, tasks, events, models
 from vr.server.utils import yamlize
@@ -41,7 +46,33 @@ def json_response(func):
 def dash(request):
     return render(request, 'dash.html', {
         'hosts': models.Host.objects.filter(active=True),
-        'apps': models.App.objects.all(),
+        'dashboard_id': '',
+        'dashboard_name': 'Home',
+        'supervisord_web_port': settings.SUPERVISORD_WEB_PORT
+    })
+
+@login_required
+def default_dash(request):
+    if hasattr(request.user, 'userprofile') and request.user.userprofile:
+        dashboard = request.user.userprofile.default_dashboard
+        if dashboard is not None:
+            dashboard_name = 'Default - %s' % dashboard.name
+            return render(request, 'dash.html', {
+                'hosts': models.Host.objects.filter(active=True),
+                'dashboard_id': dashboard.id,
+                'dashboard_name': dashboard_name,
+                'supervisord_web_port': settings.SUPERVISORD_WEB_PORT
+            })
+    # If you don't have a default dashboard go to home!
+    return HttpResponseRedirect('/')
+
+@login_required
+def custom_dash(request, slug):
+    dashboard = get_object_or_404(models.Dashboard, slug=slug)
+    return render(request, 'dash.html', {
+        'hosts': models.Host.objects.filter(active=True),
+        'dashboard_id': dashboard.id,
+        'dashboard_name': dashboard.name,
         'supervisord_web_port': settings.SUPERVISORD_WEB_PORT
     })
 
@@ -148,6 +179,7 @@ def proclog(request, hostname, procname):
 
 
 @login_required
+@revision.create_on_success
 def edit_swarm(request, swarm_id=None):
     if swarm_id:
         # Need to populate form from swarm
@@ -171,9 +203,23 @@ def edit_swarm(request, swarm_id=None):
             'config_ingredients': [
                 ing.pk for ing in swarm.config_ingredients.all()]
         }
+        fields = [field for field in swarm._meta.fields]
+        version_list = Version.objects.get_for_object(swarm).reverse()
+        version_diffs = []
+        if len(version_list) > 1:
+            for version in version_list[1:6]:
+                diff_dict = {}
+                for field in fields:
+                    diff = generate_patch(version_list[0], version, field.name)
+                    if diff:
+                        diff_dict[field.name] = version.field_dict[field.name]
+                version_diffs.append({'diff_dict': diff_dict,
+                                      'user': version.revision.user,
+                                      'date': version.revision.date_created})
     else:
         initial = None
         swarm = models.Swarm()
+        version_diffs = []
 
     form = forms.SwarmForm(request.POST or None, initial=initial)
     if form.is_valid():
@@ -199,6 +245,8 @@ def edit_swarm(request, swarm_id=None):
         swarm.config_ingredients.clear()
         for ingredient in data['config_ingredients']:
             swarm.config_ingredients.add(ingredient)
+        revision.user = request.user
+        revision.comment = "Created from web form."
 
         do_swarm(swarm, request.user)
 
@@ -208,6 +256,7 @@ def edit_swarm(request, swarm_id=None):
         'swarm': swarm,
         'form': form,
         'btn_text': 'Swarm',
+        'version_diffs': version_diffs
     })
 
 
@@ -217,7 +266,11 @@ def search_swarm(request):
     query = request.GET.get('query', None)
 
     if query:
-        swarms = models.Swarm.objects.filter(app__name__icontains=query)
+        swarms = models.Swarm.objects.filter(
+            Q(app__name__icontains=query) |
+            Q(config_name__icontains=query) |
+            Q(release__build__tag__icontains=query) |
+            Q(proc_name__icontains=query))
     else:
         swarms = models.Swarm.objects.all()
 

@@ -183,6 +183,10 @@ Date.prototype.format = function (mask, utc) {
 // A little hackishness to set up the swarm dropdown in the nav.
 $(function() {
 
+    $(document).on('hidden.bs.modal', function(ev) {
+        $(ev.target).remove();
+    });
+
     var ESCAPE = 27, UP = 38, DOWN = 40, ENTER = 13;
 
     // filter-as-you-type on swarm dropdown in nav.
@@ -327,6 +331,72 @@ $(function() {
                 }
             });
         }, 500);
+    });
+
+    // Update dropdown in navigation
+    $.getJSON(VR.Urls.getTasty('dashboard'), function(data, stat, xhr) {
+        _.each(data.objects, function(dashboard) {
+          $('#dashboard-submenu').append('<li><a href="/dashboard/'+dashboard.slug+'/">'+dashboard.name+'</a></li>');
+        });
+
+        $('#dashboard-submenu').append('<li class="divider"></li><li><a href="javascript:;" class="dashboard-new">New</a></li>');
+
+        $('.dashboard-new').click(function() {
+          var template = VR.Templates.DashModal,
+              modal = template.goatee(),
+              apps;
+          $(modal).modal('show').queue(function() {
+            $.getJSON(VR.Urls.getTasty('apps'), function(data) {
+              apps = data.objects;
+            });
+          });
+
+          $(modal).on('shown.bs.modal', function(ev) {
+            _.each(apps, function(app) {
+              if($('#'+app.name+'-option').length === 0)
+                $('#dashboard-apps').append('<option id="'+app.name+'-option" data-id="'+app.id+'" value="'+app.id+'|'+app.name+'">'+app.name+'</option>');
+            });
+
+            $('#dashboard-name').on('change', function() {
+              var name = $(this).val();
+                  name = name.replace(/\ /g, '-').toLowerCase();
+
+              $('#dashboard-slug').val(name);
+            });
+          });
+
+          $(modal).find('.btn-success').on('click', function(ev) {
+            var form = $(modal).find('form'),
+                name = form.find('#dashboard-name').val(),
+                slug = form.find('#dashboard-slug').val(),
+                apps = form.find('#dashboard-apps').val();
+
+            var payload = {
+              name: name,
+              slug: slug,
+              apps: []
+            };
+
+            _.each(apps, function(app) {
+              app = app.split('|');
+              payload.apps.push({'id': app[0], 'name': app[1]});
+            });
+
+            $.ajax({
+              url: VR.Urls.getTasty('dashboard'),
+              data: JSON.stringify(payload),
+              dataType: 'json',
+              type: 'POST',
+              headers: {
+                'Content-type': 'application/json'
+              },
+              processData: false,
+              success: function(data, status) {
+                if("success" === status) window.location.reload();
+              }
+            });
+          });
+        });
     });
 
 });

@@ -12,4 +12,7 @@ def test_parse_redis_url():
                'password': None,
                'port': 6379,
                'socket_timeout': None}
-    assert r.connection_pool.connection_kwargs == expected
+
+    for k, v in expected.items():
+        assert k in r.connection_pool.connection_kwargs.keys()
+        assert v == r.connection_pool.connection_kwargs[k]

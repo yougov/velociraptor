@@ -381,7 +381,11 @@ VR.Models.SwarmList = Backbone.Collection.extend({
 
       // Don't ask the API for swarm data on procs that aren't in swarms.
       if (procData.config_name != 'UNKNOWN') {
-        swarm.fetchByProcData(procData);
+        /**
+         * Note: this is no longer being called for every proc 
+         * and only when a swarm is clicked
+         * swarm.fetchByProcData(procData);
+         */
       }
       swarm.on('addproc', this.onAddProc, this);
       this.add(swarm);
@@ -554,7 +558,7 @@ VR.Views.Proc = Backbone.View.extend({
 
     onClick: function(ev) {
       if (!this.modal) {
-        this.modal = new VR.Views.ProcModal(this.proc);   
+        this.modal = new VR.Views.ProcModal(this.proc);
       }
 
       this.modal.show();
@@ -756,7 +760,7 @@ VR.Views.Swarm = Backbone.View.extend({
 
     onClick: function(ev) {
       if (!this.modal) {
-        this.modal = new VR.Views.SwarmModal(this.swarm);   
+        this.modal = new VR.Views.SwarmModal(this.swarm);
       }
 
       this.modal.show();
@@ -813,6 +817,16 @@ VR.Views.SwarmModal = VR.Views.BaseModal.extend({
     },
 
     render: function() {
+      this.modelUpdated = false;
+      this.$el.html(this.template.goatee(this.swarm.toJSON()));
+
+      var procs = this.swarm.getProcs();
+      _.each(procs, function(proc) {
+          this.procAdded(proc);
+      }, this);
+    },
+
+    update: function() {
       this.$el.html(this.template.goatee(this.swarm.toJSON()));
 
       var procs = this.swarm.getProcs();
@@ -835,6 +849,7 @@ VR.Views.SwarmModal = VR.Views.BaseModal.extend({
 
       pv.render();
       this.$el.find('.procboxes').append(pv.el);
+
       this.updateState();
     },
 
@@ -855,6 +870,9 @@ VR.Views.SwarmModal = VR.Views.BaseModal.extend({
       } else {
         this.$el.removeClass('somerunning');
       }
+
+      if(!this.modelUpdated) this.swarm.fetchByProcData(procs[0].attributes);
+      this.modelUpdated = true;
     },
 
     onRemove: function() {
@@ -871,11 +889,41 @@ VR.Views.SwarmModal = VR.Views.BaseModal.extend({
     },
     onSwarmEvent: function(event, model, collection, options) {
       //console.log(arguments);
+      if(this.swarm.get('id')) this.update();
     },
     onProcEvent: function(event, model, collection, options) {
       //console.log(arguments);
     }
 
+});
+
+
+// Modal that warns about pool hijacking.
+VR.Views.SwarmWarningModal = Backbone.View.extend({
+    el: '<div class="modal fade" tabindex="-1" data-backdrop="static"></div>',
+    initialize: function(swarmInfo, proceedCallback) {
+      this.swarmInfo = swarmInfo;
+      this.template = VR.Templates.SwarmWarningModal;
+      this.proceedCallback = proceedCallback || function () {return;};
+    },
+    events: {
+      'click .swarm-warning-proceed': 'onProceedBtn',
+      'click .swarm-warning-cancel': 'onCancelBtn'
+    },
+    render: function() {
+      this.$el.html(this.template.goatee(this.swarmInfo));
+    },
+    show: function() {
+      this.render();
+      this.$el.modal('show');
+    },
+    onProceedBtn: function() {
+      this.$el.modal('hide');
+      this.proceedCallback();
+    },
+    onCancelBtn: function() {
+      this.$el.modal('hide');
+    }
 });
 
 

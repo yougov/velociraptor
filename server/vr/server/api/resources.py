@@ -350,7 +350,11 @@ class LogResource(ModelResource):
         authorization = Authorization()
 v1.register(LogResource())
 
+
 class UserResource(ModelResource):
+    profile = fields.ToOneField(
+        'api.resources.ProfileResource', 'userprofile', full=True, null=True,
+        blank=True)
     class Meta:
         queryset = User.objects.all()
         resource_name = 'user'
@@ -364,3 +368,29 @@ class UserResource(ModelResource):
         )
         authorization = Authorization()
 v1.register(UserResource())
+
+
+class ProfileResource(ModelResource):
+    default_dashboard = fields.ToOneField(
+        'api.resources.DashboardResource', 'default_dashboard', null=True,
+        blank=True)
+    quick_dashboards = fields.ToManyField(
+        'api.resources.DashboardResource', 'quick_dashboards', null=True,
+        blank=True)
+
+    class Meta:
+        queryset = models.UserProfile.objects.all()
+        resource_name = 'profile'
+        authorization = Authorization()
+
+v1.register(ProfileResource())
+
+
+class DashboardResource(ModelResource):
+    apps = fields.ToManyField(
+        'api.resources.AppResource', 'apps', null=True, blank=True, full=True)
+    class Meta:
+        queryset = models.Dashboard.objects.all()
+        resource_name = 'dashboard'
+        authorization = Authorization()
+v1.register(DashboardResource())

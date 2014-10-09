@@ -11,6 +11,9 @@ admin.autodiscover()
 urlpatterns = patterns('',
     # Main UI routes
     url(r'^$', 'vr.server.views.dash', name='dash'),
+    url(r'^dashboard/$', 'vr.server.views.default_dash', name='default_dash'),
+    url(r'^dashboard/(?P<slug>[a-zA-Z0-9_.-]+)/$',
+        'vr.server.views.custom_dash', name='custom_dash'),
     url(r'^swarm/$',
         'vr.server.views.edit_swarm', name='new_swarm'),
     url(r'^swarm/(?P<swarm_id>[a-zA-Z0-9_.-]+)/$',

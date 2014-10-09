@@ -4,10 +4,20 @@
 VR.Dash = {};
 
 VR.Dash.Options = {
-    refreshInterval: 60000
+    refreshInterval: 60000,
+    apps: [],
+    dashboardId: null,
 };
 
 VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl) {
+
+  if(VR.Dash.Options.dashboardId) {
+    $.getJSON(VR.Urls.getTasty('dashboard', VR.Dash.Options.dashboardId), function(data, stat, xhr) {
+      _.each(data.apps, function(app) {
+        VR.Dash.Options.apps.push({'name': app.name});
+      })
+    });
+  }
 
   // Create a new applist, bound to our container
   VR.Dash.Apps = new VR.Models.AppList();
@@ -31,7 +41,7 @@ VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl
       }
   }, this);
 
-  // bind proc change event stream to handler 
+  // bind proc change event stream to handler
 };
 
 VR.Dash.removeProc = function(procdata) {
@@ -72,7 +82,16 @@ VR.Dash.getHostData = function() {
 VR.Dash.onHostList = function(data, stat, xhr) {
   _.each(data.objects, function(el) {
       _.each(el.procs, function(data) {
-        VR.ProcMessages.trigger('updateproc:'+data.id, data);
+        if(VR.Dash.Options.apps.length > 0) {
+          _.each(VR.Dash.Options.apps, function(app) {
+            if(data.app_name === app.name) {
+              VR.ProcMessages.trigger('updateproc:'+data.id, data);
+            }
+          });
+        }
+        else {
+          VR.ProcMessages.trigger('updateproc:'+data.id, data);
+        }
       });
   });
 

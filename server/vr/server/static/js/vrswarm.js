@@ -1,3 +1,4 @@
+
 (function() {
 
 var Swarm = VR.Swarm = {};
@@ -6,7 +7,7 @@ Swarm.init = function(swarmId, container) {
   // container should be a jQuery-wrapped node.
   Swarm.container = container;
 
-  var url = VR.Urls.getTasty('swarms', swarmId);
+  var vContainer, hContainer, url = VR.Urls.getTasty('swarms', swarmId);
   $.getJSON(url, function(data, sts, xhr) {
       Swarm.swarm = new VR.Models.Swarm(data);
       var compiled_config = Swarm.swarm.get('compiled_config');
@@ -15,6 +16,18 @@ Swarm.init = function(swarmId, container) {
       $('#compiled_env').text(JSON.stringify(compiled_env, null, '\t'));
       Swarm.swarm.on('addproc', Swarm.addProcView);
       _.each(data.procs, function(pdata, idx, lst) {
+        var versionId = 'version_'+pdata.version.replace(/\./g,'_');
+        var hostId = versionId+'_host_'+pdata.host.replace(/\./g,'_');
+        vContainer = '<table class="table table-striped table-bordered" id="'+versionId+'"><thead><tr><th colspan="2">Version: '+pdata.version+'</th></tr></table>';
+
+        if($('#'+versionId).length == 0)
+          Swarm.container.append(vContainer);
+
+        hContainer = '<tr id="'+hostId+'"><td style="text-align: right;vertical-align: middle"><span>'+pdata.host+'</span></td><td></td></tr>';
+
+        if($('#'+hostId).length == 0)
+          $('#'+versionId).append(hContainer);
+
         Swarm.swarm.onProcData(null, pdata);
       });
 
@@ -43,7 +56,13 @@ Swarm.init = function(swarmId, container) {
 
 Swarm.addProcView = function(proc) {
   var view = new VR.Views.Proc(proc);
-  Swarm.container.append(view.el);
+  var hostname = proc.get('host');
+  var version = proc.get('version');
+
+  var versionId = 'version_'+version.replace(/\./g,'_');
+  var hostId = versionId+'_host_'+hostname.replace(/\./g,'_');
+
+  $('#'+hostId+' td:last-child').append(view.el);
 };
 
 Swarm.checkPoolName = function(form) {
@@ -74,8 +93,10 @@ Swarm.checkPoolName = function(form) {
           _.each(data.objects, function(element, index, list) {
             if (currentResourceUri != element.resource_uri
                 && currentBalancer == element.balancer) {
-              hijackedPoolOwners.push(element.shortname +
-                                      ' (balancer=' + element.balancer + ')');
+              hijackedPoolOwners.push({
+                name: element.shortname
+                      + ' (balancer=' + element.balancer + ')'
+              });
             }
           });
         }
@@ -84,14 +105,21 @@ Swarm.checkPoolName = function(form) {
     });
 
     if (hijackedPoolOwners.length) {
-      var confirmationMsg = "WARNING!\n\n" +
-      "You're about to hijack pool name '" + currentPool + "'. " +
-      "It is currently being used by: " + hijackedPoolOwners.join(',') +
-      "\n\nIf you are unsure about this, click cancel immediately, " +
-      "as unintentionally taking over the pool name of some other Swarm " +
-      "may lead to disastrous scenarios.\n\n" +
-      "Are you sure you want to proceed?";
-      return confirm(confirmationMsg);
+      // show the pool hijacking warning dialog
+      var warningModal = new VR.Views.SwarmWarningModal({
+          current_pool: currentPool,
+          swarms: hijackedPoolOwners
+        },
+        function () {
+          // this callback is fired when the 'Proceed' button gets clicked
+          form.submit();
+        }
+      );
+      warningModal.show();
+
+      // prevent the normal form submit. The 'proceed' callback above takes
+      // care of the form's submission.
+      return false;
     }
 
     return true;
