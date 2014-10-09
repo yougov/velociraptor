@@ -274,7 +274,11 @@ def search_swarm(request):
     else:
         swarms = models.Swarm.objects.all()
 
-    return [{'shortname': swarm.shortname(), 'id': swarm.id, 'app_name': swarm.app.name} for swarm in swarms]
+    return [{
+        'shortname': swarm.shortname(),
+        'id': swarm.id,
+        'app_name': swarm.app.name
+    } for swarm in swarms]
 
 
 def do_swarm(swarm, user):
@@ -308,8 +312,8 @@ def do_swarm(swarm, user):
             'pool': swarm.pool,
         }
     events.eventify(user, 'swarm', swarm.shortname(),
-                    detail=ev_detail)
-
+                    detail=ev_detail, swarm_id=swarm.id)
+    return str(swarm)  # this can be used as an trace ID
 
 
 class ListLogEntry(ListView):

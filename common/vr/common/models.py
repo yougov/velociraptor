@@ -547,6 +547,7 @@ class Swarm(object):
         trigger_url = self._vr._build_url(self.resource_uri, 'swarm/')
         resp = self._vr.session.post(trigger_url)
         resp.raise_for_status()
+        return resp.json()
 
     def patch(self, **changes):
         if not changes:

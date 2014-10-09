@@ -212,11 +212,13 @@ class SwarmResource(ModelResource):
             except models.Swarm.DoesNotExist:
                 return HttpResponseNotFound()
 
-            do_swarm(swarm, request.user)
+            swarm_id = do_swarm(swarm, request.user)
 
             # Status 202 means "The request has been accepted for processing, but
             # the processing has not been completed."
-            return HttpResponse(status=202)
+            return HttpResponse(json.dumps({'swarm_id': swarm_id}),
+                                status=202,
+                                content_type='application/json')
 
         return HttpResponseNotAllowed(["POST"])
 
