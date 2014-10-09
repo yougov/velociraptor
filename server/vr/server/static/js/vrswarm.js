@@ -16,15 +16,17 @@ Swarm.init = function(swarmId, container) {
       $('#compiled_env').text(JSON.stringify(compiled_env, null, '\t'));
       Swarm.swarm.on('addproc', Swarm.addProcView);
       _.each(data.procs, function(pdata, idx, lst) {
-        vContainer = '<table class="table table-striped table-bordered" id="version_'+pdata.version+'"><thead><tr><th colspan="2">Version: '+pdata.version+'</th></tr></table>';
+        var versionId = 'version_'+pdata.version.replace(/\./g,'_');
+        var hostId = versionId+'_host_'+pdata.host.replace(/\./g,'_');
+        vContainer = '<table class="table table-striped table-bordered" id="'+versionId+'"><thead><tr><th colspan="2">Version: '+pdata.version+'</th></tr></table>';
 
-        if($('#version_'+pdata.version).length == 0)
+        if($('#'+versionId).length == 0)
           Swarm.container.append(vContainer);
 
-        hContainer = '<tr id="version_'+pdata.version+'_host_'+pdata.host+'"><td style="text-align: right;vertical-align: middle"><span>'+pdata.host+'</span></td><td></td></tr>';
+        hContainer = '<tr id="'+hostId+'"><td style="text-align: right;vertical-align: middle"><span>'+pdata.host+'</span></td><td></td></tr>';
 
-        if($('#version_'+pdata.version+'_host_'+ pdata.host).length == 0)
-          $('#version_'+pdata.version).append(hContainer);
+        if($('#'+hostId).length == 0)
+          $('#'+versionId).append(hContainer);
 
         Swarm.swarm.onProcData(null, pdata);
       });
@@ -57,7 +59,10 @@ Swarm.addProcView = function(proc) {
   var hostname = proc.get('host');
   var version = proc.get('version');
 
-  $('#version_'+version+'_host_'+hostname+' td:last-child').append(view.el);
+  var versionId = 'version_'+version.replace(/\./g,'_');
+  var hostId = versionId+'_host_'+hostname.replace(/\./g,'_');
+
+  $('#'+hostId+' td:last-child').append(view.el);
 };
 
 Swarm.checkPoolName = function(form) {
