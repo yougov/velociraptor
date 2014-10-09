@@ -44,7 +44,7 @@ VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl
 
         $('#dashboard-name').on('change', function() {
           var name = $(this).val();
-              name = name.replace(' ', '-').toLowerCase();
+              name = name.replace(/\ /g, '-').toLowerCase();
 
           $('#dashboard-slug').val(name);
         });
