@@ -25,7 +25,10 @@
 
 <script>
   $(function(){
-  VR.Dash.init($('#dash-apps'), $('#events-list'){% if dashboard_id %}, null, null, {{ dashboard_id }}{% endif %});
+  {% if dashboard_id %}
+      VR.Dash.Options.dashboardId = {{ dashboard_id }};
+  {% endif %}
+  VR.Dash.init($('#dash-apps'), $('#events-list'));
 });
 </script>
 {% endblock script %}
