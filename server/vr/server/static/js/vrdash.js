@@ -11,8 +11,8 @@ VR.Dash.Options = {
 
 VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl) {
 
-  if(dashboardId) {
-    $.getJSON(VR.Urls.getTasty('dashboard', dashboardId), function(data, stat, xhr) {
+  if(VR.Dash.Options.dashboardId) {
+    $.getJSON(VR.Urls.getTasty('dashboard', VR.Dash.Options.dashboardId), function(data, stat, xhr) {
       _.each(data.apps, function(app) {
         VR.Dash.Options.apps.push({'name': app.name});
       })
