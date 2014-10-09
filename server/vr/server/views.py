@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse, reverse_lazy
 from django.http import HttpResponseRedirect, HttpResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import edit
 from django.views.generic import ListView
 from django.utils import simplejson
@@ -41,7 +41,34 @@ def json_response(func):
 def dash(request):
     return render(request, 'dash.html', {
         'hosts': models.Host.objects.filter(active=True),
-        'apps': models.App.objects.all(),
+        'dashboard_id': '',
+        'dashboard_name': 'Home',
+        'supervisord_web_port': settings.SUPERVISORD_WEB_PORT
+    })
+
+@login_required
+def default_dash(request):
+    if hasattr(request.user, 'userprofile') and request.user.userprofile:
+        dashboard = request.user.userprofile.default_dashboard
+        if dashboard is not None:
+            dashboard_name = 'Default - %s' % dashboard.name
+            return render(request, 'dash.html', {
+                'hosts': models.Host.objects.filter(active=True),
+                'dashboard_id': dashboard.id,
+                'dashboard_name': dashboard_name,
+                'supervisord_web_port': settings.SUPERVISORD_WEB_PORT
+            })
+    # If you don't have a default dashboard go to home!
+    return HttpResponseRedirect('/')
+
+@login_required
+def custom_dash(request, slug):
+    dashboard = get_object_or_404(models.Dashboard, slug=slug)
+    dashboard_name = 'Default - %s' % dashboard.name
+    return render(request, 'dash.html', {
+        'hosts': models.Host.objects.filter(active=True),
+        'dashboard_id': dashboard.id,
+        'dashboard_name': dashboard_name,
         'supervisord_web_port': settings.SUPERVISORD_WEB_PORT
     })
 

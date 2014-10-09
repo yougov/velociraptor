@@ -6,7 +6,7 @@
 <div class="row-fluid">
 
   <div class="proc-column span9">
-    <h1>App Status</h1>
+    <h1>{{ dashboard_name }} | App Status</h1>
     <table id="dash-apps"></table>
   </div>
 
@@ -25,7 +25,7 @@
 
 <script>
   $(function(){
-  VR.Dash.init($('#dash-apps'), $('#events-list'));
+  VR.Dash.init($('#dash-apps'), $('#events-list'){% if dashboard_id %}, null, null, {{ dashboard_id }}{% endif %});
 });
 </script>
 {% endblock script %}

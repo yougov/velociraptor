@@ -8,7 +8,7 @@ VR.Dash.Options = {
     apps: []
 };
 
-VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl) {
+VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl, dashboardId) {
 
   // Create a new applist, bound to our container
   VR.Dash.Apps = new VR.Models.AppList();
@@ -32,7 +32,7 @@ VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl
       }
   }, this);
 
-  // bind proc change event stream to handler 
+  // bind proc change event stream to handler
 };
 
 VR.Dash.removeProc = function(procdata) {
