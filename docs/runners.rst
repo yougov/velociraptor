@@ -53,6 +53,11 @@ The proc.yaml file contains the following keys:
 The file doesn't actually have to be named proc.yaml.  It can have any name you
 like.
 
+Note: String config values that start with an @ sign and also contain single
+quote characters get serialized in a special way by the underlying YAML
+library.  For instance, "@How's it going?" gets serialized as
+'@How''s it going?'.
+
 Commands
 ========
 
