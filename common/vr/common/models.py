@@ -497,7 +497,7 @@ class Velociraptor(object):
         url = self._build_url('api/streams/events/')
         messages = sseclient.SSEClient(url, auth=self.session.auth)
         for msg in messages:
-            yield msg
+            yield json.loads(msg.data)
 
 
 class Swarm(object):
