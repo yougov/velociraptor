@@ -796,3 +796,19 @@ class TestResult(models.Model):
 
     class Meta:
         db_table = 'deployment_testresult'
+
+
+class Dashboard(models.Model):
+    name = models.CharField(max_length=50)
+    slug = models.SlugField()
+    apps = models.ManyToManyField(App)
+    editors = models.ManyToManyField(User)
+
+    def __unicode__(self):
+        return self.name
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User)
+    default_dashboard = models.ForeignKey(Dashboard, related_name='def+')
+    quick_dashboards = models.ManyToManyField(Dashboard, related_name='quick+')

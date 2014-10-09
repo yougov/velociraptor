@@ -1,7 +1,8 @@
 import reversion
 
 from django.contrib import admin
-from django.contrib.auth.models import Group
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import Group, User
 
 from vr.server import models
 from vr.server.forms import ConfigIngredientForm
@@ -61,3 +62,20 @@ admin.site.register(models.TestRun, TestRunAdmin)
 class ReleaseAdmin(admin.ModelAdmin):
     search_fields = ['config_yaml', 'env_yaml', 'build__app__name']
 admin.site.register(models.Release, ReleaseAdmin)
+
+admin.site.unregister(User)
+
+class UserProfileInline(admin.StackedInline):
+    model = models.UserProfile
+
+class UserProfileAdmin(UserAdmin, reversion.VersionAdmin):
+    """ User Admin override, add an inline.
+    """
+    inlines = [UserProfileInline]
+
+admin.site.register(User, UserProfileAdmin)
+
+class DashboardAdmin(admin.ModelAdmin):
+    model = models.Dashboard
+
+admin.site.register(models.Dashboard, DashboardAdmin)
