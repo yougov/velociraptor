@@ -828,6 +828,11 @@ VR.Views.SwarmModal = VR.Views.BaseModal.extend({
 
     update: function() {
       this.$el.html(this.template.goatee(this.swarm.toJSON()));
+
+      var procs = this.swarm.getProcs();
+      _.each(procs, function(proc) {
+          this.procAdded(proc);
+      }, this);
     },
 
     show: function() {
