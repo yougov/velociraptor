@@ -23,12 +23,7 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
 
     outfolder = os.getcwd()
 
-    # As long as we're sometimes using vrun_precise, which bind-mounts
-    # system folders into the container, it's not safe to run a build as
-    # root, because then untrusted code in the app or buildpack could run
-    # amok.  If we ever switch entirely to image-based builds, that could
-    # change.
-    user = 'nobody'
+    user = getattr(build_data, 'user', 'nobody')
 
     with tmpdir() as here:
 
