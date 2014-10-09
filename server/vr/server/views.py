@@ -12,6 +12,10 @@ from django.views.generic import edit
 from django.views.generic import ListView
 from django.utils import simplejson
 
+from reversion import revision
+from reversion.models import Version
+from reversion.helpers import generate_patch
+
 from vr.server import forms, tasks, events, models
 from vr.server.utils import yamlize
 
@@ -176,6 +180,7 @@ def proclog(request, hostname, procname):
 
 
 @login_required
+@revision.create_on_success
 def edit_swarm(request, swarm_id=None):
     if swarm_id:
         # Need to populate form from swarm
@@ -199,9 +204,23 @@ def edit_swarm(request, swarm_id=None):
             'config_ingredients': [
                 ing.pk for ing in swarm.config_ingredients.all()]
         }
+        fields = [field for field in swarm._meta.fields]
+        version_list = Version.objects.get_for_object(swarm).reverse()
+        version_diffs = []
+        if len(version_list) > 1:
+            for version in version_list[1:6]:
+                diff_dict = {}
+                for field in fields:
+                    diff = generate_patch(version_list[0], version, field.name)
+                    if diff:
+                        diff_dict[field.name] = version.field_dict[field.name]
+                version_diffs.append({'diff_dict': diff_dict,
+                                      'user': version.revision.user,
+                                      'date': version.revision.date_created})
     else:
         initial = None
         swarm = models.Swarm()
+        version_diffs = []
 
     form = forms.SwarmForm(request.POST or None, initial=initial)
     if form.is_valid():
@@ -227,6 +246,8 @@ def edit_swarm(request, swarm_id=None):
         swarm.config_ingredients.clear()
         for ingredient in data['config_ingredients']:
             swarm.config_ingredients.add(ingredient)
+        revision.user = request.user
+        revision.comment = "Created from web form."
 
         do_swarm(swarm, request.user)
 
@@ -236,6 +257,7 @@ def edit_swarm(request, swarm_id=None):
         'swarm': swarm,
         'form': form,
         'btn_text': 'Swarm',
+        'version_diffs': version_diffs
     })
 
 

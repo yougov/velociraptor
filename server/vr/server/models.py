@@ -13,6 +13,7 @@ from django.conf import settings
 from django.utils import timezone
 import yaml
 import redis
+import reversion
 
 from vr.server.fields import YAMLDictField, YAMLListField
 from vr.common import repo, build, models as raptor_models
@@ -74,7 +75,7 @@ class ConfigIngredient(models.Model):
     class Meta:
         ordering = ['name', ]
         db_table = 'deployment_configingredient'
-
+reversion.register(ConfigIngredient)
 
 repo_choices = (
     ('git', 'git'),
@@ -110,6 +111,7 @@ class BuildPack(models.Model):
     @property
     def basename(self):
         return repo.basename(self.repo_url)
+reversion.register(BuildPack)
 
 
 class App(models.Model):
@@ -128,6 +130,8 @@ class App(models.Model):
     class Meta:
         ordering = ('name',)
         db_table = 'deployment_app'
+reversion.register(App)
+
 
 OS_IMAGES_BASE = 'images'
 
@@ -393,6 +397,7 @@ class Host(models.Model):
                                            redis_or_url=events_redis,
                                            supervisor_username=user,
                                            supervisor_password=pwd)
+reversion.register(Host)
 
 
 class Squad(models.Model):
@@ -409,6 +414,7 @@ class Squad(models.Model):
     class Meta:
         ordering = ('name',)
         db_table = 'deployment_squad'
+reversion.register(Squad)
 
 
 config_name_help = ("Short name like 'prod' or 'europe' to distinguish between "
@@ -677,6 +683,7 @@ class Swarm(models.Model):
         self.release = self.get_current_release(os_image, version)
 
     version = property(get_version, set_version)
+reversion.register(Swarm)
 
 
 class PortLock(models.Model):
@@ -806,6 +813,7 @@ class Dashboard(models.Model):
 
     def __unicode__(self):
         return self.name
+reversion.register(Dashboard)
 
 
 class UserProfile(models.Model):
