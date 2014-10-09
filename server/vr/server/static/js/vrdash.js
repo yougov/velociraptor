@@ -5,10 +5,11 @@ VR.Dash = {};
 
 VR.Dash.Options = {
     refreshInterval: 60000,
-    apps: []
+    apps: [],
+    dashboardId: null,
 };
 
-VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl, dashboardId) {
+VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl) {
 
   if(dashboardId) {
     $.getJSON(VR.Urls.getTasty('dashboard', dashboardId), function(data, stat, xhr) {

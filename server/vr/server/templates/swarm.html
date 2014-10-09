@@ -23,6 +23,7 @@
             <li><a href="#config" data-toggle="tab">Swarm Config</a></li>
             <li><a href="#preview" data-toggle="tab">Config Preview</a></li>
             <li><a href="#routing" data-toggle="tab">Routing</a></li>
+            <li><a href="#versions" data-toggle="tab">Versions</a></li>
           </ul>
         </div>
         {% if swarm.id %}
@@ -66,6 +67,26 @@
         <div class="tab-pane form-horizontal col-sm-8" id="routing">
             {% formfield form.pool %}
             {% formfield form.balancer %}
+        </div>
+
+        <div class="tab-pane form-horizontal span4" id="versions">
+            {% if version_diffs %}
+
+             {% for diff in version_diffs %}
+                <span>Revision date: {{ diff.date }}</span><br/>
+                <span>User: {{ diff.user }}</span><br/>
+                <table>
+                <thead><tr><th>Field</th><th>Value</th></tr></thead>
+                {% for field, field_diff in diff.diff_dict.items %}
+                    <tr><td>{{ field }}</td><td>{{ field_diff|safe }}</td></tr>
+                {% endfor %}
+                </table>
+                <hr/>
+             {% endfor %}
+
+            {% else %}
+              No previous version found.
+            {% endif %}
         </div>
       </div>
 
