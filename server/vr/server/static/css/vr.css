@@ -121,14 +121,6 @@ clickable-text {
   border-radius: 0px;
 }
 
-.modal, .proc-details-modal {
-  width: 700px;
-}
-
-.modal {
-  margin-left: -360px;
-}
-
 .proc-log {
   overflow: auto;
   font-family: Monaco, Menlo, Consolas, 'Courier New', monospace;
@@ -680,9 +672,6 @@ th.rowlabel {
 #swarm-filter {
   display: block;
   margin-left: 4px;
-  /*width: -webkit-calc(100% - 22px);
-  width: -moz-calc(100% - 22px);
-  width: calc(100% - 22px);*/
   width: 95%;
 }
 
@@ -693,6 +682,28 @@ th.rowlabel {
 
 .dropdown-menu li {
   margin: 0;
+}
+.navbar-nav .btn-group > a {
+  border: none;
+  border-radius: 0px;
+  -webkit-border-radius: 0px;
+  -moz-border-radius: 0px;
+  position: relative;
+  float: left;
+  cursor: pointer;
+}
+.navbar-nav .btn-group > a:hover {
+  color: #333;
+}
+.navbar-nav .btn-group > a:first-child {
+  margin-left: 0;
+  padding-right: 2px;
+}
+.navbar-nav .btn-group > a.dropdown-toggle {
+  padding-left: 2px;
+}
+.navbar-nav .btn-group.open > a.dropdown-toggle {
+  box-shadow: none;
 }
 
 /* MULTISELECT */

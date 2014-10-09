@@ -183,6 +183,10 @@ Date.prototype.format = function (mask, utc) {
 // A little hackishness to set up the swarm dropdown in the nav.
 $(function() {
 
+    $(document).on('hidden.bs.modal', function(ev) {
+        $(ev.target).remove();
+    });
+
     var ESCAPE = 27, UP = 38, DOWN = 40, ENTER = 13;
 
     // filter-as-you-type on swarm dropdown in nav.
