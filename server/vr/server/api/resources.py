@@ -143,12 +143,12 @@ class SwarmResource(ModelResource):
     # Leave 'release' blank when you want to set 'version' to something new, and
     # the model will intelligently create a new release for you.
     release = fields.ToOneField('api.resources.ReleaseResource', 'release',
-        blank=True, null=True)
+                                blank=True, null=True)
 
     shortname = fields.CharField('shortname')
     volumes = fields.ListField('volumes', null=True)
     config_ingredients = fields.ToManyField('api.resources.IngredientResource',
-                                           'config_ingredients')
+                                            'config_ingredients')
     compiled_config = fields.DictField('get_config')
     compiled_env = fields.DictField('get_env')
     version = fields.CharField('version')
