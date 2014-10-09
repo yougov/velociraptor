@@ -1,3 +1,4 @@
+
 (function() {
 
 var Swarm = VR.Swarm = {};
@@ -43,7 +44,10 @@ Swarm.init = function(swarmId, container) {
 
 Swarm.addProcView = function(proc) {
   var view = new VR.Views.Proc(proc);
+  var hostname = proc.get('host');
+  var version = proc.get('version');
   Swarm.container.append(view.el);
+  Swarm.container.append(hostname + " | V: " + version + "<br/>");
 };
 
 Swarm.checkPoolName = function(form) {

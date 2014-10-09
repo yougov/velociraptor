@@ -8,8 +8,6 @@
 <div class="span12">
     {% if swarm.id %}
     <h1 class="float">Swarm: {{ swarm.shortname }}
-      <span id="swarm-container" class="row-fluid">
-      </span>
     </h1>
     {% else %}
     <h1>New Swarm</h1>
@@ -28,7 +26,13 @@
           <li><a href="#routing" data-toggle="tab">Routing</a></li>
         </ul>
       </div>
+      {% if swarm.id %}
+      <h3>Deployed procs:</h3>
+          <span id="swarm-container" class="row-fluid">
+          </span>
+      {% endif %}
   </div>
+
   <div class="span8">
     <div class="tab-content row">
       <div class="tab-pane active form-horizontal span8" id="general">
