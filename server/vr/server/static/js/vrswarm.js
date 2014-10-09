@@ -7,7 +7,7 @@ Swarm.init = function(swarmId, container) {
   // container should be a jQuery-wrapped node.
   Swarm.container = container;
 
-  var url = VR.Urls.getTasty('swarms', swarmId);
+  var vContainer, hContainer, url = VR.Urls.getTasty('swarms', swarmId);
   $.getJSON(url, function(data, sts, xhr) {
       Swarm.swarm = new VR.Models.Swarm(data);
       var compiled_config = Swarm.swarm.get('compiled_config');
@@ -16,6 +16,16 @@ Swarm.init = function(swarmId, container) {
       $('#compiled_env').text(JSON.stringify(compiled_env, null, '\t'));
       Swarm.swarm.on('addproc', Swarm.addProcView);
       _.each(data.procs, function(pdata, idx, lst) {
+        vContainer = '<table class="table table-striped table-bordered" id="version_'+pdata.version+'"><thead><tr><th colspan="2">Version: '+pdata.version+'</th></tr></table>';
+
+        if($('#version_'+pdata.version).length == 0)
+          Swarm.container.append(vContainer);
+
+        hContainer = '<tr id="version_'+pdata.version+'_host_'+pdata.host+'"><td style="text-align: right;vertical-align: middle"><span>'+pdata.host+'</span></td><td></td></tr>';
+
+        if($('#version_'+pdata.version+'_host_'+ pdata.host).length == 0)
+          $('#version_'+pdata.version).append(hContainer);
+
         Swarm.swarm.onProcData(null, pdata);
       });
 
@@ -46,8 +56,8 @@ Swarm.addProcView = function(proc) {
   var view = new VR.Views.Proc(proc);
   var hostname = proc.get('host');
   var version = proc.get('version');
-  Swarm.container.append(view.el);
-  Swarm.container.append(hostname + " | V: " + version + "<br/>");
+
+  $('#version_'+version+'_host_'+hostname+' td:last-child').append(view.el);
 };
 
 Swarm.checkPoolName = function(form) {
