@@ -31,7 +31,7 @@ setup(
         'requests',
         'setproctitle',
         'South==0.7.6',
-        'sseclient==0.0.6',
+        'sseclient==0.0.8',
         'six>=1.4',
         'vr.events>=1.1.3',
 
