@@ -113,7 +113,7 @@
 {% endblock content %}
 
 {% block script %}
-{{ form.media }}
+<script src="{% static 'js/jquery.textarea.min.js' %}"></script>
 <script src="{% static 'js/vrswarm.js' %}"></script>
 <script>
 $(function() {
@@ -123,10 +123,7 @@ $(function() {
   // enable using tabs in the textareas
   $('.codearea').tabby({tabString:'  '});
 
-  jQuery.each($("select[multiple]"), function () {
-    // "Locations" can be any label you want
-    SelectFilter.init(this.id, "Ingredients", 0, "/static/");
-  });
+  SelectFilter.init('id_config_ingredients', "Ingredients", 0, "/static/");
 
   // make sure that pool name checking also works for new swarms
   VR.Swarm.checkPoolName($('form.raptorform').get(0));

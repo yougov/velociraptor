@@ -350,10 +350,6 @@ $(function() {
           $(modal).modal('show').queue(function() {
             $.getJSON(VR.Urls.getTasty('apps'), function(data) {
               apps = data.objects;
-
-              jQuery.each($("select[multiple]"), function () {
-                SelectFilter.init(this.id, "Apps", 0, "/static/");
-              });
             });
           });
 
@@ -372,9 +368,7 @@ $(function() {
             });
             
             if(counter===1) {
-              jQuery.each($("select[multiple]"), function () {
-                SelectFilter.init(this.id, "Apps", 0, "/static/");
-              });
+              SelectFilter.init('dashboard-apps', "Apps", 0, "/static/");
             }
           });
 

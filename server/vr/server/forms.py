@@ -172,13 +172,3 @@ class SwarmForm(forms.Form):
         for ing in self.cleaned_data['config_ingredients']:
             instance.configingredient_set.add(ing)
         return instance
-
-    class Media:
-        js = (
-            'js/jquery.textarea.min.js',
-            'js/multiselect.js',
-        )
-
-        css = {
-            'all': ('css/multiselect.css',),
-        }
