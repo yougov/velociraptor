@@ -375,8 +375,7 @@ $(function() {
           $(modal).find('.btn-success').on('click', function(ev) {
             var form = $(modal).find('form'),
                 name = form.find('#dashboard-name').val(),
-                slug = form.find('#dashboard-slug').val(),
-                apps = form.find('#dashboard-apps').val();
+                slug = form.find('#dashboard-slug').val();
 
             var payload = {
               name: name,
@@ -384,8 +383,8 @@ $(function() {
               apps: []
             };
 
-            _.each(apps, function(app) {
-              app = app.split('|');
+            $('#dashboard-apps_to option').each(function(i, option) {
+              var app = $(option).val().split('|');
               payload.apps.push({'id': app[0], 'name': app[1]});
             });
 
