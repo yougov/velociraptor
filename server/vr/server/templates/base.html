@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="{% static 'css/font-awesome.css' %}" type="text/css" media="screen">
   <link rel="stylesheet" href="{% static 'font/roboto/stylesheet.css' %}" type="text/css" media="screen">
   <link rel="stylesheet" href="{% static 'css/vr.css' %}" type="text/css" media="screen">
+  <link rel="stylesheet" href="{% static 'css/multiselect.css' %}" type="text/css"></script>
   {% block style %}{% endblock style %}
   {% if custom_css %}
     <link rel="stylesheet" href="{{ custom_css }}" type="text/css" media="screen">
@@ -122,7 +123,7 @@
 
 {# GOATEE TEMPLATES #}
 {% include "jstemplates.html" %}
-
+<script src="{% static 'js/multiselect.js' %}"></script>
 <script>
 {# build some URLs from Django.  vrdash.js and other scripts rely on these #}
 (function () {
