@@ -225,7 +225,7 @@ def edit_swarm(request, swarm_id=None):
         swarm = models.Swarm()
         version_diffs = []
 
-    form = forms.SwarmForm(request.POST or None, initial=initial)
+    form = forms.SwarmForm(request.POST or None, initial=initial, instance=swarm)
     if form.is_valid():
         data = form.cleaned_data
         os_image = models.OSImage.objects.get(id=data['os_image_id']) \
