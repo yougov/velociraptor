@@ -273,7 +273,6 @@ class ReleaseResource(ModelResource):
             return HttpResponseNotFound()
 
         data = json.loads(request.raw_post_data)
-        print("data", data)
         do_deploy(release, request.user, data['config_name'], data['host'],
                   data['proc'], data['port'])
 

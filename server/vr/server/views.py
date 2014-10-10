@@ -156,6 +156,8 @@ def deploy(request):
         data = form.cleaned_data
 
         release = models.Release.objects.get(id=data.pop('release_id'))
+        if 'app' in data:
+            data.pop('app')
         do_deploy(release, request.user, **data)
         return redirect('dash')
 
