@@ -529,6 +529,7 @@ class BaseResource(object):
         return resp.headers['location']
 
     def load(self, url):
+        url = self._vr._build_url(self.base, url)
         resp = self._vr.session.get(url)
         resp.raise_for_status()
         self.__dict__.update(resp.json())
@@ -620,12 +621,8 @@ class Swarm(BaseResource):
         )
 
 
-class Build(object):
+class Build(BaseResource):
     base = '/api/v1/builds/'
-
-    def __init__(self, vr, obj):
-        self._vr = vr
-        self.__dict__.update(obj)
 
     @property
     def created(self):
@@ -640,11 +637,6 @@ class Build(object):
         resp = self._vr.session.post(url, json.dumps(doc))
         resp.raise_for_status()
         self.load(resp.headers['location'])
-
-    def load(self, url):
-        resp = self._vr.session.get(url)
-        resp.raise_for_status()
-        self.__dict__.update(resp.json())
 
     def assemble(self):
         """
@@ -683,18 +675,8 @@ class Squad(BaseResource):
     base = '/api/v1/squads/'
 
 
-class Release(object):
+class Release(BaseResource):
     base = '/api/v1/releases/'
-
-    def __init__(self, vr, obj={}):
-        self._vr = vr
-        self.__dict__.update(obj)
-
-    def load(self, url):
-        url = self._vr._build_url(self.base, url)
-        resp = self._vr.session.get(url)
-        resp.raise_for_status()
-        self.__dict__.update(resp.json())
 
     def deploy(self, host, port, proc, config_name):
         url = self._vr._build_url(self.resource_uri, 'deploy/')
