@@ -319,6 +319,9 @@ class Release(models.Model):
                                    help_text=memsw_limit_help)
 
     def __unicode__(self):
+        return self.get_name()
+
+    def get_name(self):
         return u'-'.join([str(self.build), self.hash or ''])
 
     def compute_hash(self):
