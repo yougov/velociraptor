@@ -26,8 +26,8 @@ class ConfigIngredientAdmin(reversion.VersionAdmin):
 
     def used_in(self, obj):
         if obj.swarm_set.all().count():
-            return ", ".join([s.__unicode__()
-                             for s in obj.swarm_set.all()])
+            return ", ".join([s.__unicode__() for s in obj.swarm_set.all().only(
+                'release', 'config_name', 'proc_name')])
         return "No Swarms"
     used_in.short_description = 'Included in'
 admin.site.register(models.ConfigIngredient, ConfigIngredientAdmin)
