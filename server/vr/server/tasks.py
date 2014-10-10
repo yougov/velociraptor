@@ -436,7 +436,7 @@ def swarm_release(swarm_id, swarm_trace_id=None):
         chord(subtasks)(callback)
     else:
         # We have just the right number of procs.  Uptest and route them.
-        swarm_assign_uptests(swarm.id)
+        swarm_assign_uptests(swarm.id, swarm_trace_id)
 
 
 @task
