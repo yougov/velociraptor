@@ -622,9 +622,7 @@ th.rowlabel {
 .formrows .helptext {
   color: #999;
   font-size: 10px;
-  margin-left: 3px;
-  position: relative;
-  bottom: 3px;
+  margin: 2px 0 5px 3px;
 }
 
 .formrows td {
