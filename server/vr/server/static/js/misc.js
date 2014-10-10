@@ -345,6 +345,8 @@ $(function() {
           var template = VR.Templates.DashModal,
               modal = template.goatee(),
               apps;
+
+          var counter = 0;
           $(modal).modal('show').queue(function() {
             $.getJSON(VR.Urls.getTasty('apps'), function(data) {
               apps = data.objects;
@@ -352,6 +354,7 @@ $(function() {
           });
 
           $(modal).on('shown.bs.modal', function(ev) {
+            counter++;
             _.each(apps, function(app) {
               if($('#'+app.name+'-option').length === 0)
                 $('#dashboard-apps').append('<option id="'+app.name+'-option" data-id="'+app.id+'" value="'+app.id+'|'+app.name+'">'+app.name+'</option>');
@@ -363,6 +366,10 @@ $(function() {
 
               $('#dashboard-slug').val(name);
             });
+            
+            if(counter===1) {
+              SelectFilter.init('dashboard-apps', "Apps", 0, "/static/");
+            }
           });
 
           $(modal).find('.btn-success').on('click', function(ev) {

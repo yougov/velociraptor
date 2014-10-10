@@ -37,6 +37,7 @@ VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl
       if (parsed.event == 'PROCESS_GROUP_REMOVED') {
         VR.ProcMessages.trigger('destroyproc:'+parsed.id, parsed);
       } else {
+        // TODO: filter out procs we don't want to see in our dashbaord
         VR.ProcMessages.trigger('updateproc:'+parsed.id, parsed);
       }
   }, this);
