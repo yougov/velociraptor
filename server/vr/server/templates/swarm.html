@@ -71,7 +71,9 @@
 
         <div class="tab-pane form-horizontal col-sm-8" id="versions">
             <div class="row">
-            {% if version_diffs %}            
+            {% if version_diffs %}
+              <div class="col-sm-2"></div>
+              <div class="col-sm-10">
               {% for diff in version_diffs %}
                 <span>Revision date: {{ diff.date }}</span><br/>
                 <span>User: {{ diff.user }}</span><br/>
@@ -93,6 +95,7 @@
                 </table>
                 <hr/>
               {% endfor %}
+              </div>
             {% else %}
             <div class="col-sm-2"></div>
             <div class="col-sm-10">

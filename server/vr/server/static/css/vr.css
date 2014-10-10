@@ -130,7 +130,8 @@ clickable-text {
 
 .modal .proc-log {
   /* the tallest we can go before there's a scroll box in the main modal */
-  height: 98px;
+  height: 128px;
+  padding: 10px;
 }
 
 /* END CUSTOMIZE BOOTSTRAP */
