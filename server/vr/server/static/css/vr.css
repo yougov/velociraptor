@@ -489,7 +489,7 @@ th.rowlabel {
   font-family: FontAwesome;
   font-weight: normal;
   font-style: normal;
-  font-size: 18px;
+  font-size: 16px;
   display: inline-block;
   text-decoration: inherit;
 }  
@@ -530,6 +530,10 @@ th.rowlabel {
   content: "\f007"; /* user icon */
 }
 
+.swarm.deploy.done .event-icon:before {
+  content: "\f1ae"; /* swarm done icon - HURRAY! */
+}
+
 .scheduled .event-icon::before {
   content: "\f017"; /* clock icon */
 }
@@ -547,7 +551,8 @@ th.rowlabel {
   color: red;
 }
 
-.success .event-icon {
+.success .event-icon,
+.done .event-icon {
   color: #0c0;
 }
 
