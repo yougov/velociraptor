@@ -5,6 +5,7 @@ from django.contrib.auth import authenticate
 import yaml
 
 from vr.server import models
+from vr.server.utils import yamlize
 
 
 class ConfigIngredientForm(forms.ModelForm):
@@ -151,13 +152,8 @@ class SwarmForm(forms.Form):
 
     def __init__(self, data, *args, **kwargs):
         if 'instance' in kwargs:
-            # We get the 'initial' keyword argument or initialize it
-            # as a dict if it didn't exist.
-            initial = kwargs.setdefault('initial', {})
-            # The widget for a ModelMultipleChoiceField expects
-            # a list of primary key for the selected data.
-            initial['config_ingredients'] = [
-                c.pk for c in kwargs['instance'].configingredient_set.all()]
+            instance = kwargs.pop('instance')
+            self.instance = instance if instance.pk is not None else None
 
         super(SwarmForm, self).__init__(data, *args, **kwargs)
         self.fields['squad_id'].choices = [(s.id, s) for s in
@@ -182,3 +178,13 @@ class SwarmForm(forms.Form):
         for ing in self.cleaned_data['config_ingredients']:
             instance.configingredient_set.add(ing)
         return instance
+
+    def get_compiled_config(self):
+        if getattr(self, 'instance', None):
+            return yamlize(self.instance.get_config())
+        return yamlize({})
+
+    def get_compiled_env(self):
+        if getattr(self, 'instance', None):
+            return yamlize(self.instance.get_env())
+        return yamlize({})

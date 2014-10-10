@@ -10,10 +10,6 @@ Swarm.init = function(swarmId, container) {
   var vContainer, hContainer, url = VR.Urls.getTasty('swarms', swarmId);
   $.getJSON(url, function(data, sts, xhr) {
       Swarm.swarm = new VR.Models.Swarm(data);
-      var compiled_config = Swarm.swarm.get('compiled_config');
-      var compiled_env = Swarm.swarm.get('compiled_env');
-      $('#compiled_config').text(JSON.stringify(compiled_config, null, '\t'));
-      $('#compiled_env').text(JSON.stringify(compiled_env, null, '\t'));
       Swarm.swarm.on('addproc', Swarm.addProcView);
       _.each(data.procs, function(pdata, idx, lst) {
         var versionId = 'version_'+pdata.version.replace(/\./g,'_');
