@@ -143,12 +143,12 @@ class SwarmResource(ModelResource):
     # Leave 'release' blank when you want to set 'version' to something new, and
     # the model will intelligently create a new release for you.
     release = fields.ToOneField('api.resources.ReleaseResource', 'release',
-        blank=True, null=True)
+                                blank=True, null=True)
 
     shortname = fields.CharField('shortname')
     volumes = fields.ListField('volumes', null=True)
     config_ingredients = fields.ToManyField('api.resources.IngredientResource',
-                                           'config_ingredients')
+                                            'config_ingredients')
     compiled_config = fields.DictField('get_config')
     compiled_env = fields.DictField('get_env')
     version = fields.CharField('version')
@@ -212,11 +212,13 @@ class SwarmResource(ModelResource):
             except models.Swarm.DoesNotExist:
                 return HttpResponseNotFound()
 
-            do_swarm(swarm, request.user)
+            swarm_id = do_swarm(swarm, request.user)
 
             # Status 202 means "The request has been accepted for processing, but
             # the processing has not been completed."
-            return HttpResponse(status=202)
+            return HttpResponse(json.dumps({'swarm_id': swarm_id}),
+                                status=202,
+                                content_type='application/json')
 
         return HttpResponseNotAllowed(["POST"])
 

@@ -464,9 +464,12 @@ class Velociraptor(object):
     def get_credentials(self):
         username = self.username or getpass.getuser()
         hostname = self.hostname()
+
         _, _, default_domain = hostname.partition('.')
-        auth_domain = os.environ.get('VELOCIRAPTOR_AUTH_DOMAIN',
-            default_domain)
+        auth_domain = os.environ.get(
+            'VELOCIRAPTOR_AUTH_DOMAIN',
+            default_domain
+        )
         password = keyring.get_password(auth_domain, username)
         if password is None:
             prompt_tmpl = "{username}@{hostname}'s password: "
@@ -500,7 +503,38 @@ class Velociraptor(object):
             yield json.loads(msg.data)
 
 
-class Swarm(object):
+class BaseResource(object):
+
+    def __init__(self, vr, obj=None):
+        self._vr = vr
+        self.__dict__.update(obj or {})
+
+    def create(self):
+        doc = copy.deepcopy(self.__dict__)
+        doc.pop('_vr')
+        url = self._vr._build_url(self.base)
+        resp = self._vr.session.post(url, json.dumps(doc))
+        if not resp.ok:
+            print(resp.headers)
+            try:
+                doc = resp.json()
+                if 'traceback' in doc:
+                    print(doc['traceback'])
+                else:
+                    print(doc)
+            except:
+                print(resp.content)
+            resp.raise_for_status()
+        self.load(resp.headers['location'])
+        return resp.headers['location']
+
+    def load(self, url):
+        resp = self._vr.session.get(url)
+        resp.raise_for_status()
+        self.__dict__.update(resp.json())
+
+
+class Swarm(BaseResource):
     """
     A VR Swarm
     """
@@ -546,7 +580,14 @@ class Swarm(object):
         self.patch(**changes)
         trigger_url = self._vr._build_url(self.resource_uri, 'swarm/')
         resp = self._vr.session.post(trigger_url)
+        print(resp.status_code)
+        print(resp.headers)
+        print(resp.content)
         resp.raise_for_status()
+        try:
+            return resp.json()
+        except ValueError:
+            return None
 
     def patch(self, **changes):
         if not changes:
@@ -630,8 +671,16 @@ class Build(object):
         return vars(self) == vars(other)
 
 
-class App(object):
+class App(BaseResource):
     base = '/api/v1/apps/'
+
+
+class Buildpack(BaseResource):
+    base = '/api/v1/buildpacks/'
+
+
+class Squad(BaseResource):
+    base = '/api/v1/squads/'
 
 
 class Release(object):
