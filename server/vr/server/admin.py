@@ -61,6 +61,7 @@ admin.site.register(models.TestRun, TestRunAdmin)
 
 class ReleaseAdmin(admin.ModelAdmin):
     search_fields = ['config_yaml', 'env_yaml', 'build__app__name']
+    list_filter = ['build__app']
 admin.site.register(models.Release, ReleaseAdmin)
 
 admin.site.unregister(User)
