@@ -628,16 +628,6 @@ class Build(BaseResource):
     def created(self):
         return 'id' in vars(self)
 
-    def create(self):
-        if self.created:
-            raise ValueError("Build already created")
-        doc = copy.deepcopy(self.__dict__)
-        doc.pop('_vr')
-        url = self._vr._build_url(self.base)
-        resp = self._vr.session.post(url, json.dumps(doc))
-        resp.raise_for_status()
-        self.load(resp.headers['location'])
-
     def assemble(self):
         """
         Assemble a build
@@ -672,6 +662,10 @@ class Buildpack(BaseResource):
 
 
 class Squad(BaseResource):
+    base = '/api/v1/squads/'
+
+
+class OSImage(BaseResource):
     base = '/api/v1/squads/'
 
 
