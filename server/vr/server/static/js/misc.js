@@ -185,6 +185,7 @@ $(function() {
 
     $(document).on('hidden.bs.modal', function(ev) {
         $(ev.target).remove();
+        $('.modal-backdrop').remove();
     });
 
     var ESCAPE = 27, UP = 38, DOWN = 40, ENTER = 13;
