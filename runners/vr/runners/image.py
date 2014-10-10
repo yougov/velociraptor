@@ -115,7 +115,7 @@ def ensure_char_device(path, devnums, perms):
     # specify
     if not os.path.exists(path):
         with tmp_umask(0):
-            print("mknod -m %s %s c %s %s" % (perms path, devnums[0], devnums[1]))
+            print("mknod -m %s %s c %s %s" % (perms, path, devnums[0], devnums[1]))
             mkdir(os.path.dirname(path))
             mode = (stat.S_IFCHR | perms)
             os.mknod(path, mode, os.makedev(*devnums))
