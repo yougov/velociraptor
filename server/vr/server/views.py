@@ -1,4 +1,8 @@
 import textwrap
+import time
+
+from hashlib import md5
+
 
 from django.conf import settings
 from django.contrib.auth import login as django_login, logout as django_logout
@@ -285,7 +289,11 @@ def do_swarm(swarm, user):
     """
     Put a swarming job on the queue, and a notification about it on the pubsub.
     """
-    tasks.swarm_start.delay(swarm.id)
+
+    # Create a swarm trace id that takes our swarm and time
+    swarm_trace_id = md5(str(swarm) + str(time.time())).hexdigest()
+
+    tasks.swarm_start.delay(swarm.id, swarm_trace_id)
     ev_detail = textwrap.dedent(
         """%(user)s swarmed %(shortname)s
 
@@ -298,6 +306,7 @@ def do_swarm(swarm, user):
         Size: %(size)s
         Balancer: %(balancer)s
         Pool: %(pool)s
+        Trace ID: %(trace_id)s
         """) % {
             'user': user.username,
             'shortname': swarm.shortname(),
@@ -310,10 +319,11 @@ def do_swarm(swarm, user):
             'size': swarm.size,
             'balancer': swarm.balancer,
             'pool': swarm.pool,
+            'trace_id': swarm_trace_id,
         }
     events.eventify(user, 'swarm', swarm.shortname(),
-                    detail=ev_detail, swarm_id=swarm.id)
-    return str(swarm)  # this can be used as an trace ID
+                    detail=ev_detail, swarm_id=swarm_trace_id)
+    return swarm_trace_id
 
 
 class ListLogEntry(ListView):
