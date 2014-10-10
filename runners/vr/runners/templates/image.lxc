@@ -1,19 +1,19 @@
 lxc.rootfs = %(proc_path)s
 
+# Share the host's networking interface. This is unsafe!
+# TODO: make separate virtual interfaces per container.
+lxc.network.type = none
+
 # Use an overlayfs for the OS image
 lxc.mount.entry = overlayfs %(proc_path)s overlayfs lowerdir=%(image_path)s,upperdir=%(proc_path)s 0 0
 lxc.mount.entry = /etc/hostname %(proc_path)s/etc/hostname none bind,ro 0 0
 lxc.mount.entry = /etc/hosts %(proc_path)s/etc/hosts none bind,ro 0 0
 lxc.mount.entry = /etc/resolv.conf %(proc_path)s/etc/resolv.conf none bind,ro 0 0
 
-# /dev can't be readonly because then we get this:
-# lxc-start: Read-only file system - error unlinking /usr/local/lib/lxc/rootfs/dev/kmsg
-# lxc.mount.entry = /dev /apps/procs/vr_node_example-v4-test-42e8e216-web-5000/rootfs/dev none bind 0 0 
 lxc.mount.entry = none %(proc_path)s/dev/shm tmpfs size=65536k,nosuid,nodev,noexec 0 0
 lxc.mount.entry = none %(proc_path)s/dev/pts devpts devpts newinstance,ptmxmode=0666,nosuid,noexec 0 0
 lxc.mount.entry = none %(proc_path)s/proc    proc   defaults 0 0
 lxc.mount.entry = none %(proc_path)s/sys     sysfs  defaults 0 0
-
 
 lxc.aa_profile = unconfined
 

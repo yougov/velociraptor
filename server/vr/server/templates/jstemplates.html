@@ -13,10 +13,11 @@
 </script>
 
 <script id="proc-details-tmpl" type="text/goatee">
-    <div class="proc-details-modal" data-host="<%host%>" data-name="<%name%>">
+  <div class="proc-details-modal modal-dialog" data-host="<%host%>" data-name="<%name%>">
+    <div class="modal-content">
       <div class="modal-header">
           <a class="close" data-dismiss="modal">×</a>
-          <h3><a href="http://<%host%>:<%port%>"><%app_name%>-<%proc_name%>@<%host%>:<%port%></a></h3>
+          <h3 class="modal-title"><a href="http://<%host%>:<%port%>"><%app_name%>-<%proc_name%>@<%host%>:<%port%></a></h3>
       </div>
       <div class="modal-body">
         <table class="attrs proc-details-table">
@@ -25,6 +26,7 @@
       </div>
       <div class="modal-footer"></div>
     </div>
+  </div>
 </script>
 
 
@@ -58,33 +60,36 @@
 
 
 <script id="app-details-tmpl" type="text/goatee">
-  <div class="app-details-modal">
-        <div class="modal-header">
-            <a class="close" data-dismiss="modal">×</a>
-            <h3><%name%></h3>
-        </div>
-        <div class="modal-body">
-            <table class="attrs">
-              <tr>            
-                <th class="rowlabel">Repo Type:</th>
-                <td><%repo_type%></td>
-              </tr>
-              <tr>
-                <th class="rowlabel">Repo Url:</th>
-                <td><a href="<%repo_url%>"><%repo_url%></a></td>
-              </tr>
-            </table>
-        </div>
+  <div class="app-details-modal modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <a class="close" data-dismiss="modal">×</a>
+        <h3 class="modal-title"><%name%></h3>
+      </div>
+      <div class="modal-body">
+        <table class="attrs">
+          <tr>
+            <th class="rowlabel">Repo Type:</th>
+            <td><%repo_type%></td>
+          </tr>
+          <tr>
+            <th class="rowlabel">Repo Url:</th>
+            <td><a href="<%repo_url%>"><%repo_url%></a></td>
+          </tr>
+        </table>
+      </div>
+    </div>
   </div>
 </script>
 
 
 <script id="swarm-details-tmpl" type="text/goatee">
-  <div class="swarm-details-modal">
+  <div class="swarm-details-modal modal-dialog">
+    <div class="modal-content">
         <div class="modal-header">
             <a class="close" data-dismiss="modal">×</a>
-            <%#id%><h3>Swarm: <%shortname%></h3><%/id%>
-            <%^id%><h3>Not a swarm</h3><%/id%>
+            <%#id%><h3 class="modal-title">Swarm: <%shortname%></h3><%/id%>
+            <%^id%><h3 class="modal-title">Not a swarm</h3><%/id%>
         </div>
         <div class="modal-body">
           <table class="attrs">
@@ -132,6 +137,7 @@
           <button class="swarm-start btn btn-success ifstopped">Start All</button>
           <%#id%><a href="/swarm/<%id%>" class="btn btn-primary">Go to Swarm</a><%/id%>
       </div>
+    </div>
   </div>
 </script>
 
@@ -149,10 +155,11 @@
 </script>
 
 <script id="event-detail-tmpl" type="text/goatee">
-  <div class="event-details-modal">
+  <div class="event-details-modal modal-dialog">
+    <div class="modal-content">
       <div class="modal-header">
           <a class="close" data-dismiss="modal">×</a>
-          <h3 class="event-title <%classtags%>">
+          <h3 class="modal-title event-title <%classtags%>">
               <i class="event-icon large"></i>
               <%title%> 
           </h3>
@@ -164,6 +171,88 @@
           Tags: <%tags%><br>
       </div>
     </div>
+  </div>
+</script>
+
+<script id="dash-create-tmpl" type="text/goatee">
+<div class="modal fade">
+  <div class="dash-create-modal modal-dialog">
+    <div class="modal-content">
+        <div class="modal-header">
+            <a class="close" data-dismiss="modal">×</a>
+            <h3 class="modal-title">Create a custom dashboard</h3>
+        </div>
+        <div class="modal-body">
+          <form class="form-horizontal">
+            <div class="form-group">
+              <div class="col-sm-2"><label class="control-label">Name</label></div>
+              <div class="col-sm-10">
+                <input type="text" class="form-control" name="name" id="dashboard-name">
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="col-sm-2"><label class="control-label">Slug</label></div>
+              <div class="col-sm-10">
+                <input type="text" class="form-control" name="slug" id="dashboard-slug">
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="col-sm-2"><label class="control-label">Apps</label></div>
+              <div class="col-sm-10">
+                <select multiple class="form-control" name="apps" id="dashboard-apps">
+                </select>
+              </div>
+            </div>
+          </form>
+        </div>
+      <div class="modal-footer">
+          <button class="btn btn-success">Create</button>
+          <button class="btn btn-default" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+</script>
+
+<script id="swarm-warning-tmpl" type="text/goatee">
+  <div class="swarm-warning-modal modal-dialog">
+    <div class="modal-content">
+        <div class="modal-header">
+            <a class="close" data-dismiss="modal">×</a>
+            <h3>WARNING</h3>
+        </div>
+        <div class="modal-body">
+            <p>
+                You're about to hijack pool name
+            </p>
+
+<pre><%current_pool%></pre>
+
+            <p>
+                It is currently being used by:
+            </p>
+
+<pre>
+<%#swarms%>
+<%name%>
+<%/swarms%></pre>
+
+            <p>
+                If you are unsure about this, click cancel immediately,
+                as unintentionally taking over the pool name of some other Swarm
+                may lead to disastrous scenarios.
+            </p>
+
+            <p>
+                Are you sure you want to proceed?
+            </p>
+        </div>
+      <div class="modal-footer">
+          <button class="swarm-warning-cancel btn btn-success">Cancel</button>
+          <button class="swarm-warning-proceed btn btn-warning">Proceed</button>
+      </div>
+    </div>
+  </div>
 </script>
 
 <script>
@@ -177,10 +266,12 @@ VR.Templates = {
   Host: $('#host-tmpl'),
   Swarm: $('#swarm-tmpl'),
   SwarmModal: $('#swarm-details-tmpl'),
+  SwarmWarningModal: $('#swarm-warning-tmpl'),
   App: $('#app-tmpl'),
   AppModal: $('#app-details-tmpl'),
   Event: $('#event-tmpl'),
-  EventModal: $('#event-detail-tmpl')
+  EventModal: $('#event-detail-tmpl'),
+  DashModal: $('#dash-create-tmpl')
 };
 });
 </script>

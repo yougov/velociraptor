@@ -121,14 +121,6 @@ clickable-text {
   border-radius: 0px;
 }
 
-.modal, .proc-details-modal {
-  width: 700px;
-}
-
-.modal {
-  margin-left: -360px;
-}
-
 .proc-log {
   overflow: auto;
   font-family: Monaco, Menlo, Consolas, 'Courier New', monospace;
@@ -151,11 +143,7 @@ clickable-text {
   position: fixed;
   right: 20px;
   top: 80px;
-  max-width: 340px;
-  width: 100%;
-  background: rgba(255,255,255,0.7);
-  border: 1px solid #eee;
-  padding: 15px 15px 20px 15px;
+  padding: 0;
 }
 
 .filters-container .header {
@@ -256,6 +244,12 @@ div.label {
 }
 .label-swarm {
   background-color: #333
+}
+.label-build {
+  background-color: #999
+}
+.label-build:hover {
+  background-color: #888;
 }
 
 /* APPS, SWARMS, PROCS */
@@ -474,6 +468,14 @@ th.rowlabel {
   min-height: 30px;
 }
 
+.swarm-warning-modal .modal-footer {
+  min-height: 30px;
+}
+
+.swarm-warning-modal .modal-footer .swarm-warning-cancel {
+  float: left;
+}
+
 /* EVENTS */
 
 .event-wrapper {
@@ -646,13 +648,39 @@ th.rowlabel {
   display: none;
 }
 
+.raptorform select, .raptorform input, .raptorform textarea,
+.form-group select, .form-group input, .form-group textarea {
+  display: block;
+  width: 100%;
+  height: 34px;
+  padding: 6px 12px;
+  font-size: 14px;
+  line-height: 1.42857143;
+  color: #555;
+  background-color: #fff;
+  background-image: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+  box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+  -webkit-transition: border-color ease-in-out .15s,-webkit-box-shadow ease-in-out .15s;
+  -o-transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
+  transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
+}
+.raptorform select[multiple],
+.raptorform select[size],
+.raptorform textarea,
+.form-group select[multiple],
+.form-group select[size],
+.form-group textarea {
+  height: auto;
+}
+
 /* NAV */
 #swarm-filter {
   display: block;
   margin-left: 4px;
-  width: -webkit-calc(100% - 22px);
-  width: -moz-calc(100% - 22px);
-  width: calc(100% - 22px);
+  width: 95%;
 }
 
 .dropdown-menu ul {
@@ -662,6 +690,28 @@ th.rowlabel {
 
 .dropdown-menu li {
   margin: 0;
+}
+.navbar-nav .btn-group > a {
+  border: none;
+  border-radius: 0px;
+  -webkit-border-radius: 0px;
+  -moz-border-radius: 0px;
+  position: relative;
+  float: left;
+  cursor: pointer;
+}
+.navbar-nav .btn-group > a:hover {
+  color: #333;
+}
+.navbar-nav .btn-group > a:first-child {
+  margin-left: 0;
+  padding-right: 2px;
+}
+.navbar-nav .btn-group > a.dropdown-toggle {
+  padding-left: 2px;
+}
+.navbar-nav .btn-group.open > a.dropdown-toggle {
+  box-shadow: none;
 }
 
 /* MULTISELECT */

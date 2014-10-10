@@ -11,6 +11,14 @@ VR.Dash.Options = {
 
 VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl) {
 
+  if(VR.Dash.Options.dashboardId) {
+    $.getJSON(VR.Urls.getTasty('dashboard', VR.Dash.Options.dashboardId), function(data, stat, xhr) {
+      _.each(data.apps, function(app) {
+        VR.Dash.Options.apps.push({'name': app.name});
+      })
+    });
+  }
+
   // Create a new applist, bound to our container
   VR.Dash.Apps = new VR.Models.AppList();
   var view = new VR.Views.Apps(VR.Dash.Apps, appsContainer);

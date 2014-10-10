@@ -558,7 +558,7 @@ VR.Views.Proc = Backbone.View.extend({
 
     onClick: function(ev) {
       if (!this.modal) {
-        this.modal = new VR.Views.ProcModal(this.proc);   
+        this.modal = new VR.Views.ProcModal(this.proc);
       }
 
       this.modal.show();
@@ -760,7 +760,7 @@ VR.Views.Swarm = Backbone.View.extend({
 
     onClick: function(ev) {
       if (!this.modal) {
-        this.modal = new VR.Views.SwarmModal(this.swarm);   
+        this.modal = new VR.Views.SwarmModal(this.swarm);
       }
 
       this.modal.show();
@@ -872,7 +872,7 @@ VR.Views.SwarmModal = VR.Views.BaseModal.extend({
       }
 
       if(!this.modelUpdated) this.swarm.fetchByProcData(procs[0].attributes);
-      this.modelUpdated = true
+      this.modelUpdated = true;
     },
 
     onRemove: function() {
@@ -895,6 +895,35 @@ VR.Views.SwarmModal = VR.Views.BaseModal.extend({
       //console.log(arguments);
     }
 
+});
+
+
+// Modal that warns about pool hijacking.
+VR.Views.SwarmWarningModal = Backbone.View.extend({
+    el: '<div class="modal fade" tabindex="-1" data-backdrop="static"></div>',
+    initialize: function(swarmInfo, proceedCallback) {
+      this.swarmInfo = swarmInfo;
+      this.template = VR.Templates.SwarmWarningModal;
+      this.proceedCallback = proceedCallback || function () {return;};
+    },
+    events: {
+      'click .swarm-warning-proceed': 'onProceedBtn',
+      'click .swarm-warning-cancel': 'onCancelBtn'
+    },
+    render: function() {
+      this.$el.html(this.template.goatee(this.swarmInfo));
+    },
+    show: function() {
+      this.render();
+      this.$el.modal('show');
+    },
+    onProceedBtn: function() {
+      this.$el.modal('hide');
+      this.proceedCallback();
+    },
+    onCancelBtn: function() {
+      this.$el.modal('hide');
+    }
 });
 
 

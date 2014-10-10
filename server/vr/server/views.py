@@ -69,11 +69,10 @@ def default_dash(request):
 @login_required
 def custom_dash(request, slug):
     dashboard = get_object_or_404(models.Dashboard, slug=slug)
-    dashboard_name = 'Default - %s' % dashboard.name
     return render(request, 'dash.html', {
         'hosts': models.Host.objects.filter(active=True),
         'dashboard_id': dashboard.id,
-        'dashboard_name': dashboard_name,
+        'dashboard_name': dashboard.name,
         'supervisord_web_port': settings.SUPERVISORD_WEB_PORT
     })
 
