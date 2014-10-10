@@ -124,7 +124,7 @@ def build_proc_info(release, config_name, hostname, proc, port):
 
 @task
 @event_on_exception(['deploy'])
-def deploy(release_id, config_name, hostname, proc, port, swarm_trace_id):
+def deploy(release_id, config_name, hostname, proc, port, swarm_trace_id=None):
     with remove_port_lock(hostname, port):
         release = Release.objects.get(id=release_id)
         msg_title = '%s-%s-%s' % (release.build.app.name, release.build.tag, proc)
