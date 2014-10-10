@@ -3,6 +3,9 @@ import datetime
 import functools
 import logging
 import traceback
+import time
+
+from hashlib import md5
 from collections import defaultdict
 
 from six.moves import range
@@ -309,13 +312,16 @@ def build_start_waiting_swarms(build_id):
 
 
 @task
-def swarm_start(swarm_id, swarm_trace_id):
+def swarm_start(swarm_id, swarm_trace_id=None):
     """
     Given a swarm_id, kick off the chain of tasks necessary to get this swarm
     deployed.
     """
     swarm = Swarm.objects.get(id=swarm_id)
     build = swarm.release.build
+
+    if not swarm_trace_id:
+        swarm_trace_id = md5(str(swarm) + str(time.time())).hexdigest()
 
     if build.is_usable():
         # Build is good.  Do a release.
