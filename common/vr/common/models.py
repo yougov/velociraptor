@@ -581,9 +581,6 @@ class Swarm(BaseResource):
         self.patch(**changes)
         trigger_url = self._vr._build_url(self.resource_uri, 'swarm/')
         resp = self._vr.session.post(trigger_url)
-        print(resp.status_code)
-        print(resp.headers)
-        print(resp.content)
         resp.raise_for_status()
         try:
             return resp.json()
