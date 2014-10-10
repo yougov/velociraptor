@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load current_nav %}
 {% load stripchar %}
 {% load static from staticfiles %}
 
@@ -6,7 +7,14 @@
 <div class="row-fluid">
 
   <div class="proc-column col-sm-6 col-md-9">
-    <h1>{{ dashboard_name }} | App Status</h1>
+    <h1>
+      {{ dashboard_name }} | App Status
+      {% if quick_dashboard %}
+        {% if dashboard_id %}
+        <button type="button" class="btn btn-primary btn-xs" id="setAsDefault" data-dashboardid="{{dashboard_id}}">Set as default</button>
+        {% endif %}
+      {% endif %}
+    </h1>
     <table id="dash-apps"></table>
   </div>
 

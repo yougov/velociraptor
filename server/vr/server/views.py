@@ -77,6 +77,7 @@ def custom_dash(request, slug):
         'hosts': models.Host.objects.filter(active=True),
         'dashboard_id': dashboard.id,
         'dashboard_name': dashboard.name,
+        'quick_dashboard': True,
         'supervisord_web_port': settings.SUPERVISORD_WEB_PORT
     })
 

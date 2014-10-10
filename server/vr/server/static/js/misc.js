@@ -399,7 +399,7 @@ $(function() {
               },
               processData: false,
               success: function(data, status) {
-                if("success" === status) window.location.reload();
+                if("success" === status) window.location = '/dashboard/' + slug;
               }
             });
           });

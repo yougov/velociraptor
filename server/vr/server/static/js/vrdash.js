@@ -15,7 +15,29 @@ VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl
     $.getJSON(VR.Urls.getTasty('dashboard', VR.Dash.Options.dashboardId), function(data, stat, xhr) {
       _.each(data.apps, function(app) {
         VR.Dash.Options.apps.push({'name': app.name});
-      })
+      });
+    });
+    $('#setAsDefault').click(function(ev) {
+      var dashId = $(this).data('dashboardid');
+      var payload = {
+        profile: {
+          default_dashboard: VR.Urls.root + 'dashboard/' + dashId + '/'
+        }
+      };
+      $.ajax({
+        type: 'PUT',
+        url: VR.Urls.getTasty('user', window.userId),
+        data: JSON.stringify(payload),
+        dataType: 'json',
+        contentType: 'application/json',
+        proccessData: false,
+        success: function(data, stat, xhr) {
+          if("success" === stat) {
+            document.cookie = 'dashboard=/dashboard/; path=/';
+            window.location = '/dashboard/';
+          }
+        }
+      });
     });
   }
 
