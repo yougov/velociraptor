@@ -223,12 +223,17 @@ def edit_swarm(request, swarm_id=None):
                 version_diffs.append({'diff_dict': diff_dict,
                                       'user': version.revision.user,
                                       'date': version.revision.date_created})
+        compiled_config = yamlize(swarm.get_config())
+        compiled_env = yamlize(swarm.get_env())
+
     else:
         initial = None
         swarm = models.Swarm()
         version_diffs = []
+        compiled_config = yamlize({})
+        compiled_env = yamlize({})
 
-    form = forms.SwarmForm(request.POST or None, initial=initial, instance=swarm)
+    form = forms.SwarmForm(request.POST or None, initial=initial)
     if form.is_valid():
         data = form.cleaned_data
         os_image = models.OSImage.objects.get(id=data['os_image_id']) \
@@ -263,7 +268,9 @@ def edit_swarm(request, swarm_id=None):
         'swarm': swarm,
         'form': form,
         'btn_text': 'Swarm',
-        'version_diffs': version_diffs
+        'version_diffs': version_diffs,
+        'compiled_config': compiled_config,
+        'compiled_env': compiled_env
     })
 
 
