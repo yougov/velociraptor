@@ -55,6 +55,7 @@ def dash(request):
         'supervisord_web_port': settings.SUPERVISORD_WEB_PORT
     })
 
+
 @login_required
 def default_dash(request):
     if hasattr(request.user, 'userprofile') and request.user.userprofile:
@@ -69,6 +70,7 @@ def default_dash(request):
             })
     # If you don't have a default dashboard go to home!
     return HttpResponseRedirect('/')
+
 
 @login_required
 def custom_dash(request, slug):
@@ -299,11 +301,11 @@ def do_swarm(swarm, user):
     """
     Put a swarming job on the queue, and a notification about it on the pubsub.
     """
-
     # Create a swarm trace id that takes our swarm and time
     swarm_trace_id = md5(str(swarm) + str(time.time())).hexdigest()
 
     tasks.swarm_start.delay(swarm.id, swarm_trace_id)
+
     ev_detail = textwrap.dedent(
         """%(user)s swarmed %(shortname)s
 
