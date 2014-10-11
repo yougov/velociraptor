@@ -580,8 +580,8 @@ VR.Views.ProcModal = VR.Views.BaseModal.extend({
       this.proc.on('change', this.render, this);
       this.proc.on('destroy', this.onProcDestroy, this);
       this.proc.on('remove', this.onProcDestroy, this);
-      this.$el.on('shown.bs.modal', $.proxy(this.onShown, this));
-      this.$el.on('hidden.bs.modal', $.proxy(this.onHidden, this));
+      this.$el.on('shown', $.proxy(this.onShown, this));
+      this.$el.on('hidden', $.proxy(this.onHidden, this));
     },
 
     render: function() {
