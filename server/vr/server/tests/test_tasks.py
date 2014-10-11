@@ -85,8 +85,7 @@ class TestSwarmStartBranches(object):
 
         tasks.swarm_start(1234, 'trace_id')
 
-        # TODO: Make sure this sends the trace id
-        swarm_wait_for_build.assert_called_with(swarm, build)
+        swarm_wait_for_build.assert_called_with(swarm, build, 'trace_id')
 
     @patch.object(tasks, 'Swarm')
     @patch.object(tasks, 'swarm_release')
