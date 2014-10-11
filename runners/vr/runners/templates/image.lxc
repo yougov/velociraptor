@@ -1,8 +1,6 @@
 lxc.rootfs = %(proc_path)s
 
-# Share the host's networking interface. This is unsafe!
-# TODO: make separate virtual interfaces per container.
-lxc.network.type = none
+%(network_config)s
 
 # Use an overlayfs for the OS image
 lxc.mount.entry = overlayfs %(proc_path)s overlayfs lowerdir=%(image_path)s,upperdir=%(proc_path)s 0 0
@@ -51,3 +49,7 @@ lxc.cgroup.devices.allow = c 5:2 rwm
 lxc.cgroup.devices.allow = c 10:200 rwm
 
 lxc.cap.drop = audit_control audit_write mac_admin mac_override mknod setpcap sys_admin sys_boot sys_module sys_nice sys_pacct sys_rawio sys_resource sys_time sys_tty_config
+
+%(memory_limits)s
+
+%(volumes)s

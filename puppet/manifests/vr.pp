@@ -4,10 +4,8 @@ group { "puppet":
 
 class {'vrhost': }
 class {'pipdeps': }
-class {'pg91': }
+class {'pg93': }
 class {'currentmongo': }
-class {'lxc': }
-class {'ruby': }
 
 # Set root password to 'vagrant' so the workers can SSH in and sudo.
 user { 'root':
@@ -39,10 +37,12 @@ class vrhost {
         libpcre3-dev:;
         libjpeg62-dev:;
         libltdl7:;
+        lxc:;
         git-core:;
         redis-server:;
         python-setuptools:;
         python-dev:;
+        python-pip:;
         python-software-properties:;
     }
 
@@ -56,40 +56,26 @@ class vrhost {
 
 }
 
-class ruby {
-
-  package {
-      'ruby1.9.3':
-        require => Ppa["brightbox/ruby-ng"];
-  }  
-
-  exec {
-    getbundler:
-      command => "gem1.9.3 install bundler",
-      require => Package['ruby1.9.3'];
-  }
-
-  ppa {
-    "brightbox/ruby-ng":;
-  }  
-}
-
 # Use pip to install newer versions of some packages than you can get from apt.
 class pipdeps {
     Package {provider => pip, ensure => present,
-      require => [Package['python-dev'], Exec [pip27]]}
+      require => [Package['python-dev'], Package['python-pip']]}
 
     package { 
       mercurial:;
       virtualenv:;
       virtualenvwrapper:;
 
-      # The host needs to have the proc_publisher available.  Install that from
+      # The host needs to have some VR components available.  Install them from
       # the repo checkout itself.
       '/vagrant/common':;
       '/vagrant/agent':
         require => [Package['/vagrant/common']],
         notify => Service[supervisor]; 
+      '/vagrant/runners':
+        require => [Package['/vagrant/common']];
+      '/vagrant/builder':
+        require => [Package['/vagrant/runners']];
     }
 
     file { '.bashrc':
@@ -99,12 +85,9 @@ class pipdeps {
     }
 
     exec {
-      pip27:
-        command => "easy_install-2.7 pip",
-        require => Package['python-setuptools'];
       custom_supervisor:
-        command => "/usr/local/bin/pip2.7 install https://bitbucket.org/yougov/velociraptor/downloads/supervisor-3.0b2-dev-vr4.tar.gz",
-        require => Exec[pip27];  
+        command => "pip install https://bitbucket.org/yougov/velociraptor/downloads/supervisor-3.0b2-dev-vr4.tar.gz",
+        require => Package['python-pip'];  
     }
 
     file { 'supervisord.conf':
@@ -137,16 +120,16 @@ class pipdeps {
     }
 }
 
-class pg91 {
+class pg93 {
     package {
-      "postgresql-9.1": ensure => present;
-      "postgresql-server-dev-9.1": ensure => present;
+      "postgresql-9.3": ensure => present;
+      "postgresql-server-dev-9.3": ensure => present;
     }
 
     file { 'pg_hba.conf':
-      path    => '/etc/postgresql/9.1/main/pg_hba.conf',
+      path    => '/etc/postgresql/9.3/main/pg_hba.conf',
       ensure  => file,
-      require => Package['postgresql-9.1'],
+      require => Package['postgresql-9.3'],
       source  => 'puppet:///modules/postgres/pg_hba.conf',
       notify => Service[postgresql];
     }
@@ -154,7 +137,7 @@ class pg91 {
     service { "postgresql":
       ensure => "running",
       enable => "true",
-      require => Package['postgresql-9.1'];
+      require => Package['postgresql-9.3'];
     }
 }
 
@@ -179,54 +162,33 @@ class currentmongo {
 }
 
 
-class lxc {
-  Package {ensure => present, require => Exec [firstupdate]}
-  package {
-    automake:;
-    libcap-dev:;
-    libapparmor-dev:;
-    build-essential:;
-  }
+mount { "/cgroup":
+    device  => 'cgroup',
+    fstype  => 'cgroup',
+    ensure  => mounted,
+    atboot  => true,
+    options => 'defaults',
+    remounts => false,
+    require => File['/cgroup'];
+}
 
-  # put the build script into /tmp
-  file { 
-  'install_lxc.sh':
-    path    => '/tmp/install_lxc.sh',
-    ensure  => file,
-    require => Package['build-essential', 'automake', 'libcap-dev', 'libapparmor-dev'],
-    source  => 'puppet:///modules/lxc/install_lxc.sh';
-  '/cgroup':
+file {  '/cgroup':
     ensure => "directory",
     owner  => "root",
     mode   => 755;
-  }
-
-  exec {
-    build_lxc:
-      command => "sh /tmp/install_lxc.sh",
-      timeout => "300",
-      require => File['install_lxc.sh'];
-  }
-
-  mount { "/cgroup":
-        device  => 'cgroup',
-        fstype  => 'cgroup',
-        ensure  => mounted,
-        atboot  => true,
-        options => 'defaults',
-        remounts => false,
-        require => File['/cgroup'];
-    }
 }
 
 
-package { 
-  foreman:
+package { foreman:
     ensure => present,
-    provider => gem,
-    require => Package ['ruby1.9.3'];
+    provider => gem;
 }
 
+# hack around https://bugs.launchpad.net/ubuntu/+source/python2.7/+bug/1115466
+file { '/usr/lib/python2.7/_sysconfigdata_nd.py':
+   ensure => 'link',
+   target => '/usr/lib/python2.7/plat-x86_64-linux-gnu/_sysconfigdata_nd.py',
+}
 
 # Provide a nice way to declare PPA dependencies.
 define ppa($ppa = "$title", $ensure = present) {

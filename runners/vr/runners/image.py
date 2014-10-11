@@ -5,7 +5,10 @@ import stat
 
 from vr.common.paths import (get_container_name, get_proc_path,
                              get_container_path, VR_ROOT)
-from vr.runners.base import BaseRunner, mkdir, ensure_file, untar, get_template
+from vr.common.utils import get_lxc_version
+from vr.runners.base import (BaseRunner, mkdir, ensure_file, untar,
+                             get_template, get_lxc_network_config)
+
 
 IMAGES_ROOT = VR_ROOT + '/images'
 
@@ -100,6 +103,9 @@ class ImageRunner(BaseRunner):
         return {
             'proc_path': get_container_path(self.config),
             'image_path': self.get_image_folder(),
+            'network_config': get_lxc_network_config(get_lxc_version()),
+            'memory_limits': self.get_lxc_memory_limits(),
+            'volumes': self.get_lxc_volume_str(),
         }
 
     def ensure_char_devices(self):
@@ -113,6 +119,7 @@ def ensure_char_device(path, devnums, perms):
     # on the umask of the running process (at least on some Linuxes that were
     # tested).  Set this to 0 to make mknod apply the perms you actually
     # specify
+    print("Making device nodes")
     if not os.path.exists(path):
         with tmp_umask(0):
             print("mknod -m %o %s c %s %s" % (perms, path, devnums[0], devnums[1]))

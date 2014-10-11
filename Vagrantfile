@@ -7,8 +7,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # configuration options, , please see the online documentation at
     # vagrantup.com.
     
-    config.vm.box = "precise64"
-    config.vm.box_url = "http://files.vagrantup.com/precise64.box"
+    config.vm.box = "trusty64"
+    config.vm.box_url = "http://files.vagrantup.com/trusty64.box"
 
     # Port for the main dashboard
     config.vm.network "forwarded_port", guest: 8000, host: 8000
@@ -41,6 +41,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.provision :puppet, :module_path => "puppet/modules" do |puppet|
         puppet.manifests_path = "puppet/manifests"
         puppet.manifest_file  = "vr.pp"
+        puppet.facter = {
+            "fqdn" => "trusty64"
+        }
     end
 
     # Make the guest use the host for name resolution, so names on the VPN will
