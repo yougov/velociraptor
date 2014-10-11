@@ -15,7 +15,29 @@ VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl
     $.getJSON(VR.Urls.getTasty('dashboard', VR.Dash.Options.dashboardId), function(data, stat, xhr) {
       _.each(data.apps, function(app) {
         VR.Dash.Options.apps.push({'name': app.name});
-      })
+      });
+    });
+    $('#setAsDefault').click(function(ev) {
+      var dashId = $(this).data('dashboardid');
+      var payload = {
+        profile: {
+          default_dashboard: VR.Urls.root + 'dashboard/' + dashId + '/'
+        }
+      };
+      $.ajax({
+        type: 'PUT',
+        url: VR.Urls.getTasty('user', window.userId),
+        data: JSON.stringify(payload),
+        dataType: 'json',
+        contentType: 'application/json',
+        proccessData: false,
+        success: function(data, stat, xhr) {
+          if("success" === stat) {
+            document.cookie = 'dashboard=/dashboard/; path=/';
+            window.location = '/dashboard/';
+          }
+        }
+      });
     });
   }
 
@@ -37,8 +59,15 @@ VR.Dash.init = function(appsContainer, eventsContainer, eventsUrl, procEventsUrl
       if (parsed.event == 'PROCESS_GROUP_REMOVED') {
         VR.ProcMessages.trigger('destroyproc:'+parsed.id, parsed);
       } else {
-        // TODO: filter out procs we don't want to see in our dashbaord
-        VR.ProcMessages.trigger('updateproc:'+parsed.id, parsed);
+        if(VR.Dash.Options.apps.length > 0) {
+          _.each(VR.Dash.Options.apps, function(app) {
+            if(parsed.app_name === app.name) {
+              VR.ProcMessages.trigger('updateproc:'+parsed.id, parsed);
+            }
+          });
+        } else {
+          VR.ProcMessages.trigger('updateproc:'+parsed.id, parsed);
+        }
       }
   }, this);
 

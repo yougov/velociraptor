@@ -5,6 +5,7 @@ from django.contrib.auth import authenticate
 import yaml
 
 from vr.server import models
+from vr.server.utils import yamlize
 
 
 class ConfigIngredientForm(forms.ModelForm):
@@ -72,8 +73,9 @@ class ReleaseForm(forms.ModelForm):
 
 
 class DeploymentForm(forms.Form):
-
-    release_id = forms.CharField(max_length=100, label='Release')
+    app = forms.ChoiceField(
+        choices=[], help_text="Choose one so we can fill the release combo")
+    release_id = forms.ChoiceField(choices=[], label='Release')
     # TODO: proc should be a drop down of the procs available for a given
     # release.  But I guess we can't narrow that down until a release is
     # picked.
@@ -86,8 +88,17 @@ class DeploymentForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(DeploymentForm, self).__init__(*args, **kwargs)
+        self.fields['app'].choices = [('', '----')] + \
+            [(app.id, app.name) for app in models.App.objects.all()]
+        if 'app' in self.data and self.data['app']:
+            self.fields['release_id'].choices = [(release.id, release.get_name()) for release in models.Release.objects.filter(build__app__id=self.data['app'])]
         self.fields['hostname'].choices = \
             [(h.name, h.name) for h in models.Host.objects.filter(active=True)]
+
+    class Media:
+        js = (
+            'js/fill_releases.js',
+        )
 
 
 class LoginForm(forms.Form):
@@ -172,3 +183,4 @@ class SwarmForm(forms.Form):
         for ing in self.cleaned_data['config_ingredients']:
             instance.configingredient_set.add(ing)
         return instance
+

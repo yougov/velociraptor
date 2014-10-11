@@ -55,6 +55,7 @@ def dash(request):
         'supervisord_web_port': settings.SUPERVISORD_WEB_PORT
     })
 
+
 @login_required
 def default_dash(request):
     if hasattr(request.user, 'userprofile') and request.user.userprofile:
@@ -70,6 +71,7 @@ def default_dash(request):
     # If you don't have a default dashboard go to home!
     return HttpResponseRedirect('/')
 
+
 @login_required
 def custom_dash(request, slug):
     dashboard = get_object_or_404(models.Dashboard, slug=slug)
@@ -77,6 +79,7 @@ def custom_dash(request, slug):
         'hosts': models.Host.objects.filter(active=True),
         'dashboard_id': dashboard.id,
         'dashboard_name': dashboard.name,
+        'quick_dashboard': True,
         'supervisord_web_port': settings.SUPERVISORD_WEB_PORT
     })
 
@@ -160,6 +163,8 @@ def deploy(request):
         data = form.cleaned_data
 
         release = models.Release.objects.get(id=data.pop('release_id'))
+        if 'app' in data:
+            data.pop('app')
         do_deploy(release, request.user, **data)
         return redirect('dash')
 
@@ -220,10 +225,15 @@ def edit_swarm(request, swarm_id=None):
                 version_diffs.append({'diff_dict': diff_dict,
                                       'user': version.revision.user,
                                       'date': version.revision.date_created})
+        compiled_config = yamlize(swarm.get_config())
+        compiled_env = yamlize(swarm.get_env())
+
     else:
         initial = None
         swarm = models.Swarm()
         version_diffs = []
+        compiled_config = yamlize({})
+        compiled_env = yamlize({})
 
     form = forms.SwarmForm(request.POST or None, initial=initial)
     if form.is_valid():
@@ -260,7 +270,9 @@ def edit_swarm(request, swarm_id=None):
         'swarm': swarm,
         'form': form,
         'btn_text': 'Swarm',
-        'version_diffs': version_diffs
+        'version_diffs': version_diffs,
+        'compiled_config': compiled_config,
+        'compiled_env': compiled_env
     })
 
 
@@ -289,11 +301,11 @@ def do_swarm(swarm, user):
     """
     Put a swarming job on the queue, and a notification about it on the pubsub.
     """
-
     # Create a swarm trace id that takes our swarm and time
     swarm_trace_id = md5(str(swarm) + str(time.time())).hexdigest()
 
     tasks.swarm_start.delay(swarm.id, swarm_trace_id)
+
     ev_detail = textwrap.dedent(
         """%(user)s swarmed %(shortname)s
 

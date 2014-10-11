@@ -3,6 +3,10 @@ import datetime
 import functools
 import logging
 import traceback
+import time
+import json
+
+from hashlib import md5
 from collections import defaultdict
 
 from six.moves import range
@@ -124,7 +128,7 @@ def build_proc_info(release, config_name, hostname, proc, port):
 
 @task
 @event_on_exception(['deploy'])
-def deploy(release_id, config_name, hostname, proc, port, swarm_trace_id):
+def deploy(release_id, config_name, hostname, proc, port, swarm_trace_id=None):
     with remove_port_lock(hostname, port):
         release = Release.objects.get(id=release_id)
         msg_title = '%s-%s-%s' % (release.build.app.name, release.build.tag, proc)
@@ -281,17 +285,34 @@ def delete_proc(host, proc, callback=None, swarm_trace_id=None):
         subtask(callback).delay()
 
 
-def swarm_wait_for_build(swarm, build):
+def create_wait_value(swarm_id, swarm_trace_id=None):
+    swarm_trace_id = swarm_trace_id or ''
+    return json.dumps({'swarm_id': swarm_id,
+                       'swarm_trace_id': swarm_trace_id})
+
+
+def read_wait_value(key):
+    # If we can't parse assume the key is the swarm_id
+    doc = {'swarm_id': key, 'swarm_trace_id': None}
+    try:
+        doc = json.loads(key)
+    except:
+        pass
+
+    return doc['swarm_id'], doc['swarm_trace_id']
+
+
+def swarm_wait_for_build(swarm, build, swarm_trace_id=None):
     """
     Given a swarm that you want to have swarmed ASAP, and a build that the
     swarm is waiting to finish, push the swarm's ID onto the build's waiting
     list.
     """
     msg = 'Swarm %s waiting for completion of build %s' % (swarm, build)
-    send_event('%s waiting' % swarm, msg, ['wait'], swarm_id=str(swarm))
+    send_event('%s waiting' % swarm, msg, ['wait'], swarm_trace_id=swarm_trace_id)
     with tmpredis() as r:
         key = getattr(settings, 'BUILD_WAIT_PREFIX', 'buildwait_') + str(build.id)
-        r.lpush(key, swarm.id)
+        r.lpush(key, create_wait_value(swarm.id, swarm_trace_id))
         r.expire(key, getattr(settings, 'BUILD_WAIT_AGE', 3600))
 
 
@@ -302,20 +323,23 @@ def build_start_waiting_swarms(build_id):
     """
     with tmpredis() as r:
         key = getattr(settings, 'BUILD_WAIT_PREFIX', 'buildwait_') + str(build_id)
-        swarm_id = r.lpop(key)
+        swarm_id, swarm_trace_id = read_wait_value(r.lpop(key))
         while swarm_id:
-            swarm_start.delay(swarm_id)
+            swarm_start.delay(swarm_id, swarm_trace_id)
             swarm_id = r.lpop(key)
 
 
 @task
-def swarm_start(swarm_id, swarm_trace_id):
+def swarm_start(swarm_id, swarm_trace_id=None):
     """
     Given a swarm_id, kick off the chain of tasks necessary to get this swarm
     deployed.
     """
     swarm = Swarm.objects.get(id=swarm_id)
     build = swarm.release.build
+
+    if not swarm_trace_id:
+        swarm_trace_id = md5(str(swarm) + str(time.time())).hexdigest()
 
     if build.is_usable():
         # Build is good.  Do a release.
@@ -324,7 +348,7 @@ def swarm_start(swarm_id, swarm_trace_id):
         # Another swarm call already started a build for this app/tag.  Instead
         # of starting a duplicate, just push the swarm ID onto the build's
         # waiting list.
-        swarm_wait_for_build(swarm, build)
+        swarm_wait_for_build(swarm, build, swarm_trace_id)
     else:
         # Build hasn't been kicked off yet.  Do that now.
         callback = swarm_release.subtask((swarm.id, swarm_trace_id))
@@ -412,7 +436,7 @@ def swarm_release(swarm_id, swarm_trace_id=None):
         chord(subtasks)(callback)
     else:
         # We have just the right number of procs.  Uptest and route them.
-        swarm_assign_uptests(swarm.id)
+        swarm_assign_uptests(swarm.id, swarm_trace_id)
 
 
 @task
@@ -653,14 +677,15 @@ def swarm_cleanup(swarm_id, swarm_trace_id):
             )
 
     if delete_subtasks:
-        chord(delete_subtasks)(swarm_finished.subtask((swarm_trace_id,)))
+        chord(delete_subtasks)(swarm_finished.subtask((swarm_id, swarm_trace_id,)))
     else:
-        swarm_finished.delay([], swarm_trace_id)
+        swarm_finished.delay([], swarm_id, swarm_trace_id)
 
 
 @task
-def swarm_finished(result, swarm_trace_id):
-    title = msg = 'Swarm %s finished' % swarm_trace_id
+def swarm_finished(result, swarm_id, swarm_trace_id):
+    swarm = Swarm.objects.get(id=swarm_id)
+    title = msg = 'Swarm %s finished' % swarm
     send_event(title, msg,
                tags=['swarm', 'deploy', 'done'],
                swarm_id=swarm_trace_id)

@@ -15,6 +15,11 @@
   {% if custom_css %}
     <link rel="stylesheet" href="{{ custom_css }}" type="text/css" media="screen">
   {% endif %}
+  {% if request.user.is_authenticated %}
+  <script>
+  var userId = '{{ request.user.id }}';
+  </script>
+  {% endif %}
 </head>
 <body>
     <div class="navbar navbar-default navbar-fixed-top" role="navigation">

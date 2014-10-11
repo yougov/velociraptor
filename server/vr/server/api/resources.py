@@ -73,6 +73,7 @@ class AppResource(ModelResource):
         queryset = models.App.objects.all()
         resource_name = 'apps'
         filtering = {
+            'id': ALL,
             'name': ALL,
         }
         authentication = auth.MultiAuthentication(
@@ -110,6 +111,9 @@ class BuildResource(ModelResource):
             auth.SessionAuthentication(),
         )
         authorization = Authorization()
+        filtering = {
+            'app': ALL_WITH_RELATIONS,
+        }
 
     def prepend_urls(self):
         return [
@@ -239,6 +243,7 @@ v1.register(SwarmResource())
 
 class ReleaseResource(ModelResource):
     build = fields.ToOneField('api.resources.BuildResource', 'build')
+    compiled_name = fields.CharField('get_name')
 
     class Meta:
         queryset = models.Release.objects.all().prefetch_related('build')
@@ -248,6 +253,9 @@ class ReleaseResource(ModelResource):
             auth.SessionAuthentication(),
         )
         authorization = Authorization()
+        filtering = {
+            'build': ALL_WITH_RELATIONS,
+        }
 
     def prepend_urls(self):
         return [
@@ -267,7 +275,6 @@ class ReleaseResource(ModelResource):
             return HttpResponseNotFound()
 
         data = json.loads(request.raw_post_data)
-        print("data", data)
         do_deploy(release, request.user, data['config_name'], data['host'],
                   data['proc'], data['port'])
 
