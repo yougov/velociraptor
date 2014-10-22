@@ -93,7 +93,8 @@ def run(command, verbose=False):
     Run a shell command.  Capture the stdout and stderr as a single stream.
     Capture the status code.
 
-    If verbose=True, then print command and the output to the terminal.
+    If verbose=True, then print command and the output to the terminal as it
+    comes in.
 
     """
     p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE,
@@ -108,7 +109,12 @@ def run(command, verbose=False):
         if verbose:
             sys.stdout.write(line)
         output += line
-    return CommandResult(command, output, status_code)
+
+    # capture any last output.
+    remainder = p.stdout.read()
+    if verbose:
+        sys.stdout.write(remainder)
+    return CommandResult(command, output + remainder, status_code)
 
 
 def parse_redis_url(url):

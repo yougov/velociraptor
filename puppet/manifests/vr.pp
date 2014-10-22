@@ -161,24 +161,6 @@ class currentmongo {
   }
 }
 
-
-mount { "/cgroup":
-    device  => 'cgroup',
-    fstype  => 'cgroup',
-    ensure  => mounted,
-    atboot  => true,
-    options => 'defaults',
-    remounts => false,
-    require => File['/cgroup'];
-}
-
-file {  '/cgroup':
-    ensure => "directory",
-    owner  => "root",
-    mode   => 755;
-}
-
-
 package { foreman:
     ensure => present,
     provider => gem;

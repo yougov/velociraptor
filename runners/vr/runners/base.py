@@ -18,7 +18,7 @@ from vr.common.paths import (get_container_name, get_buildfile_path,
                              get_proc_path)
 from vr.common.models import ProcData
 from vr.common.utils import (tmpdir, randchars, mkdir, lock_file, which,
-                             file_md5)
+                             file_md5, get_lxc_version)
 
 
 class BaseRunner(object):

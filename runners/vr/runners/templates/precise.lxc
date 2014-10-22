@@ -22,3 +22,7 @@ lxc.mount.entry = none %(proc_path)s/sys     sysfs  defaults 0 0
 
 lxc.aa_profile = unconfined
 lxc.console = none
+
+%(memory_limits)s
+
+%(volumes)s
