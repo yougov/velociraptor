@@ -77,7 +77,7 @@ def run_image(image_data, cmd=None, user='root', make_tarball=False):
         env.update(image_data.env or {})
         if 'TERM' in os.environ:
             env['TERM'] = os.environ['TERM']
-        subprocess.check_call(lxc_args, env=env)
+        subprocess.check_call(lxc_args, env=env, stderr=subprocess.STDOUT)
 
         # remove build script if we used one.
         if cmd is not None:
