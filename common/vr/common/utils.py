@@ -223,13 +223,15 @@ def get_lxc_version():
     """ Asks the current host what version of LXC it has.  Returns it as a
     string. If LXC is not installed, raises subprocess.CalledProcessError"""
 
-    # Old LXC had an lxc-version executable, and prefixed its result with 
+    # Old LXC had an lxc-version executable, and prefixed its result with
     # "lxc version: "
     try:
-        result = subprocess.check_output(['lxc-version']).rstrip()
+        result = subprocess.check_output(['lxc-version'],
+                                         stderr=subprocess.STDOUT).rstrip()
         return result.replace("lxc version: ", "")
     except (OSError, subprocess.CalledProcessError):
         pass
 
     # New LXC instead has a --version option on most installed executables.
-    return subprocess.check_output(['lxc-start', '--version']).rstrip()
+    return subprocess.check_output(['lxc-start', '--version'],
+                                   stderr=subprocess.STDOUT).rstrip()
