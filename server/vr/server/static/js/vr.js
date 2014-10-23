@@ -579,7 +579,7 @@ VR.Views.ProcModal = VR.Views.BaseModal.extend({
       this.fresh = true;
       this.proc.on('change', this.render, this);
       this.proc.on('destroy', this.onProcDestroy, this);
-      this.proc.on('remove', this.onProcDestroy, this);
+      this.proc.on('remove', this.onProcRemove, this);
       this.$el.on('shown', $.proxy(this.onShown, this));
       this.$el.on('hidden', $.proxy(this.onHidden, this));
     },
@@ -654,7 +654,8 @@ VR.Views.ProcModal = VR.Views.BaseModal.extend({
 
     onProcDestroy: function() {
       this.$el.modal('hide');
-      this.$el.remove();
+      // Remove $el after the modal has been completely hidden
+      this.$el.on('hidden.bs.modal', this.$el.remove);
     }
 });
 
