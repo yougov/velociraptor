@@ -24,7 +24,7 @@ def run_image(image_data, cmd=None, user='root', make_tarball=False):
     with tmpdir() as here:
         # download image
         image_path = os.path.realpath('img')
-        print "Getting image"
+        print "Ensuring presence of image from " + image_data.base_image_url
         ensure_image(image_data.base_image_name,
                      image_data.base_image_url,
                      IMAGES_ROOT,
@@ -88,6 +88,7 @@ def run_image(image_data, cmd=None, user='root', make_tarball=False):
         if make_tarball:
             tardest = os.path.join(outfolder, '%s.tar.gz' %
                                    image_data.new_image_name)
+            print "Compressing image to " + tardest
             with tarfile.open(tardest, 'w:gz') as tar:
                 tar.add(image_path, arcname='')
 
