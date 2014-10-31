@@ -4,7 +4,6 @@ import shutil
 import stat
 import subprocess
 import tarfile
-import textwrap
 
 from vr.common.utils import tmpdir, get_lxc_version, get_lxc_network_config
 from vr.runners.image import ensure_image, IMAGES_ROOT
