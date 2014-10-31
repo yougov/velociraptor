@@ -674,3 +674,6 @@ class Release(BaseResource):
         data = dict(host=host, port=port, proc=proc, config_name=config_name)
         resp = self._vr.session.post(url, data=json.dumps(data))
         resp.raise_for_status()
+
+    def parsed_config(self):
+        return yaml.safe_load(self.config_yaml)
