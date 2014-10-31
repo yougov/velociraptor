@@ -18,7 +18,7 @@ from vr.common.paths import (get_container_name, get_buildfile_path,
                              get_proc_path)
 from vr.common.models import ProcData
 from vr.common.utils import (tmpdir, randchars, mkdir, lock_file, which,
-                             file_md5, get_lxc_version)
+                             file_md5, get_lxc_version, get_lxc_network_config)
 
 
 class BaseRunner(object):
@@ -362,13 +362,3 @@ def get_template(name):
     path = pkg_resources.resource_filename('vr.runners', 'templates/' + name)
     with open(path, 'r') as f:
         return f.read()
-
-
-def get_lxc_network_config(version):
-    if version.split('.') < ['1', '0', '0']:
-        return ''
-    return textwrap.dedent(
-        """
-        # Share the host's networking interface. This is unsafe!
-        # TODO: make separate virtual interfaces per container.
-        lxc.network.type = none""")

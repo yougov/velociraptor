@@ -6,7 +6,7 @@ import subprocess
 import tarfile
 import textwrap
 
-from vr.common.utils import tmpdir, get_lxc_version
+from vr.common.utils import tmpdir, get_lxc_version, get_lxc_network_config
 from vr.runners.image import ensure_image, IMAGES_ROOT
 from vr.runners.base import ensure_file
 
@@ -99,12 +99,3 @@ def get_template(name):
     path = pkg_resources.resource_filename('vr.imager', 'templates/' + name)
     with open(path, 'r') as f:
         return f.read()
-
-def get_lxc_network_config(version):
-    if version.split('.') < ['1', '0', '0']:
-        return ''
-    return textwrap.dedent(
-        """
-        # Share the host's networking interface. This is unsafe!
-        # TODO: make separate virtual interfaces per container.
-        lxc.network.type = none""")

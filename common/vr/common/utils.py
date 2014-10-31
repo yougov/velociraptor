@@ -241,3 +241,13 @@ def get_lxc_version():
     # New LXC instead has a --version option on most installed executables.
     return subprocess.check_output(['lxc-start', '--version'],
                                    stderr=subprocess.STDOUT).rstrip()
+
+
+def get_lxc_network_config(version):
+    if version.split('.') < ['1', '0', '0']:
+        return ''
+    return textwrap.dedent(
+        """
+        # Share the host's networking interface. This is unsafe!
+        # TODO: make separate virtual interfaces per container.
+        lxc.network.type = none""")
