@@ -370,5 +370,5 @@ def get_lxc_network_config(version):
     return textwrap.dedent(
         """
         # Share the host's networking interface. This is unsafe!
-        # TODO: make separate virtual interfaces per container. BLAH
+        # TODO: make separate virtual interfaces per container.
         lxc.network.type = none""")

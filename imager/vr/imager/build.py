@@ -4,8 +4,9 @@ import shutil
 import stat
 import subprocess
 import tarfile
+import textwrap
 
-from vr.common.utils import tmpdir
+from vr.common.utils import tmpdir, get_lxc_version
 from vr.runners.image import ensure_image, IMAGES_ROOT
 from vr.runners.base import ensure_file
 
@@ -34,6 +35,7 @@ def run_image(image_data, cmd=None, user='root', make_tarball=False):
         tmpl = get_template('base_image.lxc')
         content = tmpl % {
             'image_path': image_path,
+            'network_config': get_lxc_network_config(get_lxc_version()),
         }
         lxc_file_path = os.path.join(here, 'imager.lxc')
         print("Writing %s" % lxc_file_path)
@@ -97,3 +99,12 @@ def get_template(name):
     path = pkg_resources.resource_filename('vr.imager', 'templates/' + name)
     with open(path, 'r') as f:
         return f.read()
+
+def get_lxc_network_config(version):
+    if version.split('.') < ['1', '0', '0']:
+        return ''
+    return textwrap.dedent(
+        """
+        # Share the host's networking interface. This is unsafe!
+        # TODO: make separate virtual interfaces per container.
+        lxc.network.type = none""")

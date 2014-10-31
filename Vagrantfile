@@ -49,6 +49,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # Make the guest use the host for name resolution, so names on the VPN will
     # work.
     config.vm.provider :virtualbox do |vb|
-        vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+        vb.customize ["modifyvm", :id, 
+        # Make the guest use the host for name resolution, so names on the VPN
+        # will work (assuming they work on the host).
+                      "--natdnshostresolver1", "on",
+        # Allocate 1GB of RAM
+                      "--memory", "1024"
+                      ]
     end
+
 end
