@@ -10,6 +10,7 @@ import string
 import hashlib
 import errno
 from datetime import datetime
+import textwrap
 
 try:
     import pwd
