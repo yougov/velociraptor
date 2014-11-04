@@ -41,6 +41,7 @@ setup(
         # requirements.txt
         'vr.common',
         'vr.builder',
+        'vr.imager',
     ],
     dependency_links = [
         'https://github.com/downloads/surfly/gevent/gevent-1.0rc2.tar.gz#egg=gevent-1.0rc2'

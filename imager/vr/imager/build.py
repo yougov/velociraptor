@@ -1,8 +1,11 @@
+from __future__ import print_function
+
 import os
 import pkg_resources
 import shutil
 import stat
 import subprocess
+import sys
 import tarfile
 
 from vr.common.utils import tmpdir, get_lxc_version, get_lxc_network_config
@@ -23,7 +26,7 @@ def run_image(image_data, cmd=None, user='root', make_tarball=False):
     with tmpdir() as here:
         # download image
         image_path = os.path.realpath('img')
-        print "Ensuring presence of image from " + image_data.base_image_url
+        print("Ensuring presence of " + image_data.base_image_url)
         ensure_image(image_data.base_image_name,
                      image_data.base_image_url,
                      IMAGES_ROOT,
@@ -78,7 +81,11 @@ def run_image(image_data, cmd=None, user='root', make_tarball=False):
         env.update(image_data.env or {})
         if 'TERM' in os.environ:
             env['TERM'] = os.environ['TERM']
-        subprocess.check_call(lxc_args, env=env, stderr=subprocess.STDOUT)
+
+        logpath = os.path.join(outfolder, '%s.log' % image_data.new_image_name)
+        print("LOGPATH", logpath)
+        with open(logpath, 'wb') as logfile:
+            tee(lxc_args, env, logfile)
 
         # remove build script if we used one.
         if cmd is not None:
@@ -87,9 +94,33 @@ def run_image(image_data, cmd=None, user='root', make_tarball=False):
         if make_tarball:
             tardest = os.path.join(outfolder, '%s.tar.gz' %
                                    image_data.new_image_name)
-            print "Compressing image to " + tardest
+            print("Compressing image to " + tardest)
             with tarfile.open(tardest, 'w:gz') as tar:
                 tar.add(image_path, arcname='')
+
+
+def tee(command, env, outfile):
+    p = subprocess.Popen(command, stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT)
+    lines = []
+    status_code = None
+    print("run:", command)
+
+    def handle_output(content):
+        outfile.write(content)
+        sys.stdout.write(content)
+        lines.append(content)
+
+    while status_code is None:
+        status_code = p.poll()
+        handle_output(p.stdout.readline())
+
+    # capture any last output.
+    handle_output(p.stdout.read())
+
+    if status_code != 0:
+        raise subprocess.CalledProcessError(status_code, command,
+                                            output=''.join(lines))
 
 
 def get_template(name):

@@ -114,25 +114,6 @@ class BuildPack(models.Model):
 reversion.register(BuildPack)
 
 
-class App(models.Model):
-    namehelp = ("Used in release name.  Good app names are short and use "
-                "no spaces or dashes (underscores are OK).")
-    name = models.CharField(max_length=50, help_text=namehelp,
-                            validators=[validate_app_name], unique=True)
-    repo_url = models.CharField(max_length=200)
-    repo_type = models.CharField(max_length=10, choices=repo_choices)
-
-    buildpack = models.ForeignKey(BuildPack, blank=True, null=True)
-
-    def __unicode__(self):
-        return self.name
-
-    class Meta:
-        ordering = ('name',)
-        db_table = 'deployment_app'
-reversion.register(App)
-
-
 OS_IMAGES_BASE = 'images'
 
 
@@ -140,11 +121,45 @@ def build_os_image_path(instance, filename):
     return os.path.join(OS_IMAGES_BASE, instance.name, filename)
 
 
+class OSStack(models.Model):
+    """ A series of OS images.  Applications link to these.  Any time an
+    application is built, the newest active OSImage in the stack is used. """
+    name = models.CharField(max_length=200, unique=True)
+    desc = models.TextField()
+
+    # Images for this stack are made with the base image and provisioning
+    # script referenced here.  This may change over time.  These values are
+    # copied to a new OSImage instance whenever an image is built.
+    base_image_url = models.CharField(max_length=200, blank=True, null=True)
+    provisioning_script = models.FileField(upload_to='provisioning_scripts',
+                                           blank=True, null=True)
+
+    def __unicode__(self):
+        return self.name
+
+    class Meta:
+        ordering = ('name',)
+        db_table = 'deployment_os_stack'
+reversion.register(OSStack)
+
+
 class OSImage(models.Model):
     """An OS image within which a build can be created and run."""
+    stack = models.ForeignKey(OSStack, null=True, blank=True)
     name = models.CharField(max_length=200, unique=True)
-    file = models.FileField(upload_to=build_os_image_path)
+    file = models.FileField(upload_to=build_os_image_path, blank=True,
+                            null=True)
     file_md5 = models.CharField(max_length=32, null=True, editable=False)
+
+    base_image_url = models.CharField(max_length=200, blank=True, null=True)
+    base_image_name = models.CharField(max_length=200, blank=True, null=True)
+
+    provisioning_script_url = models.CharField(max_length=200, blank=True,
+                                               null=True)
+    build_log = models.FileField(upload_to=OS_IMAGES_BASE, null=True, blank=True)
+
+    # Only active images will be considered at swarm time
+    active = models.BooleanField(default=False)
 
     def __unicode__(self):
         return self.name
@@ -167,6 +182,39 @@ class OSImage(models.Model):
                 md5.update(chunk)
 
         return md5.hexdigest()
+
+
+class App(models.Model):
+    namehelp = ("Used in release name.  Good app names are short and use "
+                "no spaces or dashes (underscores are OK).")
+    name = models.CharField(max_length=50, help_text=namehelp,
+                            validators=[validate_app_name], unique=True)
+    repo_url = models.CharField(max_length=200)
+    repo_type = models.CharField(max_length=10, choices=repo_choices)
+
+    buildpack = models.ForeignKey(BuildPack, blank=True, null=True)
+
+    stack = models.ForeignKey(OSStack, blank=True, null=True)
+
+    def __unicode__(self):
+        return self.name
+
+    def get_os_image(self):
+        # TODO: someday we'll require an OS image for all builds.  That day
+        # will come when everyone's migrated from the Precise-specific
+        # containers.
+        if self.stack is None:
+            return None
+        else:
+            images = self.stack.osimage_set.filter(active=True).order_by('-id')
+            if images:
+                return images[0]
+            raise ValueError('Stack %s has no active image.' % app.stack.name)
+
+    class Meta:
+        ordering = ('name',)
+        db_table = 'deployment_app'
+reversion.register(App)
 
 
 class Tag(models.Model):
@@ -192,9 +240,11 @@ class Build(models.Model):
     app = models.ForeignKey(App)
     tag = models.CharField(max_length=50)
     os_image = models.ForeignKey(OSImage, null=True, blank=True)
-    file = models.FileField(upload_to='builds', null=True, blank=True)
+    file = models.FileField(upload_to='builds', null=True, blank=True,
+                            max_length=200)
     file_md5 = models.CharField(max_length=32, blank=True, null=True)
-    compile_log = models.FileField(upload_to='builds', null=True, blank=True)
+    compile_log = models.FileField(upload_to='builds', null=True, blank=True,
+                                   max_length=200)
     start_time = models.DateTimeField(null=True)
     end_time = models.DateTimeField(null=True)
 
@@ -608,7 +658,7 @@ class Swarm(models.Model):
 
         return env
 
-    def get_current_release(self, os_image, tag):
+    def get_current_release(self, tag):
         """
         Retrieve or create a Release that has current config and a successful
         or pending build with the specified OS image and tag.
@@ -638,6 +688,8 @@ class Swarm(models.Model):
 
             # Note: there's currently no way of ensuring that the build was
             # done by a particular version of the buildpack.
+
+        os_image = self.app.get_os_image()
 
         build = get_current_build(self.app, os_image, tag)
         if build is None:
@@ -682,8 +734,7 @@ class Swarm(models.Model):
         return self.release.build.tag
 
     def set_version(self, version):
-        os_image = self.release.build.os_image
-        self.release = self.get_current_release(os_image, version)
+        self.release = self.get_current_release(version)
 
     version = property(get_version, set_version)
 reversion.register(Swarm)

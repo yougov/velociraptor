@@ -70,8 +70,7 @@ class TestCurrentRelease(object):
         )
         swarm.save()
 
-        assert swarm.get_current_release(
-            self.os_image, self.version) == release
+        assert swarm.get_current_release(self.version) == release
 
     def test_swarm_creates_release(self):
 
@@ -104,6 +103,6 @@ class TestCurrentRelease(object):
 
         # get_current_release should make a new release for us from the new
         # config.
-        r = swarm.get_current_release(self.os_image, self.version)
+        r = swarm.get_current_release(self.version)
         assert Release.objects.count() == release_count + 1
         assert r.id != release.id
