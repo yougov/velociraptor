@@ -557,10 +557,7 @@ VR.Views.Proc = Backbone.View.extend({
     },
 
     onClick: function(ev) {
-      if (!this.modal) {
-        this.modal = new VR.Views.ProcModal(this.proc);
-      }
-
+      this.modal = new VR.Views.ProcModal(this.proc);
       this.modal.show();
     }
 });
@@ -577,11 +574,12 @@ VR.Views.ProcModal = VR.Views.BaseModal.extend({
     initialize: function(proc) {
       this.proc = proc;
       this.fresh = true;
+      this.connected = false;
       this.proc.on('change', this.render, this);
       this.proc.on('destroy', this.onProcDestroy, this);
       this.proc.on('remove', this.onProcDestroy, this);
-      this.$el.on('shown', $.proxy(this.onShown, this));
-      this.$el.on('hidden', $.proxy(this.onHidden, this));
+      this.$el.on('show.bs.modal', $.proxy(this.onShown, this));
+      this.$el.on('hide.bs.modal', $.proxy(this.onHidden, this));
     },
 
     render: function() {
@@ -624,16 +622,20 @@ VR.Views.ProcModal = VR.Views.BaseModal.extend({
 
     onShown: function() {
       // show streaming logs
-      this.log = this.proc.getLog();
-      var logContainer = this.$el.find('.proc-log');
-      logContainer.html('');
-      this.logview = new VR.Views.ProcLog(this.log, logContainer);
-      this.log.connect();
+      if(!this.connected) {
+        this.log = this.proc.getLog();
+        var logContainer = this.$el.find('.proc-log');
+        logContainer.html('');
+        this.logview = new VR.Views.ProcLog(this.log, logContainer);
+        this.log.connect();
+        this.connected = true;
+      }
     },
 
     onHidden: function() {
       // stop the log stream.
       this.log.disconnect();
+      this.connected = false;
     },
 
     onStartBtn: function(ev) {
