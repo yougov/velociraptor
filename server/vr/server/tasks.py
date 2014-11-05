@@ -230,6 +230,9 @@ def build_image(image_id, callback=None):
             finally:
                 image.save()
 
+    send_event(str(image), "Completed image %s" % image, tags=['image',
+                                                               'success'])
+
     # start callback if there is one.
     if callback is not None:
         subtask(callback).delay()

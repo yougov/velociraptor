@@ -1,5 +1,6 @@
 import textwrap
 import time
+import datetime
 
 from hashlib import md5
 
@@ -443,7 +444,7 @@ class DeleteApp(edit.DeleteView):
     template_name = 'confirm_delete.html'
     success_url = reverse_lazy('app_list')
 
-
+# Buildpack views
 class ListBuildPack(ListView):
     model = models.BuildPack
     template_name = 'buildpack_list.html'
@@ -465,6 +466,52 @@ class DeleteBuildPack(edit.DeleteView):
     model = models.BuildPack
     template_name = 'confirm_delete.html'
     success_url = reverse_lazy('buildpack_list')
+
+
+# Stack views
+class ListStack(ListView):
+    model = models.OSStack
+    template_name = 'stack_list.html'
+
+
+@login_required
+def edit_stack(request, stack_id=None):
+    if stack_id:
+        stack = models.OSStack.objects.get(id=stack_id)
+    else:
+        stack = None
+
+    form = forms.StackForm(request.POST or None, request.FILES or None,
+                           instance=stack)
+
+    if form.is_valid():
+        form.save()
+        if form.cleaned_data['build_now']:
+            # Image names should look like stackname_date_counter
+            name_prefix = '%s_%s_' % (form.instance.name,
+                                      datetime.datetime.today().strftime('%Y%m%d'))
+            builds_today = models.OSImage.objects.filter(
+                name__startswith=name_prefix).count()
+            image_name = name_prefix + str(builds_today + 1)
+            image = models.OSImage(
+                stack=stack,
+                name=image_name,
+                base_image_url=form.instance.base_image_url,
+                base_image_name=form.instance.name + '_base',
+                provisioning_script_url=form.instance.provisioning_script.url,
+            )
+            image.save()
+            tasks.build_image.delay(image.id)
+        return redirect('dash')
+    return render(request, 'basic_form.html', {'form': form,
+                                               'enctype': 'multipart/form-data'})
+
+
+
+class DeleteStack(edit.DeleteView):
+    model = models.OSStack
+    template_name = 'confirm_delete.html'
+    success_url = reverse_lazy('stack_list')
 
 
 def login(request):

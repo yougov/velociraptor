@@ -68,6 +68,12 @@ class ReleaseForm(forms.ModelForm):
         exclude = ('hash',)
 
 
+class StackForm(forms.ModelForm):
+    build_now = forms.BooleanField(initial=True)
+    class Meta:
+        model = models.OSStack
+
+
 class DeploymentForm(forms.Form):
     app = forms.ChoiceField(
         choices=[], help_text="Choose one so we can fill the release combo")
