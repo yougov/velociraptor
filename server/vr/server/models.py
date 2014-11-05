@@ -209,7 +209,7 @@ class App(models.Model):
             images = self.stack.osimage_set.filter(active=True).order_by('-id')
             if images:
                 return images[0]
-            raise ValueError('Stack %s has no active image.' % app.stack.name)
+            raise ValueError('Stack %s has no active image.' % self.stack.name)
 
     class Meta:
         ordering = ('name',)
@@ -692,6 +692,7 @@ class Swarm(models.Model):
         os_image = self.app.get_os_image()
 
         build = get_current_build(self.app, os_image, tag)
+
         if build is None:
             build = Build(app=self.app, os_image=os_image, tag=tag)
             build.save()
@@ -715,6 +716,10 @@ class Swarm(models.Model):
         try:
             release = next(r for r in releases if release_eq(r, config, env,
                                                              self.volumes))
+            # If we have a complete build but release is not yet hashed, hash
+            # it.
+            if release.build.file and not release.hash:
+                release.save()
             log.info("Found existing release %s", release.hash)
             return release
         except StopIteration:
