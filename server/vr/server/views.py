@@ -481,6 +481,8 @@ def edit_stack(request, stack_id=None):
     else:
         stack = None
 
+    print "stack", stack
+
     form = forms.StackForm(request.POST or None, request.FILES or None,
                            instance=stack)
 
@@ -501,11 +503,12 @@ def edit_stack(request, stack_id=None):
                 provisioning_script_url=form.instance.provisioning_script.url,
             )
             image.save()
+            events.eventify(request.user, 'build image', image)
             tasks.build_image.delay(image.id)
         return redirect('dash')
-    return render(request, 'basic_form.html', {'form': form,
+    return render(request, 'stack_form.html', {'form': form,
+                                               'object': stack,
                                                'enctype': 'multipart/form-data'})
-
 
 
 class DeleteStack(edit.DeleteView):

@@ -195,7 +195,7 @@ def build_image(image_id, callback=None):
         'script_url': image.provisioning_script_url,
     }).as_yaml()
     img_msg = "Started image build %s" % image + '\n\n' + image_yaml
-    send_event(str(image), img_msg, tags=['image'])
+    send_event(str(image), img_msg, tags=['buildimage'])
 
 
     with tmpdir():
@@ -230,7 +230,7 @@ def build_image(image_id, callback=None):
             finally:
                 image.save()
 
-    send_event(str(image), "Completed image %s" % image, tags=['image',
+    send_event(str(image), "Completed image %s" % image, tags=['buildimage',
                                                                'success'])
 
     # start callback if there is one.
