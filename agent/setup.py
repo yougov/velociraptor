@@ -10,7 +10,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'PyYAML==3.10',
+        'PyYAML>=3.10',
         'redis>=2.6.2',
         'requests>=1.0.4',
         'supervisor',

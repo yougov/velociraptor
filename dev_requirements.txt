@@ -1,6 +1,8 @@
+--allow-external
 pytest
 mock
 
+./django-yamlfield
 -e ./common
 -e ./runners
 -e ./imager

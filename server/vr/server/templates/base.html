@@ -63,17 +63,6 @@
             </li>
 
             <li class="dropdown">
-                <a id="swarm-dropdown" class="dropdown-toggle disabled" style="cursor:not-allowed" href="#">
-                    Swarms 
-                    <b class="caret"></b>
-                </a>
-                <div class="dropdown-menu">
-                    <div class="form-group"><input id="swarm-filter" class="form-control" type="text" placeholder="Search..."></div>
-                    <ul id="swarmlist" style="padding-left:0"><li rel="new_swarm"><a href="{% url new_swarm %}">New</a></li></ul>
-                </div>
-            </li>
-
-            <li class="dropdown">
                 <a class="dropdown-toggle" data-toggle="dropdown" href="#">
                     Platform 
                     <b class="caret"></b>
@@ -86,6 +75,17 @@
                   <li class="{% current_nav ingredient_url %}"><a href="{{ ingredient_url }}">Ingredients</a></li>
                   <li class="{% current_nav host_url %}"><a href="{{ host_url }}">Hosts</a></li>
                 </ul>
+            </li>
+
+            <li class="dropdown">
+                <a id="swarm-dropdown" class="dropdown-toggle disabled" style="cursor:not-allowed" href="#">
+                    Swarms 
+                    <b class="caret"></b>
+                </a>
+                <div class="dropdown-menu">
+                    <div class="form-group"><input id="swarm-filter" class="form-control" type="text" placeholder="Search..."></div>
+                    <ul id="swarmlist" style="padding-left:0"><li rel="new_swarm"><a href="{% url new_swarm %}">New</a></li></ul>
+                </div>
             </li>
 
             <li class="dropdown">

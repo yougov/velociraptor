@@ -13,7 +13,6 @@ setup(
     install_requires=[
         'vr.common>=3.16.1,<4',
         'requests>=1.2.0',
-        'PyYAML==3.10',
     ],
     entry_points={
         'console_scripts': [
