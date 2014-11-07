@@ -6,9 +6,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # All Vagrant configuration is done here.  For a complete reference of
     # configuration options, , please see the online documentation at
     # vagrantup.com.
-    
+
     config.vm.box = "trusty64"
-    config.vm.box_url = "http://files.vagrantup.com/trusty64.box"
+    config.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
 
     # Port for the main dashboard
     config.vm.network "forwarded_port", guest: 8000, host: 8000
