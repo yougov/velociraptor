@@ -132,7 +132,7 @@ def deploy(release_id, config_name, hostname, proc, port, swarm_trace_id=None):
     with remove_port_lock(hostname, port):
         release = Release.objects.get(id=release_id)
         msg_title = '%s-%s-%s' % (release.build.app.name, release.build.tag, proc)
-        logging.info('beginning deploy of %s-%s-%s to %s' % (release, proc,
+        logger.info('beginning deploy of %s-%s-%s to %s' % (release, proc,
                                                              port,
                                                              hostname))
 
@@ -227,6 +227,7 @@ def build_image(image_id, callback=None):
                     image.build_log.save(logname, File(f))
             except:
                 logger.info('Could not retrieve ' + logfile)
+                raise
             finally:
                 image.save()
 
@@ -396,7 +397,14 @@ def swarm_start(swarm_id, swarm_trace_id=None):
     Given a swarm_id, kick off the chain of tasks necessary to get this swarm
     deployed.
     """
-    swarm = Swarm.objects.get(id=swarm_id)
+    logger.info("Swarm start %s" % swarm_id)
+    logger.info("type: %s" % type(swarm_id))
+    try:
+        swarm = Swarm.objects.get(id=swarm_id)
+    except Swarm.DoesNotExist:
+        ids = [str(s.id) for s in Swarm.objects.all()]
+        logger.info("IDs: %s" % ', '.join(ids))
+        raise
     build = swarm.release.build
 
     if not swarm_trace_id:

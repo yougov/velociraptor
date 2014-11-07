@@ -16,7 +16,7 @@ import redis
 import reversion
 
 from vr.server.fields import YAMLDictField, YAMLListField
-from vr.common import repo, build, models as raptor_models
+from vr.common import repo, models as raptor_models
 from vr.common.utils import parse_redis_url
 
 log = logging.getLogger(__name__)

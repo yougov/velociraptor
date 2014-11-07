@@ -75,7 +75,7 @@ class BuildPack(repo.Repo):
         """
 
         rev = rev or self.fragment or {
-            'git': 'HEAD',
+            'git': 'FETCH_HEAD',
             'hg': 'tip',
         }[self.vcs_type]
 

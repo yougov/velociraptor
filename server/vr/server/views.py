@@ -300,7 +300,6 @@ def do_swarm(swarm, user):
     # Create a swarm trace id that takes our swarm and time
     swarm_trace_id = md5(str(swarm) + str(time.time())).hexdigest()
 
-    tasks.swarm_start.delay(swarm.id, swarm_trace_id)
 
     ev_detail = textwrap.dedent(
         """%(user)s swarmed %(shortname)s
@@ -331,6 +330,7 @@ def do_swarm(swarm, user):
         }
     events.eventify(user, 'swarm', swarm.shortname(),
                     detail=ev_detail, swarm_id=swarm_trace_id)
+    tasks.swarm_start.delay(swarm.id, swarm_trace_id)
     return swarm_trace_id
 
 
@@ -488,6 +488,8 @@ def edit_stack(request, stack_id=None):
 
     if form.is_valid():
         form.save()
+        stack = form.instance # In case we just made a new one.
+
         if form.cleaned_data['build_now']:
             # Image names should look like stackname_date_counter
             name_prefix = '%s_%s_' % (form.instance.name,

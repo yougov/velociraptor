@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: django-yamlfield
+Version: 0.2
+Summary: A Django database field for storing YAML data
+Home-page: UNKNOWN
+Author: Ben Welsh
+Author-email: ben.welsh@latimes.com
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
