@@ -4,13 +4,13 @@ from setuptools import setup, find_packages
 setup(
     name='vr.builder',
     namespace_packages=['vr'],
-    version='1.0.6',
+    version='1.0.7',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'vr.runners>=2.4,<3',
+        'vr.runners>=2.4.4,<3',
     ],
     entry_points={
         'console_scripts': [
