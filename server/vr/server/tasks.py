@@ -402,9 +402,16 @@ def swarm_start(swarm_id, swarm_trace_id=None):
     try:
         swarm = Swarm.objects.get(id=swarm_id)
     except Swarm.DoesNotExist:
-        ids = [str(s.id) for s in Swarm.objects.all()]
-        logger.info("IDs: %s" % ', '.join(ids))
-        raise
+        # For some STRANGE reason, sometimes the Swarm.objects.get above will
+        # raise an error saying the swarm doesn't exist, even though querying
+        # it here will show that it does.  This sucks, but we can catch such
+        # things sometimes.
+        swarms = Swarm.objects.all()
+        ids = [str(s.id) for s in swarms]
+        if swarm_id in ids:
+            swarm = next(s for s in swarms if s.id==swarm_id)
+        else:
+            raise
     build = swarm.release.build
 
     if not swarm_trace_id:

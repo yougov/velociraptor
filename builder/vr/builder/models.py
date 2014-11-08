@@ -8,7 +8,7 @@ import yaml
 import utc
 
 from vr.common import repo
-from vr.common.utils import run, mkdir, lock_file
+from vr.common.utils import run, mkdir, chdir, lock_file
 from vr.common.paths import VR_ROOT
 
 from vr.builder.slugignore import clean_slug_dir
@@ -73,13 +73,23 @@ class BuildPack(repo.Repo):
         """
         Override Repo.update to provide default rev when none is provided.
         """
+        if not os.path.exists(self.folder):
+            self.clone()
 
-        rev = rev or self.fragment or {
-            'git': 'FETCH_HEAD',
-            'hg': 'tip',
-        }[self.vcs_type]
+        rev = rev or self.fragment or None # account for self.fragment=='' case
 
-        return super(BuildPack, self).update(rev)
+        if self.vcs_type == 'git':
+            if rev is None:
+                # Git needs special handling if no rev is passed.  Don't ask for a
+                # revision, just do a pull.
+                with chdir(self.folder):
+                    self.run('git fetch --tags')
+                    self.run('git pull')
+            else:
+                return super(BuildPack, self).update(rev)
+        elif self.vcs_type ==  'hg':
+            # Are there actually any mercurial buildpacks?
+            return super(BuildPack, self).update(rev or 'tip')
 
 
 class App(repo.Repo):

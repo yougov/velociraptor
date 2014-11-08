@@ -105,7 +105,6 @@ class Repo(object):
         self.run(cmd)
 
     def update(self, rev):
-        print "Repo update"
         # If folder doesn't exist, do a clone.  Else pull and update.
         if not os.path.exists(self.folder):
             self.clone()

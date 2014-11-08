@@ -16,12 +16,8 @@ class Migration(SchemaMigration):
         db.alter_column('deployment_build', 'compile_log', self.gf('django.db.models.fields.files.FileField')(max_length=200, null=True))
 
     def backwards(self, orm):
+        pass
 
-        # Changing field 'Build.file'
-        db.alter_column('deployment_build', 'file', self.gf('django.db.models.fields.files.FileField')(max_length=100, null=True))
-
-        # Changing field 'Build.compile_log'
-        db.alter_column('deployment_build', 'compile_log', self.gf('django.db.models.fields.files.FileField')(max_length=100, null=True))
 
     models = {
         'auth.group': {
