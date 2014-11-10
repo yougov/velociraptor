@@ -84,10 +84,10 @@ class BuildPack(repo.Repo):
                 # revision, just do a pull.
                 with chdir(self.folder):
                     self.run('git fetch --tags')
-                    self.run('git pull')
+                    self.run('git pull origin master')
             else:
                 return super(BuildPack, self).update(rev)
-        elif self.vcs_type ==  'hg':
+        elif self.vcs_type == 'hg':
             # Are there actually any mercurial buildpacks?
             return super(BuildPack, self).update(rev or 'tip')
 
