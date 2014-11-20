@@ -80,3 +80,71 @@ class TestSaveSwarms(unittest.TestCase):
         saved = models.Swarm.objects.get(id=self.swarm.id)
         new_release_id = saved.release_id
         assert previous_release_id != new_release_id
+
+    def test_config_yaml_marshaling(self):
+
+        url = reverse('edit_swarm', kwargs={'swarm_id':self.swarm.id})
+        payload = {
+            'app_id': self.swarm.app.id,
+            'os_image_id': getattr(self.swarm.release.build.os_image, 'id', ''),
+            'squad_id': self.swarm.squad.id,
+            'tag': randchars(),
+            'config_name': self.swarm.config_name,
+            'config_yaml': '1: integer key not allowed',
+            'env_yaml': yamlize(self.swarm.env_yaml),
+            'volumes': yamlize(self.swarm.volumes),
+            'run_as': self.swarm.run_as or 'nobody',
+            'mem_limit': self.swarm.mem_limit,
+            'memsw_limit': self.swarm.memsw_limit,
+            'proc_name': self.swarm.proc_name,
+            'size': self.swarm.size,
+            'pool': self.swarm.pool or '',
+            'balancer': '',
+            'config_ingredients': [
+                ing.pk for ing in self.swarm.config_ingredients.all()]
+        }
+        resp = self.client.post(url, data=payload)
+        assert "Cannot be marshalled to XMLRPC" in resp.content
+
+    def test_env_yaml_marshaling(self):
+
+        url = reverse('edit_swarm', kwargs={'swarm_id':self.swarm.id})
+        payload = {
+            'app_id': self.swarm.app.id,
+            'os_image_id': getattr(self.swarm.release.build.os_image, 'id', ''),
+            'squad_id': self.swarm.squad.id,
+            'tag': randchars(),
+            'config_name': self.swarm.config_name,
+            'config_yaml': yamlize(self.swarm.config_yaml),
+            'env_yaml': 'TOO_BIG_NUMBER: 1234123412341234',
+            'volumes': yamlize(self.swarm.volumes),
+            'run_as': self.swarm.run_as or 'nobody',
+            'mem_limit': self.swarm.mem_limit,
+            'memsw_limit': self.swarm.memsw_limit,
+            'proc_name': self.swarm.proc_name,
+            'size': self.swarm.size,
+            'pool': self.swarm.pool or '',
+            'balancer': '',
+            'config_ingredients': [
+                ing.pk for ing in self.swarm.config_ingredients.all()]
+        }
+        resp = self.client.post(url, data=payload)
+        assert "Cannot be marshalled to XMLRPC" in resp.content
+
+class TestSaveIngredients(unittest.TestCase):
+    def setUp(self):
+
+        # Get a logged in client ready
+        self.user = get_user()
+        self.client = Client()
+        self.client.post(reverse('login'), {'username': self.user.username, 'password':'password123'})
+
+    def test_save_unmarshalable_ingredient(self):
+
+        url = reverse('ingredient_add')
+        payload = {
+            'config_yaml': 'TOO_BIG: 1234123412341234',
+        }
+        resp = self.client.post(url, data=payload)
+
+        assert "Cannot be marshalled to XMLRPC" in resp.content

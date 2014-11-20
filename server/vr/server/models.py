@@ -60,23 +60,13 @@ def validate_config_marshaling(obj):
     """
     if obj.config_yaml:
         try:
-            data = yaml.safe_load(obj.config_yaml)
-        except:
-            raise ValidationError("Invalid YAML")
-
-        try:
-            xmlrpclib.dumps((data,), allow_none=True)
+            xmlrpclib.dumps((obj.config_yaml,), allow_none=True)
         except Exception as e:
             raise ValidationError("Cannot be marshalled to XMLRPC: %s" % e)
 
     if obj.env_yaml:
         try:
-            data = yaml.safe_load(obj.env_yaml)
-        except:
-            raise ValidationError("Invalid YAML")
-
-        try:
-            xmlrpclib.dumps((data,), allow_none=True)
+            xmlrpclib.dumps((obj.env_yaml,), allow_none=True)
         except Exception as e:
             raise ValidationError("Cannot be marshalled to XMLRPC: %s" % e)
 
