@@ -198,3 +198,31 @@ class SwarmForm(forms.Form):
             instance.configingredient_set.add(ing)
         return instance
 
+    def clean_config_yaml(self):
+        config_yaml = self.cleaned_data.get('config_yaml', None)
+        if config_yaml:
+            try:
+                data = yaml.safe_load(config_yaml)
+            except:
+                raise forms.ValidationError("Invalid YAML")
+
+            try:
+                xmlrpclib.dumps((data,), allow_none=True)
+            except Exception as e:
+                raise forms.ValidationError("Cannot be marshalled to XMLRPC: %s" % e)
+        return config_yaml
+
+    def clean_env_yaml(self):
+        env_yaml = self.cleaned_data.get('env_yaml', None)
+        if env_yaml:
+            try:
+                data = yaml.safe_load(env_yaml)
+            except:
+                raise forms.ValidationError("Invalid YAML")
+
+            try:
+                xmlrpclib.dumps((data,), allow_none=True)
+            except Exception as e:
+                raise forms.ValidationError("Cannot be marshalled to XMLRPC: %s" % e)
+
+        return env_yaml

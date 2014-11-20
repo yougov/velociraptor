@@ -3,8 +3,10 @@ import hashlib
 import logging
 import os.path
 import sys
+import xmlrpclib
 
 import six
+import yaml
 
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -46,6 +48,39 @@ def validate_app_name(value):
         raise ValidationError(u'Slashes are not allowed')
 
 
+def validate_config_marshaling(obj):
+    """ Given an object with .config_yaml and .env_yaml attributes, raise an
+    error if 1) their YAML can't be parsed, or 2) the parsed object can't be
+    dumped to XMLRPC format.
+
+    Given that the Supervisor RPC interface can return any proc's config, and
+    that some things (like >32 bit ints, or integer keys in dicts) can't be
+    marshalled as XML RPC, this protects us from bigger problems after a proc
+    has been deployed.
+    """
+    if obj.config_yaml:
+        try:
+            data = yaml.safe_load(obj.config_yaml)
+        except:
+            raise ValidationError("Invalid YAML")
+
+        try:
+            xmlrpclib.dumps((data,), allow_none=True)
+        except Exception as e:
+            raise ValidationError("Cannot be marshalled to XMLRPC: %s" % e)
+
+    if obj.env_yaml:
+        try:
+            data = yaml.safe_load(obj.env_yaml)
+        except:
+            raise ValidationError("Invalid YAML")
+
+        try:
+            xmlrpclib.dumps((data,), allow_none=True)
+        except Exception as e:
+            raise ValidationError("Cannot be marshalled to XMLRPC: %s" % e)
+
+
 class DeploymentLogEntry(models.Model):
     type = models.CharField(max_length=50, choices=LOG_ENTRY_TYPES)
     time = models.DateTimeField(auto_now_add=True)
@@ -75,6 +110,10 @@ class ConfigIngredient(models.Model):
     class Meta:
         ordering = ['name', ]
         db_table = 'deployment_configingredient'
+
+    def save(self):
+        validate_config_marshaling(self)
+        super(ConfigIngredient, self).save()
 reversion.register(ConfigIngredient)
 
 repo_choices = (
@@ -342,6 +381,7 @@ class Release(models.Model):
         # build is complete.
         if self.build.status == BUILD_SUCCESS and not self.hash:
             self.hash = self.compute_hash()
+        validate_config_marshaling(self)
         super(Release, self).save()
 
 
@@ -686,6 +726,10 @@ class Swarm(models.Model):
         self.release = self.get_current_release(os_image, version)
 
     version = property(get_version, set_version)
+
+    def save(self):
+        validate_config_marshaling(self)
+        super(Swarm, self).save()
 reversion.register(Swarm)
 
 
