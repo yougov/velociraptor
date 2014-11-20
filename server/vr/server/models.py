@@ -18,7 +18,7 @@ import redis
 import reversion
 
 from vr.server.fields import YAMLDictField, YAMLListField
-from vr.common import repo, build, models as raptor_models
+from vr.common import repo, models as common_models
 from vr.common.utils import parse_redis_url
 
 log = logging.getLogger(__name__)
@@ -133,9 +133,6 @@ class BuildPack(models.Model):
         of folder name strings.
         """
         return [repo.basename(bp.repo_url) for bp in cls.objects.all()]
-
-    def get_repo(self):
-        return build.add_buildpack(self.repo_url, vcs_type=self.repo_type)
 
     @property
     def basename(self):
@@ -426,7 +423,7 @@ class Host(models.Model):
         super(Host, self).__init__(*args, **kwargs)
         user = getattr(settings, 'SUPERVISOR_USERNAME', None)
         pwd = getattr(settings, 'SUPERVISOR_PASSWORD', None)
-        self.raw_host = raptor_models.Host(self.name, settings.SUPERVISOR_PORT,
+        self.raw_host = common_models.Host(self.name, settings.SUPERVISOR_PORT,
                                            redis_or_url=events_redis,
                                            supervisor_username=user,
                                            supervisor_password=pwd)
