@@ -23,12 +23,7 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
 
     outfolder = os.getcwd()
 
-    # As long as we're sometimes using vrun_precise, which bind-mounts
-    # system folders into the container, it's not safe to run a build as
-    # root, because then untrusted code in the app or buildpack could run
-    # amok.  If we ever switch entirely to image-based builds, that could
-    # change.
-    user = 'nobody'
+    user = getattr(build_data, 'user', 'nobody')
 
     with tmpdir() as here:
 
@@ -117,7 +112,8 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
             runner = 'vrun'
 
         try:
-            subprocess.check_call([runner, 'setup', 'buildproc.yaml'])
+            subprocess.check_call([runner, 'setup', 'buildproc.yaml'],
+                                  stderr=subprocess.STDOUT)
             # copy the builder.sh script into place.
             script_src = pkg_resources.resource_filename('vr.builder',
                                                      'scripts/builder.sh')
@@ -132,7 +128,8 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
             slash_app = os.path.join(get_container_path(buildproc), 'app')
             mkdir(os.path.join(slash_app, 'vendor'))
             chowntree(slash_app, username=user)
-            subprocess.check_call([runner, runner_cmd, 'buildproc.yaml'])
+            subprocess.check_call([runner, runner_cmd, 'buildproc.yaml'],
+                                  stderr=subprocess.STDOUT)
             build_data.release_data = recover_release_data(app_folder)
             bp = recover_buildpack(app_folder)
             build_data.buildpack_url = bp.url + '#' + bp.version
@@ -149,7 +146,8 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
                         print("No file at %s" % compile_log_src)
             finally:
                 # Clean up container
-                subprocess.check_call([runner, 'teardown', 'buildproc.yaml'])
+                subprocess.check_call([runner, 'teardown', 'buildproc.yaml'],
+                                      stderr=subprocess.STDOUT)
 
         with lock_or_wait(cachefolder):
             shutil.rmtree(cachefolder, ignore_errors=True)

@@ -1,13 +1,14 @@
 from __future__ import print_function
 
-import os
-import stat
-import pwd
-import grp
-import shutil
-import tarfile
-import pkg_resources
 import argparse
+import grp
+import os
+import pkg_resources
+import pwd
+import shutil
+import stat
+import tarfile
+import textwrap
 
 import requests
 import yaml
@@ -17,7 +18,8 @@ from vr.common.paths import (get_container_name, get_buildfile_path,
                              get_proc_path)
 from vr.common.models import ProcData
 from vr.common.utils import (tmpdir, randchars, mkdir, lock_file, which,
-                             file_md5)
+                             file_md5, get_lxc_version, get_lxc_network_config)
+
 
 class BaseRunner(object):
     def main(self):
@@ -243,6 +245,9 @@ class BaseRunner(object):
     def get_proc_lxc_tmpl_ctx(self):
         return {
             'proc_path': get_container_path(self.config),
+            'network_config': get_lxc_network_config(get_lxc_version()),
+            'memory_limits': self.get_lxc_memory_limits(),
+            'volumes': self.get_lxc_volume_str(),
         }
 
     def write_proc_lxc(self):
@@ -253,11 +258,7 @@ class BaseRunner(object):
 
         tmpl = get_template(self.lxc_template_name)
 
-        content = '\n'.join((
-            tmpl % self.get_proc_lxc_tmpl_ctx(),
-            self.get_lxc_memory_limits(),
-            self.get_lxc_volume_str(),
-        ))
+        content = tmpl % self.get_proc_lxc_tmpl_ctx()
 
         filepath = os.path.join(proc_path, 'proc.lxc')
         with open(filepath, 'w') as f:

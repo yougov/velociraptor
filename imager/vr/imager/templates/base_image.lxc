@@ -1,5 +1,6 @@
-
 lxc.rootfs = %(image_path)s
+
+%(network_config)s
 
 lxc.mount.entry = /etc/hostname %(image_path)s/etc/hostname none bind,ro 0 0
 lxc.mount.entry = /etc/hosts %(image_path)s/etc/hosts none bind,ro 0 0

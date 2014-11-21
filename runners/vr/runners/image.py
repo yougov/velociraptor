@@ -1,10 +1,14 @@
 from __future__ import print_function
 
 import os
+import stat
 
 from vr.common.paths import (get_container_name, get_proc_path,
                              get_container_path, VR_ROOT)
-from vr.runners.base import BaseRunner, mkdir, ensure_file, untar, get_template
+from vr.common.utils import get_lxc_version
+from vr.runners.base import (BaseRunner, mkdir, ensure_file, untar,
+                             get_template, get_lxc_network_config)
+
 
 IMAGES_ROOT = VR_ROOT + '/images'
 
@@ -55,12 +59,20 @@ class ImageRunner(BaseRunner):
 
     lxc_template_name = 'image.lxc'
 
+    char_devices = (
+        ('/dev/null', (1, 3), 0666),
+        ('/dev/zero', (1, 5), 0666),
+        ('/dev/random', (1, 8), 0444),
+        ('/dev/urandom', (1, 9), 0444),
+    )
+
     def setup(self):
         print("Setting up", get_container_name(self.config))
         mkdir(IMAGES_ROOT)
         self.ensure_image()
         self.make_proc_dirs()
         self.ensure_build()
+        self.ensure_char_devices()
         self.write_proc_lxc()
         self.write_settings_yaml()
         self.write_proc_sh()
@@ -91,4 +103,41 @@ class ImageRunner(BaseRunner):
         return {
             'proc_path': get_container_path(self.config),
             'image_path': self.get_image_folder(),
+            'network_config': get_lxc_network_config(get_lxc_version()),
+            'memory_limits': self.get_lxc_memory_limits(),
+            'volumes': self.get_lxc_volume_str(),
         }
+
+    def ensure_char_devices(self):
+        for path, devnums, perms in self.char_devices:
+            fullpath = get_container_path(self.config) + path
+            ensure_char_device(fullpath, devnums, perms)
+
+
+def ensure_char_device(path, devnums, perms):
+    # Python uses the OS mknod(2) implementation which modifies the mode based
+    # on the umask of the running process (at least on some Linuxes that were
+    # tested).  Set this to 0 to make mknod apply the perms you actually
+    # specify
+    print("Making device nodes")
+    if not os.path.exists(path):
+        with tmp_umask(0):
+            print("mknod -m %o %s c %s %s" % (perms, path, devnums[0], devnums[1]))
+            mkdir(os.path.dirname(path))
+            mode = (stat.S_IFCHR | perms)
+            os.mknod(path, mode, os.makedev(*devnums))
+    else:
+        print("%s already exists.  Skipping" % path)
+
+
+class tmp_umask(object):
+    """Context manager for temporarily setting the process umask"""
+    def __init__(self, tmp_mask):
+        self.tmp_mask = tmp_mask
+
+    def __enter__(self):
+        self.orig_mask = os.umask(self.tmp_mask)
+
+    def __exit__(self, type, value, traceback):
+        os.umask(self.orig_mask)
+

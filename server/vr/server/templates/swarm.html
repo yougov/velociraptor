@@ -16,7 +16,7 @@
 
   <div class="row">
 
-    <div class="col-sm-4">
+    <div class="col-sm-3">
         <div class="tabbable">
           <ul class="nav nav-pills nav-stacked">
             <li class="active"><a href="#general" data-toggle="tab">General</a></li>
@@ -32,7 +32,7 @@
         {% endif %}
     </div>
 
-    <div class="col-sm-8">
+    <div class="col-sm-9">
       <div class="tab-content row">
         <div class="tab-pane active form-horizontal col-sm-8" id="general">
             {% formfield form.app_id %}
@@ -57,10 +57,10 @@
             <div class="col-sm-2"></div>
             <div class="col-sm-10">
               <h4>Compiled Config</h4>
-              <pre id="compiled_config"></pre>
+              <pre id="compiled_config">{{ compiled_config }}</pre>
 
               <h4>Compiled Env</h4>
-              <pre id="compiled_env"></pre>
+              <pre id="compiled_env">{{ compiled_env }}</pre>
             </div>
           </div>
         </div>
@@ -69,28 +69,44 @@
             {% formfield form.balancer %}
         </div>
 
-        <div class="tab-pane form-horizontal span4" id="versions">
+        <div class="tab-pane form-horizontal col-sm-8" id="versions">
+            <div class="row">
             {% if version_diffs %}
-
-             {% for diff in version_diffs %}
+              <div class="col-sm-2"></div>
+              <div class="col-sm-10">
+              {% for diff in version_diffs %}
                 <span>Revision date: {{ diff.date }}</span><br/>
                 <span>User: {{ diff.user }}</span><br/>
-                <table>
-                <thead><tr><th>Field</th><th>Value</th></tr></thead>
-                {% for field, field_diff in diff.diff_dict.items %}
-                    <tr><td>{{ field }}</td><td>{{ field_diff|safe }}</td></tr>
-                {% endfor %}
+                <table class="table table-striped table-hover">
+                  <thead>
+                    <tr>
+                      <th>Field</th>
+                      <th>Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  {% for field, field_diff in diff.diff_dict.items %}
+                    <tr>
+                      <td>{{ field }}</td>
+                      <td>{{ field_diff|safe }}</td>
+                    </tr>
+                  {% endfor %}
+                  </tbody>
                 </table>
                 <hr/>
-             {% endfor %}
-
+              {% endfor %}
+              </div>
             {% else %}
-              No previous version found.
+            <div class="col-sm-2"></div>
+            <div class="col-sm-10">
+              <p>No previous version found.</p>
+            </div>
             {% endif %}
+            </div>
         </div>
       </div>
 
-      <div style="padding-left:100px">
+      <div style="padding-left:112px">
         <button type="submit" class="btn btn-primary">Swarm</button>
       </div>
     </div>
@@ -100,28 +116,21 @@
 {% endblock content %}
 
 {% block script %}
-{{ form.media }}
+<script src="{% static 'js/jquery.textarea.min.js' %}"></script>
 <script src="{% static 'js/vrswarm.js' %}"></script>
-{% if swarm.id %}
 <script>
 $(function() {
+{% if swarm.id %}
   VR.Swarm.init('{{ swarm.id }}', $('#swarm-container'));
+{% endif %}
   // enable using tabs in the textareas
   $('.codearea').tabby({tabString:'  '});
 
-  jQuery.each($("select[multiple]"), function () {
-    // "Locations" can be any label you want
-    SelectFilter.init(this.id, "Ingredients", 0, "/static/");
-  });
-});
+  SelectFilter.init('id_config_ingredients', "Ingredients", 0, "/static/");
 
-</script>
-{% else %}
-<script>
-$(function() {
   // make sure that pool name checking also works for new swarms
   VR.Swarm.checkPoolName($('form.raptorform').get(0));
 });
+
 </script>
-{% endif %}
 {% endblock script %}

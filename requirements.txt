@@ -1,6 +1,9 @@
+--allow-external
 ./common
 ./runners
 ./builder
+./imager
+./django-yamlfield
 ./server
 
 # We can't use dateutil 2.0 til we're on Python 3.  Make pip enforce that.

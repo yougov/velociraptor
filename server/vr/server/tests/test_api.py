@@ -28,9 +28,9 @@ class BasicAuthClient(Client):
         }
         super(BasicAuthClient, self).__init__(*args, **kwargs)
 
-    def get(self, url, *args, **kwargs):
+    def request(self, *args, **kwargs):
         kwargs.update(self.auth_headers)
-        return super(BasicAuthClient, self).get(url, *args, **kwargs)
+        return super(BasicAuthClient, self).request(*args, **kwargs)
 
 
 def test_no_auth_denied():
@@ -64,6 +64,20 @@ def test_session_auth_accepted():
     url = get_api_url('hosts', 'api_dispatch_list')
     response = c.get(url)
     assert response.status_code == 200
+
+
+def test_config_xmlrpc_marshaling():
+    u = get_user()
+    c = BasicAuthClient(u.username, 'password123')
+    url = get_api_url('ingredients', 'api_dispatch_list')
+    #data = json.dumps({'config_yaml': {1: 'int key'}})
+    #data = json.dumps({'config_yaml': '"bigint": 123412341234}'})
+    data = json.dumps({
+        'name': randchars(),
+        'config_yaml': "{'really_big_int': 1234123412341234}"
+    })
+    resp = c.post(url, data=data, content_type='application/json')
+    assert "int exceeds XML-RPC limits" in resp.content
 
 
 class TestSaveSwarms(unittest.TestCase):

@@ -11,7 +11,7 @@ py2_reqs = ['suds==0.4'] if not PY3 else []
 params = dict(
     name='vr.common',
     namespace_packages=['vr'],
-    version='3.12',
+    version='3.16.3',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
     packages=setuptools.find_packages(),
@@ -22,7 +22,7 @@ params = dict(
         'six>=1.4.1',
         'utc',
         'requests',
-        'PyYAML==3.10',
+        'PyYAML>=3.10',
         'sseclient==0.0.8',
     ] + py2_reqs,
     description='Libraries and for deploying with Velociraptor',

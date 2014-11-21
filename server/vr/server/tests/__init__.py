@@ -16,7 +16,7 @@ from django.contrib.auth.models import User
 
 
 def sh(cmd):
-    subprocess.call(shlex.split(cmd))
+    subprocess.call(shlex.split(cmd), stderr=subprocess.STDOUT)
 
 
 def dbsetup():

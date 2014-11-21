@@ -12,6 +12,7 @@ admin.site.register(models.BuildPack)
 admin.site.register(models.DeploymentLogEntry)
 admin.site.register(models.Host)
 admin.site.register(models.OSImage)
+admin.site.register(models.OSStack)
 admin.site.register(models.Swarm)
 
 # Unregister the Django 'group' model, as I don't think we'll be using it.
@@ -26,8 +27,8 @@ class ConfigIngredientAdmin(reversion.VersionAdmin):
 
     def used_in(self, obj):
         if obj.swarm_set.all().count():
-            return ", ".join([s.__unicode__()
-                             for s in obj.swarm_set.all()])
+            return ", ".join([s.__unicode__() for s in obj.swarm_set.all().only(
+                'release', 'config_name', 'proc_name')])
         return "No Swarms"
     used_in.short_description = 'Included in'
 admin.site.register(models.ConfigIngredient, ConfigIngredientAdmin)
@@ -61,6 +62,7 @@ admin.site.register(models.TestRun, TestRunAdmin)
 
 class ReleaseAdmin(admin.ModelAdmin):
     search_fields = ['config_yaml', 'env_yaml', 'build__app__name']
+    list_filter = ['build__app']
 admin.site.register(models.Release, ReleaseAdmin)
 
 admin.site.unregister(User)

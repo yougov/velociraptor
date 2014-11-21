@@ -185,6 +185,7 @@ $(function() {
 
     $(document).on('hidden.bs.modal', function(ev) {
         $(ev.target).remove();
+        $('.modal-backdrop').remove();
     });
 
     var ESCAPE = 27, UP = 38, DOWN = 40, ENTER = 13;
@@ -204,11 +205,13 @@ $(function() {
       // start with "start", and show all the rest.
       els.each(function(idx, el) {
             el = $(el);
-            if (el.attr('rel').indexOf(txt.toLowerCase()) > -1) {
-                el.show();
-            } else {
-                el.hide();
-            }
+            try {
+              if (el.attr('rel').indexOf(txt.toLowerCase()) > -1) {
+                  el.show();
+              } else {
+                  el.hide();
+              }
+            } catch(e) {}
         });
 
       return els.filter(':visible');
@@ -345,31 +348,35 @@ $(function() {
           var template = VR.Templates.DashModal,
               modal = template.goatee(),
               apps;
-          $(modal).modal('show').queue(function() {
-            $.getJSON(VR.Urls.getTasty('apps'), function(data) {
-              apps = data.objects;
-            });
-          });
 
-          $(modal).on('shown.bs.modal', function(ev) {
-            _.each(apps, function(app) {
-              if($('#'+app.name+'-option').length === 0)
-                $('#dashboard-apps').append('<option id="'+app.name+'-option" data-id="'+app.id+'" value="'+app.id+'|'+app.name+'">'+app.name+'</option>');
-            });
-
+          var counter = 0;
+          $(modal).modal('show').on('shown.bs.modal', function(ev) {
+            counter++;
             $('#dashboard-name').on('change', function() {
               var name = $(this).val();
                   name = name.replace(/\ /g, '-').toLowerCase();
 
               $('#dashboard-slug').val(name);
             });
+            
+            if(counter===1) {
+              $.getJSON(VR.Urls.getTasty('apps'), function(data) {
+                apps = data.objects;
+
+                _.each(apps, function(app) {
+                  if($('#'+app.name+'-option').length === 0)
+                    $('#dashboard-apps').append('<option id="'+app.name+'-option" data-id="'+app.id+'" value="'+app.id+'|'+app.name+'">'+app.name+'</option>');
+                });
+
+                SelectFilter.init('dashboard-apps', "Apps", 0, "/static/");
+              });
+            }
           });
 
           $(modal).find('.btn-success').on('click', function(ev) {
             var form = $(modal).find('form'),
                 name = form.find('#dashboard-name').val(),
-                slug = form.find('#dashboard-slug').val(),
-                apps = form.find('#dashboard-apps').val();
+                slug = form.find('#dashboard-slug').val();
 
             var payload = {
               name: name,
@@ -377,8 +384,8 @@ $(function() {
               apps: []
             };
 
-            _.each(apps, function(app) {
-              app = app.split('|');
+            $('#dashboard-apps_to option').each(function(i, option) {
+              var app = $(option).val().split('|');
               payload.apps.push({'id': app[0], 'name': app[1]});
             });
 
@@ -392,7 +399,7 @@ $(function() {
               },
               processData: false,
               success: function(data, status) {
-                if("success" === status) window.location.reload();
+                if("success" === status) window.location = '/dashboard/' + slug;
               }
             });
           });

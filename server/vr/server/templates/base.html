@@ -10,9 +10,15 @@
   <link rel="stylesheet" href="{% static 'css/font-awesome.css' %}" type="text/css" media="screen">
   <link rel="stylesheet" href="{% static 'font/roboto/stylesheet.css' %}" type="text/css" media="screen">
   <link rel="stylesheet" href="{% static 'css/vr.css' %}" type="text/css" media="screen">
+  <link rel="stylesheet" href="{% static 'css/multiselect.css' %}" type="text/css"></script>
   {% block style %}{% endblock style %}
   {% if custom_css %}
     <link rel="stylesheet" href="{{ custom_css }}" type="text/css" media="screen">
+  {% endif %}
+  {% if request.user.is_authenticated %}
+  <script>
+  var userId = '{{ request.user.id }}';
+  </script>
   {% endif %}
 </head>
 <body>
@@ -38,6 +44,7 @@
           {% url log as log_url %}
           {% url ingredient_list as ingredient_url %}
           {% url app_list as app_url %}
+          {% url stack_list as stack_url %}
           {% url buildpack_list as buildpack_url %}
           {% url host_list as host_url %}
           {% url squad_list as squad_url %}
@@ -55,11 +62,20 @@
               </ul>
             </li>
 
-            <li class="{% current_nav app_url %}"><a href="{{ app_url }}">Apps</a></li>
-            <li class="{% current_nav buildpack_url %}"><a href="{{ buildpack_url }}">BuildPacks</a></li>
-            <li class="{% current_nav squad_url %}"><a href="{{ squad_url }}">Squads</a></li>
-            <li class="{% current_nav host_url %}"><a href="{{ host_url }}">Hosts</a></li>
-            <li class="{% current_nav ingredient_url %}"><a href="{{ ingredient_url }}">Ingredients</a></li>
+            <li class="dropdown">
+                <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                    Platform 
+                    <b class="caret"></b>
+                </a>
+                <ul class="dropdown-menu">
+                  <li class="{% current_nav stack_url %}"><a href="{{ stack_url }}">Stacks</a></li>
+                  <li class="{% current_nav squad_url %}"><a href="{{ squad_url }}">Squads</a></li>
+                  <li class="{% current_nav buildpack_url %}"><a href="{{ buildpack_url }}">BuildPacks</a></li>
+                  <li class="{% current_nav app_url %}"><a href="{{ app_url }}">Apps</a></li>
+                  <li class="{% current_nav ingredient_url %}"><a href="{{ ingredient_url }}">Ingredients</a></li>
+                  <li class="{% current_nav host_url %}"><a href="{{ host_url }}">Hosts</a></li>
+                </ul>
+            </li>
 
             <li class="dropdown">
                 <a id="swarm-dropdown" class="dropdown-toggle disabled" style="cursor:not-allowed" href="#">
@@ -71,6 +87,7 @@
                     <ul id="swarmlist" style="padding-left:0"><li rel="new_swarm"><a href="{% url new_swarm %}">New</a></li></ul>
                 </div>
             </li>
+
             <li class="dropdown">
 
                 <a class="dropdown-toggle" data-toggle="dropdown" href="#">
@@ -122,7 +139,7 @@
 
 {# GOATEE TEMPLATES #}
 {% include "jstemplates.html" %}
-
+<script src="{% static 'js/multiselect.js' %}"></script>
 <script>
 {# build some URLs from Django.  vrdash.js and other scripts rely on these #}
 (function () {

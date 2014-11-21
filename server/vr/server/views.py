@@ -1,4 +1,9 @@
 import textwrap
+import time
+import datetime
+
+from hashlib import md5
+
 
 from django.conf import settings
 from django.contrib.auth import login as django_login, logout as django_logout
@@ -51,6 +56,7 @@ def dash(request):
         'supervisord_web_port': settings.SUPERVISORD_WEB_PORT
     })
 
+
 @login_required
 def default_dash(request):
     if hasattr(request.user, 'userprofile') and request.user.userprofile:
@@ -66,6 +72,7 @@ def default_dash(request):
     # If you don't have a default dashboard go to home!
     return HttpResponseRedirect('/')
 
+
 @login_required
 def custom_dash(request, slug):
     dashboard = get_object_or_404(models.Dashboard, slug=slug)
@@ -73,6 +80,7 @@ def custom_dash(request, slug):
         'hosts': models.Host.objects.filter(active=True),
         'dashboard_id': dashboard.id,
         'dashboard_name': dashboard.name,
+        'quick_dashboard': True,
         'supervisord_web_port': settings.SUPERVISORD_WEB_PORT
     })
 
@@ -82,11 +90,9 @@ def build_app(request):
     form = forms.BuildForm(request.POST or None)
     if form.is_valid():
         app = models.App.objects.get(id=form.cleaned_data['app_id'])
-        os_image_id = form.cleaned_data['os_image_id']
-        os_image = models.OSImage.objects.get(id=os_image_id) \
-            if os_image_id is not None else None
+
         build = models.Build(app=app, tag=form.cleaned_data['tag'],
-                             os_image=os_image)
+                             os_image=app.get_os_image())
         build.save()
         do_build(build, request.user)
         return redirect('dash')
@@ -156,6 +162,8 @@ def deploy(request):
         data = form.cleaned_data
 
         release = models.Release.objects.get(id=data.pop('release_id'))
+        if 'app' in data:
+            data.pop('app')
         do_deploy(release, request.user, **data)
         return redirect('dash')
 
@@ -186,7 +194,6 @@ def edit_swarm(request, swarm_id=None):
         swarm = models.Swarm.objects.get(id=swarm_id)
         initial = {
             'app_id': swarm.app.id,
-            'os_image_id': getattr(swarm.release.build.os_image, 'id', None),
             'squad_id': swarm.squad.id,
             'tag': swarm.release.build.tag,
             'config_name': swarm.config_name,
@@ -216,16 +223,19 @@ def edit_swarm(request, swarm_id=None):
                 version_diffs.append({'diff_dict': diff_dict,
                                       'user': version.revision.user,
                                       'date': version.revision.date_created})
+        compiled_config = yamlize(swarm.get_config())
+        compiled_env = yamlize(swarm.get_env())
+
     else:
         initial = None
         swarm = models.Swarm()
         version_diffs = []
+        compiled_config = yamlize({})
+        compiled_env = yamlize({})
 
     form = forms.SwarmForm(request.POST or None, initial=initial)
     if form.is_valid():
         data = form.cleaned_data
-        os_image = models.OSImage.objects.get(id=data['os_image_id']) \
-            if data['os_image_id'] is not None else None
 
         swarm.app = models.App.objects.get(id=data['app_id'])
         swarm.squad = models.Squad.objects.get(id=data['squad_id'])
@@ -240,7 +250,7 @@ def edit_swarm(request, swarm_id=None):
         swarm.size = data['size']
         swarm.pool = data['pool'] or None
         swarm.balancer = data['balancer'] or None
-        swarm.release = swarm.get_current_release(os_image, data['tag'])
+        swarm.release = swarm.get_current_release(data['tag'])
         swarm.save()
         swarm.config_ingredients.clear()
         for ingredient in data['config_ingredients']:
@@ -256,7 +266,9 @@ def edit_swarm(request, swarm_id=None):
         'swarm': swarm,
         'form': form,
         'btn_text': 'Swarm',
-        'version_diffs': version_diffs
+        'version_diffs': version_diffs,
+        'compiled_config': compiled_config,
+        'compiled_env': compiled_env
     })
 
 
@@ -274,14 +286,21 @@ def search_swarm(request):
     else:
         swarms = models.Swarm.objects.all()
 
-    return [{'shortname': swarm.shortname(), 'id': swarm.id, 'app_name': swarm.app.name} for swarm in swarms]
+    return [{
+        'shortname': swarm.shortname(),
+        'id': swarm.id,
+        'app_name': swarm.app.name
+    } for swarm in swarms]
 
 
 def do_swarm(swarm, user):
     """
     Put a swarming job on the queue, and a notification about it on the pubsub.
     """
-    tasks.swarm_start.delay(swarm.id)
+    # Create a swarm trace id that takes our swarm and time
+    swarm_trace_id = md5(str(swarm) + str(time.time())).hexdigest()
+
+
     ev_detail = textwrap.dedent(
         """%(user)s swarmed %(shortname)s
 
@@ -294,6 +313,7 @@ def do_swarm(swarm, user):
         Size: %(size)s
         Balancer: %(balancer)s
         Pool: %(pool)s
+        Trace ID: %(trace_id)s
         """) % {
             'user': user.username,
             'shortname': swarm.shortname(),
@@ -306,10 +326,12 @@ def do_swarm(swarm, user):
             'size': swarm.size,
             'balancer': swarm.balancer,
             'pool': swarm.pool,
+            'trace_id': swarm_trace_id,
         }
     events.eventify(user, 'swarm', swarm.shortname(),
-                    detail=ev_detail)
-
+                    detail=ev_detail, swarm_id=swarm_trace_id)
+    tasks.swarm_start.delay(swarm.id, swarm_trace_id)
+    return swarm_trace_id
 
 
 class ListLogEntry(ListView):
@@ -422,7 +444,7 @@ class DeleteApp(edit.DeleteView):
     template_name = 'confirm_delete.html'
     success_url = reverse_lazy('app_list')
 
-
+# Buildpack views
 class ListBuildPack(ListView):
     model = models.BuildPack
     template_name = 'buildpack_list.html'
@@ -444,6 +466,57 @@ class DeleteBuildPack(edit.DeleteView):
     model = models.BuildPack
     template_name = 'confirm_delete.html'
     success_url = reverse_lazy('buildpack_list')
+
+
+# Stack views
+class ListStack(ListView):
+    model = models.OSStack
+    template_name = 'stack_list.html'
+
+
+@login_required
+def edit_stack(request, stack_id=None):
+    if stack_id:
+        stack = models.OSStack.objects.get(id=stack_id)
+    else:
+        stack = None
+
+    print "stack", stack
+
+    form = forms.StackForm(request.POST or None, request.FILES or None,
+                           instance=stack)
+
+    if form.is_valid():
+        form.save()
+        stack = form.instance # In case we just made a new one.
+
+        if form.cleaned_data['build_now']:
+            # Image names should look like stackname_date_counter
+            name_prefix = '%s_%s_' % (form.instance.name,
+                                      datetime.datetime.today().strftime('%Y%m%d'))
+            builds_today = models.OSImage.objects.filter(
+                name__startswith=name_prefix).count()
+            image_name = name_prefix + str(builds_today + 1)
+            image = models.OSImage(
+                stack=stack,
+                name=image_name,
+                base_image_url=form.instance.base_image_url,
+                base_image_name=form.instance.name + '_base',
+                provisioning_script_url=form.instance.provisioning_script.url,
+            )
+            image.save()
+            events.eventify(request.user, 'build image', image)
+            tasks.build_image.delay(image.id)
+        return redirect('dash')
+    return render(request, 'stack_form.html', {'form': form,
+                                               'object': stack,
+                                               'enctype': 'multipart/form-data'})
+
+
+class DeleteStack(edit.DeleteView):
+    model = models.OSStack
+    template_name = 'confirm_delete.html'
+    success_url = reverse_lazy('stack_list')
 
 
 def login(request):

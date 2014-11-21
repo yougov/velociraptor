@@ -13,7 +13,7 @@ from vr.events import Sender
 
 class EventSender(Sender):
 
-    def publish(self, message, event=None, tags=None, title=None):
+    def publish(self, message, event=None, tags=None, title=None, **kw):
         # Make an object with timestamp, ID, and payload
         data = {
             'time': datetime.datetime.utcnow().isoformat(),
@@ -21,6 +21,9 @@ class EventSender(Sender):
             'tags': tags or [],
             'title': title or '',
         }
+
+        # Used for optional keys such as the swarm id, trace id, etc.
+        data.update(kw)
 
         payload = json.dumps(data)
         # Serialize it and stick it on the pubsub
@@ -60,7 +63,7 @@ class ProcListener(object):
         self.rcon.connection_pool.disconnect()
 
 
-def eventify(user, action, obj, detail=None):
+def eventify(user, action, obj, detail=None, **kw):
     """
     Save a message to the user action log, application log, and events pubsub
     all at once.
@@ -82,5 +85,5 @@ def eventify(user, action, obj, detail=None):
         settings.EVENTS_PUBSUB_URL,
         settings.EVENTS_PUBSUB_CHANNEL,
         settings.EVENTS_BUFFER_KEY)
-    sender.publish(detail or message, tags=['user', action], title=message)
+    sender.publish(detail or message, tags=['user', action], title=message, **kw)
     sender.close()
