@@ -122,9 +122,11 @@ class pipdeps {
 }
 
 class pg93 {
+    Package {ensure => present, require => Exec [firstupdate]}
+
     package {
-      "postgresql-9.3": ensure => present;
-      "postgresql-server-dev-9.3": ensure => present;
+      "postgresql-9.3":;
+      "postgresql-server-dev-9.3":;
     }
 
     file { 'pg_hba.conf':
