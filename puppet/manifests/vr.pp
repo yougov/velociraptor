@@ -37,6 +37,7 @@ class vrhost {
         libpcre3-dev:;
         libjpeg62-dev:;
         libltdl7:;
+        libyaml-dev:;
         lxc:;
         git-core:;
         redis-server:;
@@ -204,3 +205,9 @@ define ppa($ppa = "$title", $ensure = present) {
   }
 }
 
+# Ensure that there's an entry for our hostname in /etc/hosts
+file { '/etc/hosts':
+    path => '/etc/hosts',
+    ensure => file,
+    source => 'puppet:///modules/base/hosts';
+}

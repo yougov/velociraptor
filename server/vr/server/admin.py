@@ -12,6 +12,7 @@ admin.site.register(models.BuildPack)
 admin.site.register(models.DeploymentLogEntry)
 admin.site.register(models.Host)
 admin.site.register(models.OSImage)
+admin.site.register(models.OSStack)
 admin.site.register(models.Swarm)
 
 # Unregister the Django 'group' model, as I don't think we'll be using it.

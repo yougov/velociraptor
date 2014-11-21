@@ -21,13 +21,13 @@ from django.utils import timezone
 from django.core.files import File
 
 from vr.builder.main import BuildData
+from vr.imager.main import ImageData
 from vr.common import utils
 from vr.common.models import Proc
 from vr.common.utils import tmpdir
 from vr.server import events, balancer, remote
-from vr.server.models import (
-    Release, Build, Swarm, Host, PortLock, TestRun, TestResult, BuildPack,
-)
+from vr.server.models import (Release, Build, Swarm, Host, PortLock, TestRun,
+                              TestResult, BuildPack, OSImage)
 
 
 logger = logging.getLogger('velociraptor')
@@ -132,7 +132,7 @@ def deploy(release_id, config_name, hostname, proc, port, swarm_trace_id=None):
     with remove_port_lock(hostname, port):
         release = Release.objects.get(id=release_id)
         msg_title = '%s-%s-%s' % (release.build.app.name, release.build.tag, proc)
-        logging.info('beginning deploy of %s-%s-%s to %s' % (release, proc,
+        logger.info('beginning deploy of %s-%s-%s to %s' % (release, proc,
                                                              port,
                                                              hostname))
 
@@ -184,6 +184,61 @@ def build_app(build_id, callback=None, swarm_trace_id=None):
     build_start_waiting_swarms(build.id)
 
 
+@task
+@event_on_exception(['image'])
+def build_image(image_id, callback=None):
+    image = OSImage.objects.get(id=image_id)
+    image_yaml = ImageData({
+        'base_image_url': image.base_image_url,
+        'base_image_name': image.base_image_name,
+        'new_image_name': image.name,
+        'script_url': image.provisioning_script_url,
+    }).as_yaml()
+    img_msg = "Started image build %s" % image + '\n\n' + image_yaml
+    send_event(str(image), img_msg, tags=['buildimage'])
+
+
+    with tmpdir():
+        try:
+            with open('image.yaml', 'wb') as f:
+                f.write(image_yaml)
+            env.host_string = 'localhost'
+            env.abort_on_prompts = True
+            env.task = build_app
+            env.user = settings.DEPLOY_USER
+            env.password = settings.DEPLOY_PASSWORD
+            env.linewise = True
+            remote.build_image('image.yaml')
+
+            # We should now have <image_name>.tar.gz and <image_name>.log
+            # locally.
+            img_file = image.name + '.tar.gz'
+            img_storage_path = 'images/' + img_file
+            with open(img_file, 'rb') as localfile:
+                image.file.save(img_storage_path, File(localfile))
+
+            image.active = True
+        finally:
+            logfile = image.name + '.log'
+            try:
+                # grab and store the compile log.
+                with open(logfile, 'rb') as f:
+                    logname = 'images/' + logfile
+                    image.build_log.save(logname, File(f))
+            except:
+                logger.info('Could not retrieve ' + logfile)
+                raise
+            finally:
+                image.save()
+
+    send_event(str(image), "Completed image %s" % image, tags=['buildimage',
+                                                               'success'])
+
+    # start callback if there is one.
+    if callback is not None:
+        subtask(callback).delay()
+
+
 def _do_build(build, build_yaml):
     # enter a temp folder
     with tmpdir():
@@ -210,14 +265,19 @@ def _do_build(build, build_yaml):
                 build_result.build_md5
             ])
             filepath = 'builds/' + build_name + '.tar.gz'
+            logger.info('Saving tarball')
             with open('build.tar.gz', 'rb') as localfile:
                 build.file.save(filepath, File(localfile))
+
+            logger.info('Saving build metadata')
             build.file_md5 = build_result.build_md5
             build.env_yaml = build_result.release_data.get('config_vars', {})
             build.buildpack_url = build_result.buildpack_url
             build.buildpack_version = build_result.buildpack_version
             build.status = 'success'
+
         except:
+            logger.error('Build failed')
             build.status = 'failed'
             raise
         finally:
@@ -225,9 +285,11 @@ def _do_build(build, build_yaml):
                 # grab and store the compile log.
                 with open('compile.log', 'rb') as f:
                     logname = 'builds/build_%s_compile.log' % build.id
+                    logger.info("logname: " + logname)
                     build.compile_log.save(logname, File(f))
             except:
                 logger.info('Could not retrieve compile.log for %s' % build)
+                raise
             finally:
                 build.end_time = timezone.now()
                 build.save()
@@ -335,7 +397,21 @@ def swarm_start(swarm_id, swarm_trace_id=None):
     Given a swarm_id, kick off the chain of tasks necessary to get this swarm
     deployed.
     """
-    swarm = Swarm.objects.get(id=swarm_id)
+    logger.info("Swarm start %s" % swarm_id)
+    logger.info("type: %s" % type(swarm_id))
+    try:
+        swarm = Swarm.objects.get(id=swarm_id)
+    except Swarm.DoesNotExist:
+        # For some STRANGE reason, sometimes the Swarm.objects.get above will
+        # raise an error saying the swarm doesn't exist, even though querying
+        # it here will show that it does.  This sucks, but we can catch such
+        # things sometimes.
+        swarms = Swarm.objects.all()
+        ids = [str(s.id) for s in swarms]
+        if swarm_id in ids:
+            swarm = next(s for s in swarms if s.id==swarm_id)
+        else:
+            raise
     build = swarm.release.build
 
     if not swarm_trace_id:
@@ -372,8 +448,12 @@ def swarm_release(swarm_id, swarm_trace_id=None):
 
     # swarm.get_current_release(tag) will check whether there's a release with
     # the right build and config, and create one if not.
-    swarm.release = swarm.get_current_release(build.os_image, build.tag)
+    swarm.release = swarm.get_current_release(build.tag)
     swarm.save()
+
+    # Ensure that the release is hashed.
+    release = swarm.release
+    release.save()
 
     # OK we have a release.  Next: see if we need to do a deployment.
     # Query squad for list of procs.

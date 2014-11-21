@@ -54,15 +54,11 @@ class BuildForm(forms.Form):
 
     app_id = forms.ChoiceField(choices=[], label='App')
     tag = forms.CharField()
-    os_image_id = forms.TypedChoiceField(choices=[], label='OS Image',
-                                         required=False, empty_value=None)
 
     def __init__(self, *args, **kwargs):
         super(BuildForm, self).__init__(*args, **kwargs)
         self.fields['app_id'].choices = [(a.id, a) for a in
                                          models.App.objects.all()]
-        self.fields['os_image_id'].choices = [('', '-------')] + [
-            (image.id, image) for image in models.OSImage.objects.all()]
 
 
 class BuildUploadForm(forms.ModelForm):
@@ -84,6 +80,12 @@ class ReleaseForm(forms.ModelForm):
     class Meta:
         model = models.Release
         exclude = ('hash',)
+
+
+class StackForm(forms.ModelForm):
+    build_now = forms.BooleanField(initial=True)
+    class Meta:
+        model = models.OSStack
 
 
 class DeploymentForm(forms.Form):
@@ -132,8 +134,6 @@ class SwarmForm(forms.Form):
     """
     app_id = forms.ChoiceField(choices=[], label='App')
     tag = forms.CharField(max_length=50)
-    os_image_id = forms.TypedChoiceField(choices=[], label='OS Image',
-                                         required=False, empty_value=None)
     config_name = forms.CharField(max_length=50,
                                   help_text=models.config_name_help)
     config_yaml = forms.CharField(
@@ -179,8 +179,6 @@ class SwarmForm(forms.Form):
                                            models.Squad.objects.all()]
         self.fields['app_id'].choices = [(a.id, a) for a in
                                          models.App.objects.all()]
-        self.fields['os_image_id'].choices = [('', '-------')] + [
-            (image.id, image) for image in models.OSImage.objects.all()]
         self.fields['balancer'].choices = [('', '-------')] + [
             (b, b) for b in settings.BALANCERS]
 

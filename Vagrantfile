@@ -53,8 +53,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         # Make the guest use the host for name resolution, so names on the VPN
         # will work (assuming they work on the host).
                       "--natdnshostresolver1", "on",
-        # Allocate 1GB of RAM
-                      "--memory", "1024"
+        # Allocate 2GB of RAM
+                      "--memory", "2048"
                       ]
     end
 

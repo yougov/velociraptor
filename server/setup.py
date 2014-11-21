@@ -19,7 +19,6 @@ setup(
         'django-redis-cache==0.9.5',
         'django-reversion==1.6.6',
         'django-tastypie==0.9.12',
-        'django-yamlfield==0.2',
         'Fabric==1.8.0',
         'gevent>=1.0rc2,<2',
         'gevent-psycopg2==0.0.3',
@@ -41,6 +40,8 @@ setup(
         # requirements.txt
         'vr.common',
         'vr.builder',
+        'vr.imager',
+        'django-yamlfield',
     ],
     dependency_links = [
         'https://github.com/downloads/surfly/gevent/gevent-1.0rc2.tar.gz#egg=gevent-1.0rc2'

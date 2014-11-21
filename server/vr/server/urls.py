@@ -94,6 +94,15 @@ urlpatterns = patterns('',
     url(r'^buildpack/(?P<pk>\d+)/delete/$',
         login_required(views.DeleteBuildPack.as_view()),
         name='buildpack_delete'),
+
+    # Stack CRUD
+    url(r'^stack/$', login_required(views.ListStack.as_view()),
+        name='stack_list'),
+    url(r'^stack/add/$', 'vr.server.views.edit_stack', name='stack_add'),
+    url(r'^stack/(?P<stack_id>\d+)/$', 'vr.server.views.edit_stack', name='stack_update'),
+    url(r'^stack/(?P<pk>\d+)/delete/$',
+        login_required(views.DeleteStack.as_view()),
+        name='stack_delete'),
 )
 
 urlpatterns += staticfiles_urlpatterns()

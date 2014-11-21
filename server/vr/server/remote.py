@@ -327,6 +327,37 @@ def build_app(build_yaml_path):
                 sudo('rm -rf ' + remote_tmp)
 
 
+@task
+def build_image(image_yaml_path):
+    """
+    Given the path to an image.yaml file with everything you need for 'vimage'
+    to make a build, copy it to the remote host and run the vimage tool on it.
+    Then copy the resulting image and compile log up here.
+    """
+    remote_tmp = '/tmp/' + randchars()
+    sudo('mkdir -p ' + remote_tmp)
+    with open(image_yaml_path) as f:
+        image_data = yaml.safe_load(f)
+    with cd(remote_tmp):
+        try:
+            remote_image_yaml_path = posixpath.join(remote_tmp, 'image_job.yaml')
+            put(image_yaml_path, remote_image_yaml_path, use_sudo=True)
+            sudo('vimage build ' + remote_image_yaml_path)
+            fname = '%s.tar.gz' % image_data['new_image_name']
+            get(posixpath.join(remote_tmp, fname), fname)
+        finally:
+            logfile = '%(new_image_name)s.log' % image_data
+            try:
+                # try to get .log even if build fails.
+                with fab_settings(warn_only=True):
+                    get(posixpath.join(remote_tmp, logfile), logfile)
+            except:
+                print "Could not retrieve " + logfile
+            finally:
+                sudo('rm -rf ' + remote_tmp)
+
+
+
 @contextlib.contextmanager
 def shell_env(**env_vars):
     """
