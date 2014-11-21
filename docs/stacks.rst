@@ -53,6 +53,15 @@ Some kind souls have implemented `that workaround`_ for Docker images, and it
 works for Velociraptor as well.  You can download a Velociraptor-compatible
 base image at http://cdn.yougov.com/build/ubuntu_trusty_pamfix.tar.gz.
 
+Provisioning Scripts
+====================
+
+The only requirement on provisioning scripts is that they be executable, but
+it's recommended that you write them in Bash.
+
+The `cedarish`_ open source project provides a provisioning script that can be
+used to make a Heroku-compatible image.
+
 Using vimage
 ============
 
@@ -101,3 +110,4 @@ to get into the container and debug interactively.  You can do so like this::
 .. _`Ubuntu's website`: http://cdimage.ubuntu.com/ubuntu-core/trusty/daily/current/
 .. _`a bug`: https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/patch/?id=543bc6a1a987672b79d6ebe8e2ab10471d8f1047
 .. _`that workaround`: https://github.com/sequenceiq/docker-pam
+.. _cedarish: https://github.com/progrium/cedarish/blob/master/stack/cedar-14.sh
