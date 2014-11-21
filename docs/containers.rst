@@ -21,9 +21,4 @@ application host.  Any local files written by an app are likely to be deleted
 when the app is restarted, and *certain* to be deleted when the app is
 reswarmed.
 
-There is a deprecated and rarely-used option to run an app outside an LXC
-container.  This is only available to apps with special buildpacks that don't
-expect to be able to write to /app (which excludes all publicly available build
-packs).  In the future this option will be removed entirely.
-
 .. _LXC: http://linuxcontainers.org
