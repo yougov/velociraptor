@@ -11,7 +11,7 @@ py2_reqs = ['suds==0.4'] if not PY3 else []
 params = dict(
     name='vr.common',
     namespace_packages=['vr'],
-    version='3.16.2',
+    version='3.16.3',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
     packages=setuptools.find_packages(),
