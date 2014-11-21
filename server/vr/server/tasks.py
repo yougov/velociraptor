@@ -398,7 +398,6 @@ def swarm_start(swarm_id, swarm_trace_id=None):
     deployed.
     """
     logger.info("Swarm start %s" % swarm_id)
-    logger.info("type: %s" % type(swarm_id))
     try:
         swarm = Swarm.objects.get(id=swarm_id)
     except Swarm.DoesNotExist:
