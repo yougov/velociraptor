@@ -32,7 +32,7 @@ the build is.
 
 In time you may realize that you want to change something in the OS image.
 Maybe you need to add a system-level package, or maybe there's an urgent
-security fix.  You should modifyy your provisioning script to make the desired
+security fix.  You should modify your provisioning script to make the desired
 change, edit your stack in the Velociraptor UI, upload your new script, and
 click "Save and Build" as you did before.  When your image is done building, it
 will be marked as the 'active' build in the stack, and will be used for all
@@ -41,17 +41,20 @@ builds and swarms of your app.
 Base Images
 ===========
 
-Velociraptor needs a base image as a starting point.  You can use a tarball
-provided by an existing Linux distribution.  `Ubuntu's website`_ provides
-minimal base images that you can use.
+Velociraptor needs a base image as a starting point.  You can use an existing
+tarball provided by a Linux distribution.  `Ubuntu's website`_ provides minimal
+base images that you can use.
 
 But!
 
 There is `a bug`_ in stock Ubuntu 14.04 (Trusty) and CentOS 6.5 images that makes
 them essentially unusable in containers, unless you disable PAM audit signals.
 Some kind souls have implemented `that workaround`_ for Docker images, and it
-works for Velociraptor as well.  You can download a Velociraptor-compatible
-base image at http://cdn.yougov.com/build/ubuntu_trusty_pamfix.tar.gz.
+works for Velociraptor as well.  There is a Velociraptor-compatible
+base image for Ubuntu Trusty at http://cdn.yougov.com/build/ubuntu_trusty_pamfix.tar.gz.
+
+Additionally, any Docker image can be made into a Velociraptor image by doing
+`docker export`_ and gzipping the result.
 
 Provisioning Scripts
 ====================
@@ -111,3 +114,4 @@ to get into the container and debug interactively.  You can do so like this::
 .. _`a bug`: https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/patch/?id=543bc6a1a987672b79d6ebe8e2ab10471d8f1047
 .. _`that workaround`: https://github.com/sequenceiq/docker-pam
 .. _cedarish: https://github.com/progrium/cedarish/blob/master/stack/cedar-14.sh
+.. _docker export: http://docs.docker.com/reference/commandline/cli/#export
