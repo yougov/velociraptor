@@ -677,3 +677,7 @@ class Release(BaseResource):
 
     def parsed_config(self):
         return yaml.safe_load(self.config_yaml)
+
+
+class Ingredient(BaseResource):
+    base = '/api/v1/ingredients/'
