@@ -9,6 +9,8 @@ import functools
 import json
 
 from datetime import datetime
+from collections import Iterable
+from urlparse import urlparse, parse_qs
 
 try:
     import xmlrpc.client as xmlrpc_client
@@ -429,6 +431,60 @@ class SwarmFilter(six.text_type):
         )
 
 
+class QueryResult(Iterable):
+
+    def __init__(self, vr, url, params):
+        self.vr = vr
+        self.sess = vr.session
+        self.url = url
+        self.params = params
+        self._doc = None
+        self._index = 0
+
+    def __iter__(self):
+        return self
+
+    def load(self, next=None):
+        url = self.url
+        params = self.params or {}
+        if next:
+            next_url = urlparse(next)
+            # See what query string args we have and update our
+            # current params
+            if next_url.query:
+                params.update(dict(parse_qs(next_url.query)))
+
+            # Be sure we have a trailing slash to avoid redirects
+            if not next.endswith('/'):
+                next += '/'
+
+            url = self.vr._build_url(next_url.path)
+
+        resp = self.sess.get(url, params=params)
+        resp.raise_for_status()
+        return resp.json()
+
+    def next(self):
+        if not self._doc:
+            self._doc = self.load()
+
+        objects = self._doc['objects']
+        meta = self._doc['meta']
+
+        if self._index >= len(objects):
+            # We reached the end of the objects in the list. Let's see
+            # if there are more.
+            if meta.get('next'):
+                self._doc = self.load(meta['next'])
+                self._index = 0
+                return self.next()
+            raise StopIteration()
+
+        result = objects[self._index]
+        self._index += 1
+        return result
+
+
 class Velociraptor(object):
     """
     A Velociraptor 2 HTTP API service
@@ -484,7 +540,7 @@ class Velociraptor(object):
 
     def query(self, path, query):
         url = self._build_url(path)
-        return self.session.get(url, params=query).json()
+        return QueryResult(self, url, params=query)
 
     def cut(self, build, **kwargs):
         """
@@ -558,11 +614,12 @@ class Swarm(BaseResource):
     @classmethod
     def by_name(cls, vr, swarm_name):
         app_name, config_name, proc_name = swarm_name.split('-')
-        doc = vr.query(cls.base, {
+        doc = list(vr.query(cls.base, {
             'app_name': app_name,
             'config_name': config_name,
             'proc_name': proc_name,
-        })
+        }))[0]
+
         return cls(vr, doc['objects'][0])
 
     @classmethod
