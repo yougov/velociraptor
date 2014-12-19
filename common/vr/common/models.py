@@ -590,6 +590,14 @@ class BaseResource(object):
         resp.raise_for_status()
         self.__dict__.update(resp.json())
 
+    def save(self):
+        url = self._vr._build_url(self.resource_uri)
+        content = copy.deepcopy(self.__dict__)
+        content.pop('_vr')
+        resp = self._vr.session.put(url, json.dumps(content))
+        resp.raise_for_status()
+        return resp
+
 
 class Swarm(BaseResource):
     """
@@ -651,13 +659,6 @@ class Swarm(BaseResource):
         resp = self._vr.session.patch(url, json.dumps(changes))
         resp.raise_for_status()
         self.__dict__.update(changes)
-
-    def save(self):
-        url = self._vr._build_url(self.resource_uri)
-        content = copy.deepcopy(self.__dict__)
-        content.pop('_vr')
-        resp = self._vr.session.put(url, json.dumps(content))
-        resp.raise_for_status()
 
     @property
     def app(self):
