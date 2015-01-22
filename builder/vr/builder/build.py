@@ -23,15 +23,16 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
 
     outfolder = os.getcwd()
 
-    user = getattr(build_data, 'user', 'nobody')
-
     with tmpdir() as here:
-        _cmd_build(build_data, runner_cmd, make_tarball, outfolder, user, here)
+        _cmd_build(build_data, runner_cmd, make_tarball, outfolder, here)
 
 
-def _cmd_build(build_data, runner_cmd, make_tarball, outfolder, user, here):
+def _cmd_build(build_data, runner_cmd, make_tarball, outfolder, here):
     # Only bother pulling all the buildpacks if the build file doesn't specify
     # a particular one to build with.
+
+    user = getattr(build_data, 'user', 'nobody')
+
     buildpack_url = getattr(build_data, 'buildpack_url', None)
     buildpack_folders = []
     if not buildpack_url:
