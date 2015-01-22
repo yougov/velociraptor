@@ -30,13 +30,11 @@ def tmpdir(cleanup=True):
     """Context manager for putting you into a temporary directory on enter
     and deleting the directory on exit
     """
-    orig_path = os.getcwd()
     target = tempfile.mkdtemp()
-    os.chdir(target)
     try:
-        yield target
+        with chdir(target):
+            yield target
     finally:
-        os.chdir(orig_path)
         if cleanup:
             shutil.rmtree(target, ignore_errors=True)
 
