@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import os
-import stat
 import hashlib
 import shutil
 import subprocess
@@ -9,6 +8,7 @@ import pkg_resources
 import tarfile
 
 import yaml
+import path
 
 from vr.common.utils import tmpdir, mkdir, file_md5, chowntree
 from vr.builder.models import (BuildPack, update_buildpack, update_app,
@@ -126,8 +126,7 @@ def _cmd_build(build_data, runner_cmd, make_tarball, outfolder):
                                   'builder.sh')
         shutil.copy(script_src, script_dst)
         # Make sure builder.sh is chmod a+x
-        builder_st = os.stat(script_dst)
-        os.chmod(script_dst, builder_st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        path.path(script_dst).chmod('a+x')
 
         # make /app/vendor
         slash_app = os.path.join(get_container_path(buildproc), 'app')

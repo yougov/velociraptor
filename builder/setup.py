@@ -11,6 +11,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'vr.runners>=2.4.4,<3',
+        'path.py>=7.1',
     ],
     entry_points={
         'console_scripts': [
