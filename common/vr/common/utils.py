@@ -11,6 +11,7 @@ import hashlib
 import errno
 from datetime import datetime
 import textwrap
+import contextlib
 
 try:
     import pwd
@@ -24,35 +25,30 @@ import isodate
 import six
 
 
-class tmpdir(object):
+@contextlib.contextmanager
+def tmpdir(cleanup=True):
     """Context manager for putting you into a temporary directory on enter
     and deleting the directory on exit
     """
-    def __init__(self, cleanup=True):
-        self.orig_path = os.getcwd()
-        self.cleanup = cleanup
-
-    def __enter__(self):
-        self.temp_path = tempfile.mkdtemp()
-        os.chdir(self.temp_path)
-        return self.temp_path
-
-    def __exit__(self, type, value, traceback):
-        os.chdir(self.orig_path)
-        if self.cleanup:
-            shutil.rmtree(self.temp_path, ignore_errors=True)
+    orig_path = os.getcwd()
+    target = tempfile.mkdtemp()
+    os.chdir(target)
+    try:
+        yield target
+    finally:
+        os.chdir(orig_path)
+        if cleanup:
+            shutil.rmtree(target, ignore_errors=True)
 
 
-class chdir(object):
-    def __init__(self, folder):
-        self.orig_path = os.getcwd()
-        self.temp_path = folder
-
-    def __enter__(self):
-        os.chdir(self.temp_path)
-
-    def __exit__(self, type, value, traceback):
-        os.chdir(self.orig_path)
+@contextlib.contextmanager
+def chdir(folder):
+    orig_path = os.getcwd()
+    os.chdir(folder)
+    try:
+        yield
+    finally:
+        os.chdir(orig_path)
 
 
 def mkdir(path):
