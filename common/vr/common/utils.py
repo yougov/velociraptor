@@ -26,17 +26,26 @@ import six
 
 
 @contextlib.contextmanager
-def tmpdir(cleanup=True):
-    """Context manager for putting you into a temporary directory on enter
-    and deleting the directory on exit
+def tmpdir():
     """
-    target = tempfile.mkdtemp()
+    Create a tempdir context for the cwd and remove it after.
+    """
     try:
-        with chdir(target):
+        with tmpdir_extant() as target:
             yield target
     finally:
-        if cleanup:
-            shutil.rmtree(target, ignore_errors=True)
+        shutil.rmtree(target, ignore_errors=True)
+
+
+@contextlib.contextmanager
+def tmpdir_extant():
+    """
+    Create a tempdir context for the cwd, but allow the target to remain after
+    exiting the context.
+    """
+    target = tempfile.mkdtemp()
+    with chdir(target):
+        yield target
 
 
 @contextlib.contextmanager
