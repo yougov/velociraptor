@@ -85,31 +85,7 @@ def _cmd_build(build_data, runner_cmd, make_tarball, outfolder):
 
     cmd = '/builder.sh %s /cache/buildpack_cache' % app_folder_inside
 
-    buildproc = ProcData({
-        'app_name': build_data.app_name,
-        'app_repo_url': '',
-        'app_repo_type': '',
-        'buildpack_url': '',
-        'buildpack_version': '',
-        'config_name': 'build',
-        'env': env,
-        'host': '',
-        'port': 0,
-        'version': build_data.version,
-        'release_hash': '',
-        'settings': {},
-        'user': user,
-        'cmd': cmd,
-        'volumes': volumes,
-        'proc_name': 'build',
-        'image_name': build_data.image_name,
-        'image_url': build_data.image_url,
-        'image_md5': build_data.image_md5,
-    })
-
-    # write a proc.yaml for the container.
-    with open('buildproc.yaml', 'wb') as f:
-        f.write(buildproc.as_yaml())
+    container_path = _write_buildproc_yaml(build_data, env, user, cmd, volumes)
 
     if build_data.image_url is None:
         runner = 'vrun_precise'
@@ -122,13 +98,13 @@ def _cmd_build(build_data, runner_cmd, make_tarball, outfolder):
         # copy the builder.sh script into place.
         script_src = pkg_resources.resource_filename('vr.builder',
                                                  'scripts/builder.sh')
-        script_dst = os.path.join(get_container_path(buildproc), 'builder.sh')
+        script_dst = os.path.join(container_path, 'builder.sh')
         shutil.copy(script_src, script_dst)
         # Make sure builder.sh is chmod a+x
         path.path(script_dst).chmod('a+x')
 
         # make /app/vendor
-        slash_app = os.path.join(get_container_path(buildproc), 'app')
+        slash_app = os.path.join(container_path, 'app')
         mkdir(os.path.join(slash_app, 'vendor'))
         chowntree(slash_app, username=user)
         build_cmd = runner, runner_cmd, 'buildproc.yaml'
@@ -172,6 +148,38 @@ def _cmd_build(build_data, runner_cmd, make_tarball, outfolder):
         print("Writing", build_data_path)
         with open(build_data_path, 'wb') as f:
             f.write(build_data.as_yaml())
+
+def _write_buildproc_yaml(build_data, env, user, cmd, volumes):
+    """
+    Write a proc.yaml for the container and return the container path
+    """
+
+    buildproc = ProcData({
+        'app_name': build_data.app_name,
+        'app_repo_url': '',
+        'app_repo_type': '',
+        'buildpack_url': '',
+        'buildpack_version': '',
+        'config_name': 'build',
+        'env': env,
+        'host': '',
+        'port': 0,
+        'version': build_data.version,
+        'release_hash': '',
+        'settings': {},
+        'user': user,
+        'cmd': cmd,
+        'volumes': volumes,
+        'proc_name': 'build',
+        'image_name': build_data.image_name,
+        'image_url': build_data.image_url,
+        'image_md5': build_data.image_md5,
+    })
+
+    # write a proc.yaml for the container.
+    with open('buildproc.yaml', 'wb') as f:
+        f.write(buildproc.as_yaml())
+    return get_container_path(buildproc)
 
 
 def recover_release_data(app_folder):
