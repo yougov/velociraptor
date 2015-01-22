@@ -117,13 +117,12 @@ def _cmd_build(build_data, runner_cmd, make_tarball, outfolder):
         runner = 'vrun'
 
     try:
-        subprocess.check_call([runner, 'setup', 'buildproc.yaml'],
-                              stderr=subprocess.STDOUT)
+        setup_cmd = runner, 'setup', 'buildproc.yaml'
+        subprocess.check_call(setup_cmd, stderr=subprocess.STDOUT)
         # copy the builder.sh script into place.
         script_src = pkg_resources.resource_filename('vr.builder',
                                                  'scripts/builder.sh')
-        script_dst = os.path.join(get_container_path(buildproc),
-                                  'builder.sh')
+        script_dst = os.path.join(get_container_path(buildproc), 'builder.sh')
         shutil.copy(script_src, script_dst)
         # Make sure builder.sh is chmod a+x
         path.path(script_dst).chmod('a+x')
@@ -132,8 +131,8 @@ def _cmd_build(build_data, runner_cmd, make_tarball, outfolder):
         slash_app = os.path.join(get_container_path(buildproc), 'app')
         mkdir(os.path.join(slash_app, 'vendor'))
         chowntree(slash_app, username=user)
-        subprocess.check_call([runner, runner_cmd, 'buildproc.yaml'],
-                              stderr=subprocess.STDOUT)
+        build_cmd = runner, runner_cmd, 'buildproc.yaml'
+        subprocess.check_call(build_cmd, stderr=subprocess.STDOUT)
         build_data.release_data = recover_release_data(app_folder)
         bp = recover_buildpack(app_folder)
         build_data.buildpack_url = bp.url + '#' + bp.version
@@ -150,8 +149,8 @@ def _cmd_build(build_data, runner_cmd, make_tarball, outfolder):
                     print("No file at %s" % compile_log_src)
         finally:
             # Clean up container
-            subprocess.check_call([runner, 'teardown', 'buildproc.yaml'],
-                                  stderr=subprocess.STDOUT)
+            teardown_cmd = runner, 'teardown', 'buildproc.yaml'
+            subprocess.check_call(teardown_cmd, stderr=subprocess.STDOUT)
 
     with lock_or_wait(cachefolder):
         shutil.rmtree(cachefolder, ignore_errors=True)
