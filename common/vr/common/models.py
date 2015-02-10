@@ -7,6 +7,7 @@ import logging
 import copy
 import functools
 import json
+import operator
 
 from datetime import datetime
 from collections import Iterable
@@ -413,22 +414,36 @@ class HashableDict(dict):
         return hash(tuple(sorted(self.items())))
 
 
-class SwarmFilter(six.text_type):
+class Filter(six.text_type):
     """
-    A regular expression indicating which swarm names to include.
+    A regular expression indicating which items to include.
     """
+
     exclusions = []
     "additional patterns to exclude"
 
-    def matches(self, swarms):
-        return filter(self.match, swarms)
+    getter = lambda item: item
 
-    def match(self, swarm):
+    def matches(self, items):
+        return filter(self.match, items)
+
+    def match(self, item):
+        value = self.getter(item)
         return (
-            not any(re.search(exclude, swarm.name, re.I)
-                    for exclude in self.exclusions)
-            and re.match(self, swarm.name)
+            not any(
+                re.search(exclude, value, re.I)
+                for exclude in self.exclusions
+            )
+            and re.match(self, value)
         )
+
+
+class SwarmFilter(Filter):
+    getter = operator.attrgetter('name')
+
+
+class ProcHostFilter(Filter):
+    getter = operator.itemgetter('host')
 
 
 class QueryResult(Iterable):
