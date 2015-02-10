@@ -628,7 +628,7 @@ class Swarm(BaseResource):
             'proc_name': proc_name,
         }))[0]
 
-        return cls(vr, doc['objects'][0])
+        return cls(vr, doc)
 
     @classmethod
     def load_all(cls, vr):
