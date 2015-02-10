@@ -21,6 +21,8 @@ except ImportError:
     # bypass import failure on Windows
     pass
 
+from six.moves import urllib
+
 import isodate
 import six
 
@@ -126,7 +128,7 @@ def parse_redis_url(url):
     Given a url like redis://localhost:6379/0, return a dict with host, port,
     and db members.
     """
-    parsed = six.moves.urllib.parse.urlsplit(url)
+    parsed = urllib.parse.urlsplit(url)
     return {
         'host': parsed.hostname,
         'port': parsed.port,

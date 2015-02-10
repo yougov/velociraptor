@@ -526,7 +526,7 @@ class Velociraptor(object):
         return os.environ.get('VELOCIRAPTOR_URL', fallback)
 
     def hostname(self):
-        return six.moves.urllib.parse.urlparse(self.base).hostname
+        return urllib.parse.urlparse(self.base).hostname
 
     session = requests.session()
     session.headers = {
@@ -565,7 +565,7 @@ class Velociraptor(object):
         raise NotImplementedError("Can't cut releases (config?)")
 
     def _build_url(self, *parts):
-        joiner = six.moves.urllib.parse.urljoin
+        joiner = urllib.parse.urljoin
         return functools.reduce(joiner, parts, self.base)
 
     def events(self):
