@@ -11,7 +11,8 @@ import operator
 
 from datetime import datetime
 from collections import Iterable
-from urlparse import urlparse, parse_qs
+
+from six.moves import urllib
 
 try:
     import xmlrpc.client as xmlrpc_client
@@ -463,11 +464,11 @@ class QueryResult(Iterable):
         url = self.url
         params = self.params or {}
         if next:
-            next_url = urlparse(next)
+            next_url = urllib.parse.urlparse(next)
             # See what query string args we have and update our
             # current params
             if next_url.query:
-                params.update(dict(parse_qs(next_url.query)))
+                params.update(dict(urllib.parse.parse_qs(next_url.query)))
 
             # Be sure we have a trailing slash to avoid redirects
             if not next.endswith('/'):
