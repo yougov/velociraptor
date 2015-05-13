@@ -32,11 +32,13 @@ def tmpdir():
     """
     Create a tempdir context for the cwd and remove it after.
     """
+    target = None
     try:
         with _tmpdir_extant() as target:
             yield target
     finally:
-        shutil.rmtree(target, ignore_errors=True)
+        if target is not None:
+            shutil.rmtree(target, ignore_errors=True)
 
 
 @contextlib.contextmanager
