@@ -13,6 +13,7 @@ build/*
 dist/*
 tmp/*
 run/*
+repos/*
 env/
 _build/*
 coverage.xml
@@ -32,3 +33,4 @@ celerybeat-schedule
 celerybeat.pid
 *egg-info*
 TODO
+TAGS
