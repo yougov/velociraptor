@@ -126,7 +126,8 @@ class Host(object):
             proc_list = self.supervisor.getAllProcessInfo()
         except Exception:
             log.error("Failed to connect to %s", self)
-            raise
+            return {}
+
         # getAllProcessInfo returns a list of dicts.  Reshape that into a dict
         # of dicts, keyed by proc name.
         proc_dict = {d['name']: d for d in proc_list}
