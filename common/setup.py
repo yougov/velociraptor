@@ -10,7 +10,7 @@ py2_reqs = ['suds==0.4'] if not PY3 else []
 
 params = dict(
     name='vr.common',
-    version='3.17',
+    version='3.18',
     author='Brent Tubbs',
     author_email='brent.tubbs@gmail.com',
     url='https://bitbucket.org/yougov/velociraptor',
