@@ -317,7 +317,8 @@ v1.register(TestRunResource())
 
 
 class HostResource(ModelResource):
-    squad = fields.ToOneField('api.resources.SquadResource', 'squad')
+    squad = fields.ToOneField('api.resources.SquadResource', 'squad',
+                              null=True, blank=True)
 
     class Meta:
         queryset = models.Host.objects.all()
