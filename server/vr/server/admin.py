@@ -13,7 +13,6 @@ admin.site.register(models.DeploymentLogEntry)
 admin.site.register(models.Host)
 admin.site.register(models.OSImage)
 admin.site.register(models.OSStack)
-admin.site.register(models.Swarm)
 
 # Unregister the Django 'group' model, as I don't think we'll be using it.
 admin.site.unregister(Group)
@@ -81,3 +80,11 @@ class DashboardAdmin(admin.ModelAdmin):
     model = models.Dashboard
 
 admin.site.register(models.Dashboard, DashboardAdmin)
+
+class SwarmAdmin(admin.ModelAdmin):
+    model = models.Swarm
+    # Make release readonly, to avoid "N+1 query" issues
+    # See https://bitbucket.org/yougov/velociraptor/issue/151/error-in-admin-swarm-pages
+    readonly_fields = ('release', )
+
+admin.site.register(models.Swarm, SwarmAdmin)
