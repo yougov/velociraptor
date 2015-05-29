@@ -681,11 +681,12 @@ def swarm_post_uptest(uptest_results, swarm_id, swarm_trace_id):
                    tags=['warning', 'uptest'], swarm_id=swarm_trace_id)
 
     # Also check for captured failures in the results
-    correct_nodes = set()
-    for host, results in uptest_results:
+    correct_nodes = set(
+        '%s:%s' % (host, procname.split('-')[-1])
+        for host, results in uptest_results
         # results is now a dictionary keyed by procname
-        for procname in results:
-            correct_nodes.add('%s:%s' % (host, procname.split('-')[-1]))
+        for procname in results
+    )
 
     callback = swarm_cleanup.subtask((swarm_id, swarm_trace_id))
     swarm_route.delay(swarm_id, list(correct_nodes), callback,
