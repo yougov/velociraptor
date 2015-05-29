@@ -719,15 +719,14 @@ def swarm_route(swarm_id, correct_nodes, callback=None, swarm_trace_id=None):
         stale_nodes = current_nodes.difference(correct_nodes)
 
         if new_nodes:
-            balancer.add_nodes(swarm.balancer, swarm.pool,
-                               list(new_nodes))
+            balancer.add_nodes(swarm.balancer, swarm.pool, list(new_nodes))
 
         if stale_nodes:
             balancer.delete_nodes(swarm.balancer, swarm.pool,
                                   list(stale_nodes))
-        send_event(str(swarm),
-                   'Routed swarm %s.  New nodes: %s' % (swarm, list(correct_nodes)),
-                   tags=['route'], swarm_id=swarm_trace_id)
+
+        msg = 'Routed swarm %s.  New nodes: %s' % (swarm, list(correct_nodes))
+        send_event(str(swarm), msg, tags=['route'], swarm_id=swarm_trace_id)
 
     if callback is not None:
         subtask(callback).delay()
