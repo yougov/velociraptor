@@ -105,7 +105,7 @@ build time.
 You can also run the same script that Velociraptor runs inside the container to
 execute the buildpack::
 
-  /builder.sh /build /cache/buildpack_cache
+  /builder.sh /build/* /cache/buildpack_cache
 
 Read the comments and source in builder.sh for more details.
 
