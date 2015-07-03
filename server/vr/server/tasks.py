@@ -294,8 +294,8 @@ def _do_build(build, build_yaml):
                 build.end_time = timezone.now()
                 build.save()
 
-    send_event(str(build), "Completed build %s" % build, tags=['build',
-                                                               'success'])
+    msg = "Completed build %s" % build
+    send_event(str(build), msg, tags=['build', 'success'])
 
 
 def get_build_parameters(build):
