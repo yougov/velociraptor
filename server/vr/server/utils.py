@@ -33,10 +33,12 @@ def get_task_status(task_id):
 
 
 def clean_task_value(v):
-    if isinstance(v, (datetime.datetime, datetime.date)):
+    date_types = datetime.datetime, datetime.date
+    if isinstance(v, date_types):
         return v.isoformat()
-    elif isinstance(v, (basestring, int, float, tuple, list, dict, bool,
-                        type(None))):
+
+    sp_types = basestring, int, float, tuple, list, dict, bool, type(None)
+    if isinstance(v, sp_types):
         return v
 
 
