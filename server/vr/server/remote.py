@@ -3,6 +3,8 @@ Utilities for running commands and reading/writing files on remote hosts over
 SSH.
 """
 
+from __future__ import print_function
+
 import traceback
 import posixpath
 import pkg_resources
@@ -331,7 +333,7 @@ def build_app(build_yaml_path):
                 with fab_settings(warn_only=True):
                     get(posixpath.join(remote_tmp, 'compile.log'), 'compile.log')
             except:
-                print "Could not retrieve compile.log"
+                print("Could not retrieve compile.log")
 
 
 @task
@@ -357,7 +359,7 @@ def build_image(image_yaml_path):
                 with fab_settings(warn_only=True):
                     get(posixpath.join(remote_tmp, logfile), logfile)
             except:
-                print "Could not retrieve " + logfile
+                print("Could not retrieve", logfile)
 
 
 @contextlib.contextmanager
