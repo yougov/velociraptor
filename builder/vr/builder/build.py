@@ -7,6 +7,8 @@ import subprocess
 import pkg_resources
 import tarfile
 
+from six.moves import urllib
+
 import yaml
 import path
 
@@ -214,11 +216,11 @@ def recover_buildpack(app_folder):
 
 
 def pull_app(parent_folder, name, url, version, vcs_type):
-    just_url = url.partition('#')[0]
-    with lock_or_wait(just_url):
+    defrag = urllib.parse.urldefrag(url)
+    with lock_or_wait(defrag.url):
         app = update_app(name, url, version, vcs_type=vcs_type)
         dest = os.path.join(parent_folder,
-                            name + '-' + hashlib.md5(just_url).hexdigest())
+                            name + '-' + hashlib.md5(defrag.url).hexdigest())
         shutil.copytree(app.folder, dest)
     return dest
 
@@ -228,10 +230,10 @@ def pull_buildpack(url):
     Update a buildpack in its shared location, then make a copy into the
     current directory, using an md5 of the url.
     """
-    just_url = url.partition('#')[0]
-    with lock_or_wait(just_url):
+    defrag = urllib.parse.urldefrag(url)
+    with lock_or_wait(defrag.url):
         bp = update_buildpack(url)
-        dest = bp.basename + '-' + hashlib.md5(just_url).hexdigest()
+        dest = bp.basename + '-' + hashlib.md5(defrag.url).hexdigest()
         shutil.copytree(bp.folder, dest)
     return dest
 
