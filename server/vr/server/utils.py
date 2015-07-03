@@ -57,5 +57,5 @@ def task_to_dict(task):
 
 
 def yamlize(dct):
-    "Shortcut so I don't have to type all the YAML options so much."
+    "Shortcut for convenience."
     return yaml.safe_dump(dct, default_flow_style=False)
