@@ -6,9 +6,10 @@ import shutil
 
 import yaml
 import utc
+import yg.lockfile
 
 from vr.common import repo
-from vr.common.utils import run, mkdir, chdir, lock_file
+from vr.common.utils import run, mkdir, chdir
 from vr.common.paths import VR_ROOT
 
 from vr.builder.slugignore import clean_slug_dir
@@ -141,27 +142,24 @@ class Build(object):
         self.path = path
 
 
-class lock_or_wait(object):
+class lock_or_wait(yg.lockfile.FileLock):
     """
-    On init, provide a directory for creating lock files, and the name of some
-    string you're locking (like a url).
+    Context manager for using a file system lock to guard a resource.
 
-    On enter, hash the string to get a filename, and open and lock the file.
+    Given the name of some target to be guarded by the lock (like a url),
+    and (optionally) a folder in which to store those locks, return a
+    context manager that when entered will lock on a hash of that target.
 
-    On exit, close the file.
+    Despite the name "lock or wait", the context does not block and will
+    fail immediately with a FileLockTimeout exception if the lock cannot
+    be acquired.
     """
     def __init__(self, target, folder=LOCKS_HOME):
         self.folder = folder
         self.target = target
-
-    def __enter__(self):
-        path = os.path.join(self.folder, hashlib.md5(self.target).hexdigest())
-        mkdir(self.folder)
-        self.f = open(path, 'wb')
-        lock_file(self.f)
-
-    def __exit__(self, type, value, traceback):
-        self.f.close()
+        hash_name = hashlib.md5(target).hexdigest()
+        lock_filename = os.path.join(folder, hash_name)
+        super(lock_or_wait, self).__init__(lock_filename, timeout=0)
 
 
 def update_buildpack(url, packs_dir=PACKS_HOME, vcs_type=None):
