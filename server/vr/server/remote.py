@@ -295,6 +295,17 @@ def get_builds():
     return sudo('ls -1 %s' % BUILDS_ROOT).split()
 
 
+@contextlib.contextmanager
+def remote_temp_dir():
+    remote_tmp = '/tmp/' + randchars()
+    sudo('mkdir -p ' + remote_tmp)
+    with cd(remote_tmp):
+        try:
+            yield
+        finally:
+            sudo('rm -rf ' + remote_tmp)
+
+
 @task
 def build_app(build_yaml_path):
     """
@@ -302,9 +313,7 @@ def build_app(build_yaml_path):
     build, copy it to the remote host and run the vbuild tool on it.  Then copy
     the resulting build.tar.gz and build_result.yaml back up here.
     """
-    remote_tmp = '/tmp/' + randchars()
-    sudo('mkdir -p ' + remote_tmp)
-    with cd(remote_tmp):
+    with remote_temp_dir() as remote_tmp:
         try:
             remote_build_yaml_path = posixpath.join(remote_tmp, 'build_job.yaml')
             put(build_yaml_path, remote_build_yaml_path, use_sudo=True)
@@ -323,8 +332,6 @@ def build_app(build_yaml_path):
                     get(posixpath.join(remote_tmp, 'compile.log'), 'compile.log')
             except:
                 print "Could not retrieve compile.log"
-            finally:
-                sudo('rm -rf ' + remote_tmp)
 
 
 @task
@@ -334,11 +341,9 @@ def build_image(image_yaml_path):
     to make a build, copy it to the remote host and run the vimage tool on it.
     Then copy the resulting image and compile log up here.
     """
-    remote_tmp = '/tmp/' + randchars()
-    sudo('mkdir -p ' + remote_tmp)
     with open(image_yaml_path) as f:
         image_data = yaml.safe_load(f)
-    with cd(remote_tmp):
+    with remote_temp_dir() as remote_tmp:
         try:
             remote_image_yaml_path = posixpath.join(remote_tmp, 'image_job.yaml')
             put(image_yaml_path, remote_image_yaml_path, use_sudo=True)
@@ -353,9 +358,6 @@ def build_image(image_yaml_path):
                     get(posixpath.join(remote_tmp, logfile), logfile)
             except:
                 print "Could not retrieve " + logfile
-            finally:
-                sudo('rm -rf ' + remote_tmp)
-
 
 
 @contextlib.contextmanager
