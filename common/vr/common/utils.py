@@ -114,19 +114,16 @@ def run(command, verbose=False):
         stderr=subprocess.STDOUT,
     )
 
-    output = ""
-    status_code = None
     v_print("run:", command)
-    while status_code is None:
-        status_code = p.poll()
-        line = p.stdout.readline()
-        v_print(line, end='')
-        output += line
 
-    # capture any last output.
-    remainder = p.stdout.read()
-    v_print(remainder, end='')
-    return CommandResult(command, output + remainder, status_code)
+    def log_and_yield(line):
+        v_print(line)
+        return line
+
+    output = ''.join(map(log_and_yield, p.stdout))
+    status_code = p.poll()
+
+    return CommandResult(command, output, status_code)
 
 
 def parse_redis_url(url):
