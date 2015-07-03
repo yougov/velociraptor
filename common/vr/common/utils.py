@@ -1,6 +1,5 @@
 from __future__ import print_function
 
-import sys
 import os
 import subprocess
 import shutil
@@ -105,23 +104,28 @@ def run(command, verbose=False):
     comes in.
 
     """
-    p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT)
+    do_nothing = lambda *args, **kwargs: None
+    v_print = print if verbose else do_nothing
+
+    p = subprocess.Popen(
+        command,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+
     output = ""
     status_code = None
-    if verbose:
-        print("run:", command)
+    v_print("run:", command)
     while status_code is None:
         status_code = p.poll()
         line = p.stdout.readline()
-        if verbose:
-            sys.stdout.write(line)
+        v_print(line, end='')
         output += line
 
     # capture any last output.
     remainder = p.stdout.read()
-    if verbose:
-        sys.stdout.write(remainder)
+    v_print(remainder, end='')
     return CommandResult(command, output + remainder, status_code)
 
 
