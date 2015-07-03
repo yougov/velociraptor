@@ -1,6 +1,5 @@
 import datetime
 import json
-import urlparse
 
 from django.http import HttpResponse
 from celery.result import AsyncResult
