@@ -54,15 +54,14 @@ def _cmd_build(build_data, runner_cmd, make_tarball, outfolder):
     # a particular one to build with.
 
     buildpack_url = getattr(build_data, 'buildpack_url', None)
-    buildpack_folders = []
-    if not buildpack_url:
-        buildpack_folders = pull_buildpacks(build_data.buildpack_urls)
 
     if buildpack_url:
+        buildpack_folders = []
         folder = pull_buildpack(buildpack_url)
         env = {'BUILDPACK_DIR': '/' + folder}
         volumes.append([os.path.join(here, folder), '/' + folder])
     else:
+        buildpack_folders = pull_buildpacks(build_data.buildpack_urls)
         buildpacks_env = ':'.join('/' + bp for bp in buildpack_folders)
         env = {'BUILDPACK_DIRS': buildpacks_env}
         for folder in buildpack_folders:
