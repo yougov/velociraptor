@@ -1,8 +1,9 @@
 # Tools for doing some simple (clone and pull) operations with repositories.
 import os
-import urlparse
 import re
 import logging
+
+from six import urllib
 
 import requests
 from vr.common.utils import chdir, run
@@ -16,7 +17,7 @@ def guess_url_vcs(url):
     Given a url, try to guess what kind of VCS it's for.  Return None if we
     can't make a good guess.
     """
-    parsed = urlparse.urlsplit(url)
+    parsed = urllib.parse.urlsplit(url)
 
     if parsed.scheme in ('git', 'svn'):
         return parsed.scheme
