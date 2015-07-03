@@ -1,6 +1,8 @@
 import datetime
 import json
 
+import six
+
 from django.http import HttpResponse
 from celery.result import AsyncResult
 import yaml
@@ -37,7 +39,8 @@ def clean_task_value(v):
     if isinstance(v, date_types):
         return v.isoformat()
 
-    sp_types = basestring, int, float, tuple, list, dict, bool, type(None)
+    sp_types = int, float, tuple, list, dict, bool, type(None)
+    sp_types += six.string_types
     if isinstance(v, sp_types):
         return v
 
