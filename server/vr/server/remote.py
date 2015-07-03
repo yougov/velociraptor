@@ -328,12 +328,13 @@ def build_app(build_yaml_path):
                 BuildData(yaml.safe_load(f))
             get(posixpath.join(remote_tmp, 'build.tar.gz'), 'build.tar.gz')
         finally:
+            logfile = 'compile.log'
             try:
                 # try to get compile.log even if build fails.
                 with fab_settings(warn_only=True):
-                    get(posixpath.join(remote_tmp, 'compile.log'), 'compile.log')
+                    get(posixpath.join(remote_tmp, logfile), logfile)
             except:
-                print("Could not retrieve compile.log")
+                print("Could not retrieve", logfile)
 
 
 @task
