@@ -30,16 +30,8 @@ def cmd_build(build_data, runner_cmd='run', make_tarball=True):
 
 
 def _cmd_build(build_data, runner_cmd, make_tarball, outfolder):
-    # Only bother pulling all the buildpacks if the build file doesn't specify
-    # a particular one to build with.
-
     here = os.getcwd()
     user = getattr(build_data, 'user', 'nobody')
-
-    buildpack_url = getattr(build_data, 'buildpack_url', None)
-    buildpack_folders = []
-    if not buildpack_url:
-        buildpack_folders = pull_buildpacks(build_data.buildpack_urls)
 
     # clone/pull repo to latest
     build_folder = os.path.join(here, 'build')
@@ -57,6 +49,14 @@ def _cmd_build(build_data, runner_cmd, make_tarball, outfolder):
     volumes = [
         [build_folder, '/build']
     ]
+
+    # Only bother pulling all the buildpacks if the build file doesn't specify
+    # a particular one to build with.
+
+    buildpack_url = getattr(build_data, 'buildpack_url', None)
+    buildpack_folders = []
+    if not buildpack_url:
+        buildpack_folders = pull_buildpacks(build_data.buildpack_urls)
 
     if buildpack_url:
         folder = pull_buildpack(buildpack_url)
