@@ -50,17 +50,14 @@ def _cmd_build(build_data, runner_cmd, make_tarball, outfolder):
         [build_folder, '/build']
     ]
 
-    # Only bother pulling all the buildpacks if the build file doesn't specify
-    # a particular one to build with.
-
     buildpack_url = getattr(build_data, 'buildpack_url', None)
-
     if buildpack_url:
         buildpack_folders = []
         folder = pull_buildpack(buildpack_url)
         env = {'BUILDPACK_DIR': '/' + folder}
         volumes.append([os.path.join(here, folder), '/' + folder])
     else:
+        # Pull the buildpacks only if one is not specified.
         buildpack_folders = pull_buildpacks(build_data.buildpack_urls)
         buildpacks_env = ':'.join('/' + bp for bp in buildpack_folders)
         env = {'BUILDPACK_DIRS': buildpacks_env}
@@ -218,8 +215,8 @@ def pull_app(parent_folder, name, url, version, vcs_type):
     defrag = urllib.parse.urldefrag(url)
     with lock_or_wait(defrag.url):
         app = update_app(name, url, version, vcs_type=vcs_type)
-        dest = os.path.join(parent_folder,
-                            name + '-' + hashlib.md5(defrag.url).hexdigest())
+        dest_name = name + '-' + hashlib.md5(defrag.url).hexdigest()
+        dest = os.path.join(parent_folder, dest_name)
         shutil.copytree(app.folder, dest)
     return dest
 
