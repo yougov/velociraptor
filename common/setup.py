@@ -1,12 +1,6 @@
 #!/usr/bin/python
 
-import sys
-
 import setuptools
-
-PY3 = sys.version_info >= (3,)
-
-py2_reqs = ['suds==0.4'] if not PY3 else []
 
 params = dict(
     name='vr.common',
@@ -27,7 +21,13 @@ params = dict(
         'requests',
         'PyYAML>=3.10',
         'sseclient==0.0.8',
-    ] + py2_reqs,
+    ],
+
+    extras_require={
+        ':python_version=="2.7"': [
+            'suds==0.4',
+        ],
+    },
 )
 
 if __name__ == '__main__':
