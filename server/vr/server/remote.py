@@ -318,24 +318,22 @@ def build_app(build_yaml_path):
     build, copy it to the remote host and run the vbuild tool on it.  Then copy
     the resulting build.tar.gz and build_result.yaml back up here.
     """
-    with temp_dir() as remote_tmp:
+    with temp_dir():
         try:
-            remote_build_yaml_path = posixpath.join(remote_tmp, 'build_job.yaml')
-            put(build_yaml_path, remote_build_yaml_path, use_sudo=True)
-            sudo('vbuild build ' + remote_build_yaml_path)
+            put(build_yaml_path, 'build_job.yaml', use_sudo=True)
+            sudo('vbuild build build_job.yaml')
             # relies on the build being named build.tar.gz and the manifest being named
             # build_result.yaml.
-            get(posixpath.join(remote_tmp, 'build_result.yaml'),
-                'build_result.yaml')
+            get('build_result.yaml', 'build_result.yaml')
             with open('build_result.yaml', 'rb') as f:
                 BuildData(yaml.safe_load(f))
-            get(posixpath.join(remote_tmp, 'build.tar.gz'), 'build.tar.gz')
+            get('build.tar.gz', 'build.tar.gz')
         finally:
             logfile = 'compile.log'
             try:
                 # try to get compile.log even if build fails.
                 with fab_settings(warn_only=True):
-                    get(posixpath.join(remote_tmp, logfile), logfile)
+                    get(logfile, logfile)
             except:
                 print("Could not retrieve", logfile)
 
@@ -349,19 +347,18 @@ def build_image(image_yaml_path):
     """
     with open(image_yaml_path) as f:
         image_data = yaml.safe_load(f)
-    with temp_dir() as remote_tmp:
+    with temp_dir():
         try:
-            remote_image_yaml_path = posixpath.join(remote_tmp, 'image_job.yaml')
-            put(image_yaml_path, remote_image_yaml_path, use_sudo=True)
-            sudo('vimage build ' + remote_image_yaml_path)
+            put(image_yaml_path, 'image_job.yaml', use_sudo=True)
+            sudo('vimage build image_job.yaml')
             fname = '%s.tar.gz' % image_data['new_image_name']
-            get(posixpath.join(remote_tmp, fname), fname)
+            get(fname, fname)
         finally:
             logfile = '%(new_image_name)s.log' % image_data
             try:
                 # try to get .log even if build fails.
                 with fab_settings(warn_only=True):
-                    get(posixpath.join(remote_tmp, logfile), logfile)
+                    get(logfile, logfile)
             except:
                 print("Could not retrieve", logfile)
 
