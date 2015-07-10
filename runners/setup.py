@@ -11,7 +11,7 @@ setup(
     include_package_data=True,
     url='https://bitbucket.org/yougov/velociraptor',
     install_requires=[
-        'vr.common>=3.16.2,<4',
+        'vr.common>=3.16.2,<5dev',
         'requests>=1.2.0',
     ],
     entry_points={
