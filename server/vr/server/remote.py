@@ -296,14 +296,17 @@ def get_builds():
 
 
 @contextlib.contextmanager
-def remote_temp_dir():
-    remote_tmp = '/tmp/' + randchars()
-    sudo('mkdir -p ' + remote_tmp)
-    with cd(remote_tmp):
+def temp_dir():
+    """
+    Yield a temporary directory on a remote host as the current dir.
+    """
+    target = '/tmp/' + randchars()
+    sudo('mkdir -p ' + target)
+    with cd(target):
         try:
-            yield
+            yield target
         finally:
-            sudo('rm -rf ' + remote_tmp)
+            sudo('rm -rf ' + target)
 
 
 @task
@@ -313,7 +316,7 @@ def build_app(build_yaml_path):
     build, copy it to the remote host and run the vbuild tool on it.  Then copy
     the resulting build.tar.gz and build_result.yaml back up here.
     """
-    with remote_temp_dir() as remote_tmp:
+    with temp_dir() as remote_tmp:
         try:
             remote_build_yaml_path = posixpath.join(remote_tmp, 'build_job.yaml')
             put(build_yaml_path, remote_build_yaml_path, use_sudo=True)
@@ -343,7 +346,7 @@ def build_image(image_yaml_path):
     """
     with open(image_yaml_path) as f:
         image_data = yaml.safe_load(f)
-    with remote_temp_dir() as remote_tmp:
+    with temp_dir() as remote_tmp:
         try:
             remote_image_yaml_path = posixpath.join(remote_tmp, 'image_job.yaml')
             put(image_yaml_path, remote_image_yaml_path, use_sudo=True)
