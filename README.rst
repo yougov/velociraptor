@@ -167,19 +167,19 @@ all the form fields mean:
 - Tag: This is where you set the version of the code that Velociraptor should
   check out and build.  You can use any tag, branch name, bookmark, or revision
   hash from your version control system (any 'git
-  checkout' or 'hg update' target).
+  checkout' or 'hg update' target). Use 'v5' for the vr_node_example.
 - Proc name: The name of the proc that you want to run in this swarm (from the
-  Procfile).  Type in 'web' for our example app.
+  Procfile).  Type in 'web' for vr_node_example.
 - Config Name: This is a short name like 'prod' or 'europe' to distinguish
   between deployments of the same app. Must be filesystem-safe, with no dashes
-  or spaces.  You could put 'test' or 'demo' here for our sample app.
+  or spaces.  Use 'demo' here for vr_node_example.
 - Squad: Here you declare which group of hosts this swarm should run on.  If
   you set up the squad as indicated earlier in this walkthrough, you should be
   able to select 'local' here.
 - Size: The number of procs to put in the swarm.  Try 2 for now.
 - Config YAML: Here you can enter optional YAML text that will be written to
   the remote host when your app is deployed.  Your app can find the location of
-  this YAML from the APP_SETTINGS_YAML environment variable.
+  this YAML file from the APP_SETTINGS_YAML environment variable.
 - Env YAML: Here you can enter YAML text to specify additional environment
   variables to be passed in to your app.
 - Pool: If your app accepts requests over a network you can use this "pool"
