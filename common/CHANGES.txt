@@ -1,0 +1,4 @@
+4.0
+===
+
+Installation now requires pip 6.x or later.
