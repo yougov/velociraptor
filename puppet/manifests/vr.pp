@@ -76,6 +76,8 @@ class pipdeps {
         require => [Package['/vagrant/common']];
       '/vagrant/builder':
         require => [Package['/vagrant/runners']];
+      '/vagrant/imager':
+        require => [Package['/vagrant/runners']];
     }
 
     file { '.bashrc':
