@@ -38,8 +38,8 @@ Now enter the velociraptor folder and launch vagrant::
     cd velociraptor
     vagrant up
 
-Now go make a sandwich while you wait for the precise64 VM image to download
-(it's about 250MB).
+Now go make a sandwich while you wait for the Ubuntu Trusty VM image to
+download (about 430MB).
 
 Installation of system-level dependencies inside the VM is done automatically
 using Vagrant's Puppet provisioner.  This includes some normal apt packages,
@@ -50,7 +50,7 @@ The first time you 'vagrant up', the Puppet provisioning could take about
 5 minutes.  It will be faster on later startups, since most packages will
 already be installed.
 
-Once the image is all downloaded and Puppet has done its thing, type this::
+Once the image is all downloaded and Puppet has run, log in with::
 
     vagrant ssh
 
