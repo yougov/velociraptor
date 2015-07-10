@@ -137,7 +137,7 @@ across a group of hosts, which it calls a "Squad".  Go to
 http://localhost:8000/squad/add/ to create a new squad.  Call it whatever you
 like (I call my development squad 'local').  Squad names must be
 unique.  Then we need to add a host, go to http://localhost:8000/host/add/ and
-give the squad a host named 'precise64', which is the hostname of the Vagrant
+give the squad a host named 'vr-master', which is the hostname of the Vagrant
 VM itself.
 
 Apps
