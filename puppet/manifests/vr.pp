@@ -6,6 +6,7 @@ class {'vrhost': }
 class {'pipdeps': }
 class {'pg93': }
 class {'current_mongo': }
+class {'late_pip': }
 
 # Set root password to 'vagrant' so the workers can SSH in and sudo.
 user { 'root':
@@ -41,9 +42,7 @@ class vrhost {
         lxc:;
         git-core:;
         redis-server:;
-        python-setuptools:;
         python-dev:;
-        python-pip:;
         python-software-properties:;
     }
 
@@ -60,7 +59,7 @@ class vrhost {
 # Use pip to install newer versions of some packages than you can get from apt.
 class pipdeps {
     Package {provider => pip, ensure => present,
-      require => [Package['python-dev'], Package['python-pip']]}
+      require => [Package['python-dev'], Class['late_pip']]}
 
     package {
       mercurial:;
@@ -87,8 +86,9 @@ class pipdeps {
 
     exec {
       custom_supervisor:
-        command => "pip install https://bitbucket.org/yougov/velociraptor/downloads/supervisor-3.0b2-dev-vr4.tar.gz",
-        require => Package['python-pip'];
+        # invoke pip via python because /usr/local/bin isn't in the path
+        command => "python -m pip install https://bitbucket.org/yougov/velociraptor/downloads/supervisor-3.0b2-dev-vr4.tar.gz",
+        require => Class['late_pip'];
     }
 
     file { 'supervisord.conf':
@@ -118,6 +118,15 @@ class pipdeps {
          File['supervisord.init'],
          File['supervisord.conf'],
        ],
+    }
+}
+
+# Trusty has an old version of pip that doesn't honor
+#  extras. Install instead from bootstrap.
+class late_pip {
+    exec {
+      install_late_pip:
+        command => "wget https://bootstrap.pypa.io/get-pip.py -O - | python -",
     }
 }
 
