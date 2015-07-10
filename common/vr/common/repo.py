@@ -3,7 +3,7 @@ import os
 import re
 import logging
 
-from six import urllib
+from six.moves import urllib
 
 import requests
 from vr.common.utils import chdir, run
