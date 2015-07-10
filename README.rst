@@ -166,8 +166,8 @@ all the form fields mean:
 - App: Select your app from this drop down.
 - Tag: This is where you set the version of the code that Velociraptor should
   check out and build.  You can use any tag, branch name, bookmark, or revision
-  hash from your version control system (basically anything you can 'git
-  checkout' or 'hg up').
+  hash from your version control system (any 'git
+  checkout' or 'hg update' target).
 - Proc name: The name of the proc that you want to run in this swarm (from the
   Procfile).  Type in 'web' for our example app.
 - Config Name: This is a short name like 'prod' or 'europe' to distinguish
