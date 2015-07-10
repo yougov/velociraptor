@@ -215,7 +215,6 @@ def recover_buildpack(app_folder):
 
 def pull_app(parent_folder, name, url, version, vcs_type):
     defrag = _defrag_compat(urllib.parse.urldefrag(url))
-    print(defrag)
     with lock_or_wait(defrag.url):
         app = update_app(name, url, version, vcs_type=vcs_type)
         dest_name = name + '-' + hashlib.md5(defrag.url).hexdigest()
