@@ -1,6 +1,4 @@
---allow-external
-pytest
-mock
+--allow-external pytest mock
 
 ./django-yamlfield
 -e ./common
