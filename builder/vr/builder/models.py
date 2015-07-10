@@ -155,6 +155,7 @@ class lock_or_wait(yg.lockfile.FileLock):
     be acquired.
     """
     def __init__(self, target, folder=LOCKS_HOME):
+        mkdir(folder)
         self.folder = folder
         self.target = target
         hash_name = hashlib.md5(target).hexdigest()
