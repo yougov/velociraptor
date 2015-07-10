@@ -81,9 +81,8 @@ Once your database is created, you'll need to create the tables.  (Please
 forgive the deeply nested folders; I know it's tedious, but it's the cost of
 using several namespaced Python packages in the same repo)::
 
-    cd /vagrant/server/vr/server
-    ./manage.py syncdb
-    ./manage.py migrate
+    server/vr/server/manage.py syncdb
+    server/vr/server/manage.py migrate
 
 As Velociraptor is developed and the DB schema changes, you can run
 `./manage.py migrate` again to get your local DB schema in sync with the code.
@@ -102,7 +101,6 @@ There is a Procfile included with Velociraptor that can be used to run a
 development environment with these processes. You can use Foreman_ to
 read the Procfile and start the processes it lists::
 
-    cd /vagrant
     foreman start -f Procfile.dev
 
 That will start the Django dev server on port 8000, the Celery workers, and the
