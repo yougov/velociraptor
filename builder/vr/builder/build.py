@@ -6,6 +6,8 @@ import shutil
 import subprocess
 import pkg_resources
 import tarfile
+import sys
+import collections
 
 from six.moves import urllib
 
@@ -212,7 +214,8 @@ def recover_buildpack(app_folder):
 
 
 def pull_app(parent_folder, name, url, version, vcs_type):
-    defrag = urllib.parse.urldefrag(url)
+    defrag = _defrag_compat(urllib.parse.urldefrag(url))
+    print(defrag)
     with lock_or_wait(defrag.url):
         app = update_app(name, url, version, vcs_type=vcs_type)
         dest_name = name + '-' + hashlib.md5(defrag.url).hexdigest()
@@ -221,12 +224,21 @@ def pull_app(parent_folder, name, url, version, vcs_type):
     return dest
 
 
+PY32 = sys.version_info >= (3, 2)
+DefragResult = collections.namedtuple('DefragResult', 'url fragment')
+_defrag_compat = (lambda x: x) if PY32 else lambda x: DefragResult(*x)
+"""
+Return a Python 3.2 compatible result from urldefrag.
+TODO: replace with python-futures invocation.
+"""
+
+
 def pull_buildpack(url):
     """
     Update a buildpack in its shared location, then make a copy into the
     current directory, using an md5 of the url.
     """
-    defrag = urllib.parse.urldefrag(url)
+    defrag = _defrag_compat(urllib.parse.urldefrag(url))
     with lock_or_wait(defrag.url):
         bp = update_buildpack(url)
         dest = bp.basename + '-' + hashlib.md5(defrag.url).hexdigest()
