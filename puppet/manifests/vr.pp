@@ -1,11 +1,11 @@
 group { "puppet":
-    ensure => "present", 
+    ensure => "present",
 }
 
 class {'vrhost': }
 class {'pipdeps': }
 class {'pg93': }
-class {'currentmongo': }
+class {'current_mongo': }
 
 # Set root password to 'vagrant' so the workers can SSH in and sudo.
 user { 'root':
@@ -24,7 +24,7 @@ Exec { path => '/usr/bin:/bin:/usr/sbin:/sbin' }
 # Velociraptor setup: generic, build host, DB/Redis host.
 
 class vrhost {
-    
+
     Package {ensure => present, require => Exec [firstupdate]}
 
     package {
@@ -62,7 +62,7 @@ class pipdeps {
     Package {provider => pip, ensure => present,
       require => [Package['python-dev'], Package['python-pip']]}
 
-    package { 
+    package {
       mercurial:;
       virtualenv:;
       virtualenvwrapper:;
@@ -72,7 +72,7 @@ class pipdeps {
       '/vagrant/common':;
       '/vagrant/agent':
         require => [Package['/vagrant/common']],
-        notify => Service[supervisor]; 
+        notify => Service[supervisor];
       '/vagrant/runners':
         require => [Package['/vagrant/common']];
       '/vagrant/builder':
@@ -88,7 +88,7 @@ class pipdeps {
     exec {
       custom_supervisor:
         command => "pip install https://bitbucket.org/yougov/velociraptor/downloads/supervisor-3.0b2-dev-vr4.tar.gz",
-        require => Package['python-pip'];  
+        require => Package['python-pip'];
     }
 
     file { 'supervisord.conf':
@@ -113,8 +113,8 @@ class pipdeps {
        ensure  => "running",
        enable  => "true",
        require => [
-         Exec[custom_supervisor], 
-         File[supervisor_logdir], 
+         Exec[custom_supervisor],
+         File[supervisor_logdir],
          File['supervisord.init'],
          File['supervisord.conf'],
        ],
@@ -144,23 +144,22 @@ class pg93 {
     }
 }
 
-class currentmongo {
+class current_mongo {
   exec {
-    tengenkey:
-      command => 'apt-key adv --keyserver keyserver.ubuntu.com --recv 7F0CEB10';
-    tengensource:
-      command => "echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' >> /etc/apt/sources.list",
-      unless => 'grep 10gen /etc/apt/sources.list',
-      require => Exec [tengenkey];
-    tengenupdate:
+    mongodb_key:
+      command => 'apt-key adv --keyserver hkp://keyserver.ubuntu.com --recv 7F0CEB10';
+    mongodb_source:
+      command => 'echo "deb http://repo.mongodb.org/apt/ubuntu "$(lsb_release -sc)"/mongodb-org/3.0 multiverse" > /etc/apt/sources.list.d/mongodb-org-3.0.list',
+      require => Exec [mongodb_key];
+    mongodb_update:
       command => "apt-get update",
-      require => Exec [tengensource];
+      require => Exec [mongodb_source];
   }
 
   package {
-    mongodb-10gen:
+    mongodb-org:
       ensure => present,
-      require => Exec [tengenupdate];
+      require => Exec [mongodb_update];
   }
 }
 
