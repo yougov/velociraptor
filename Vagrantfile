@@ -7,8 +7,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # configuration options, , please see the online documentation at
     # vagrantup.com.
 
-    config.vm.box = "trusty64"
-    config.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
+    config.vm.box = "ubuntu/trusty64"
 
     # Port for the main dashboard
     config.vm.network "forwarded_port", guest: 8000, host: 8000
@@ -49,7 +48,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # Make the guest use the host for name resolution, so names on the VPN will
     # work.
     config.vm.provider :virtualbox do |vb|
-        vb.customize ["modifyvm", :id, 
+        vb.customize ["modifyvm", :id,
         # Make the guest use the host for name resolution, so names on the VPN
         # will work (assuming they work on the host).
                       "--natdnshostresolver1", "on",
