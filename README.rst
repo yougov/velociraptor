@@ -142,6 +142,14 @@ unique.  Then we need to add a host, go to http://localhost:8000/host/add/ and
 give the squad a host named 'vr-master', which is the hostname of the Vagrant
 VM itself.
 
+Stacks and Images
+-----------------
+
+Create a trusty stack.
+
+Create an empty provisioning script and use base trusty image per docs.
+http://cdn.yougov.com/build/ubuntu_trusty_pamfix.tar.gz
+
 Apps
 ----
 
@@ -154,6 +162,8 @@ spaces).
 You can leave the 'buildpack' field blank.  Velociraptor will use the
 buildpacks' built-in 'detect' feature to determine which buildpack to use on
 your app.
+
+Select 'Trusty' for the stack.
 
 Swarms
 ------
