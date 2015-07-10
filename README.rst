@@ -147,8 +147,18 @@ Stacks and Images
 
 Create a trusty stack.
 
-Create an empty provisioning script and use base trusty image per docs.
+Create a provisioning script and use base trusty image per docs.
 http://cdn.yougov.com/build/ubuntu_trusty_pamfix.tar.gz
+
+The vr_node_example app requires curl to be installed, so you provisioning
+script should include at least::
+
+    #!/bin/sh
+    export PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin
+    apt-get update
+    apt-get upgrade -y
+    apt-get install -y curl
+
 
 Apps
 ----
