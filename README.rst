@@ -145,20 +145,10 @@ VM itself.
 Stacks and Images
 -----------------
 
-Create a trusty stack.
-
-Create a provisioning script and use base trusty image per docs.
+Create a trusty stack. Use the base trusty image per docs.
 http://cdn.yougov.com/build/ubuntu_trusty_pamfix.tar.gz
 
-The vr_node_example app requires curl to be installed, so you provisioning
-script should include at least::
-
-    #!/bin/sh
-    export PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin
-    apt-get update
-    apt-get upgrade -y
-    apt-get install -y curl
-
+Provision the stack with the 'provision.sh' file in the repository.
 
 Apps
 ----
