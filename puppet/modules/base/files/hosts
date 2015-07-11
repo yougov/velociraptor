@@ -1,4 +1,4 @@
-127.0.0.1 localhost vagrant-ubuntu-trusty-64
+127.0.0.1 localhost vr-master
 
 # The following lines are desirable for IPv6 capable hosts
 ::1 ip6-localhost ip6-loopback
