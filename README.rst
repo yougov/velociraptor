@@ -126,29 +126,43 @@ in your browser in order to add a buildpack.  You will need to enter the git
 (or mercurial) repository URL, as well as an integer for the 'order'.  See the
 `Heroku buildpack documentation`_ to understand more about how buildpacks work
 and why order matters.  For now, just add a single buildpack, and set its order
-to '0'.  The NodeJS buildpack at
-https://github.com/heroku/heroku-buildpack-nodejs.git is a good one to start
-with.
+to '0'.  A good one to start is the `NodeJS buildpack
+<https://github.com/heroku/heroku-buildpack-nodejs.git>`_.
 
 Squads and Hosts
 ----------------
 
-In order to know where to deploy your application, you'll need to give
-Velociraptor some hostnames.  Velociraptor does load balanced deployments
-across a group of hosts, which it calls a "Squad".  Go to
+In order for Velociraptor to know where to deploy an application, it requires
+some hostnames.  Velociraptor does load balanced deployments
+across a group of hosts called a "Squad".  Go to
 http://localhost:8000/squad/add/ to create a new squad.  Call it whatever you
-like (I call my development squad 'local').  Squad names must be
-unique.  Then we need to add a host, go to http://localhost:8000/host/add/ and
+like (I suggest 'local').  Squad names must be
+unique.  Then add a host; go to http://localhost:8000/host/add/ and
 give the squad a host named 'vr-master', which is the hostname of the Vagrant
 VM itself.
 
 Stacks and Images
 -----------------
 
-Create a trusty stack. Use the base trusty image per docs.
+Velociraptor uses a container based system for isolating the execution
+environments of each application.
+
+A "legacy" stack is provided but deprecated.
+
+Instead, create a trusty stack. Use the base trusty image per docs.
 http://cdn.yougov.com/build/ubuntu_trusty_pamfix.tar.gz
 
-Provision the stack with the 'provision.sh' file in the repository.
+Provision the stack with the 'provision.sh' file from the
+Velociraptor repository. You must also provide name and description.
+Use "trusty" for both.
+
+The provisioning script takes some time as it needs to download, expand,
+and mount the base image, run the provisioning script in a container
+for that image, collect the image back into an archive, and upload
+the image to the Velociraptor image repository.
+
+Watch the "worker" log for progress and wait for a green cube icon in
+the UI. The process takes most of 20 minutes.
 
 Apps
 ----
@@ -163,7 +177,7 @@ You can leave the 'buildpack' field blank.  Velociraptor will use the
 buildpacks' built-in 'detect' feature to determine which buildpack to use on
 your app.
 
-Select 'Trusty' for the stack.
+Select "trusty" for the stack.
 
 Swarms
 ------
@@ -192,23 +206,22 @@ all the form fields mean:
   this YAML file from the APP_SETTINGS_YAML environment variable.
 - Env YAML: Here you can enter YAML text to specify additional environment
   variables to be passed in to your app.
-- Pool: If your app accepts requests over a network you can use this "pool"
+- Pool: If your app accepts requests over a network, you can use this "pool"
   field to tell your load balancer what name to use for the routing pool.  By
   default Velociraptor talks only to an in memory stub balancer called "Dummy".
-  If you're following this document with the sample app, leave this field
-  blank.
+  For the walkthrough, leave this field blank.
   To configure a real load balancer, see docs/balancers.rst in the Velociraptor
   repo.  Velociraptor supports nginx_, Varnish_, and Stingray_ load balancers.
   This interface is pluggable, so you can also create your own.
 - Balancer: Here you select which balancer should be told to route traffic to
-  your swarm.  You can leave this blank if you're following this walkthrough
-  with the sample app.
+  your swarm.  For the walkthrough, leave this field blank.
 
 Now click Swarm.  Velociraptor will start a series of worker tasks to check out
-the buildpack, check out your code, compile your code, save the resulting
-build, and push it out to the hosts in the squad along with any config you've
-specified.  You can see everything that happens when you swarm
-by looking at the Swarm Flow diagram in the docs folder.
+the buildpack, check out your code, download the image, compile your code
+in the image, save the resulting
+build, push it out to the hosts in the squad along with any config you've
+specified, and launch the code within the stack image.  The Swarm Flow diagram
+in the docs folder illustrates the process.
 
 
 Tests
