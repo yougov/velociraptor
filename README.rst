@@ -227,8 +227,8 @@ in the docs folder illustrates the process.
 Tests
 ~~~~~
 
-Run the tests with py.test from the root of the repo.  You can install
-any test dependencies using the test_requirements.txt::
+Run the tests with py.test from the root of the repo after installing
+the dev requirements::
 
     cd /vagrant
     pip install -r dev_requirements.txt
