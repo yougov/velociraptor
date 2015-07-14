@@ -15,7 +15,7 @@ You can do some neat things using runners:
   running production.
 
 The interface between Velociraptor and its runners is specified in terms of
-command line arguments and a yaml file. 
+command line arguments and a yaml file.
 
 A runner is launched with two command line arguments:
 
@@ -28,7 +28,7 @@ Using the 'setup' command might look like this::
     some_runner setup /home/dave/myproc.yaml
 
 The proc.yaml file
-==================
+------------------
 
 The proc.yaml file contains the following keys:
 
@@ -59,7 +59,7 @@ library.  For instance, "@How's it going?" gets serialized as
 '@How''s it going?'.
 
 Commands
-========
+--------
 
 Runners support the following commands:
 
@@ -67,7 +67,7 @@ Setup
 ~~~~~
 
 Example::
-  
+
     some_runner setup /home/dave/myproc.yaml
 
 The ``setup`` command will read the proc.yaml file, download the build (if
@@ -86,7 +86,7 @@ Teardown
 ~~~~~~~~
 
 Example::
-  
+
     some_runner teardown /home/dave/myproc.yaml
 
 The ``teardown`` command should remove the proc folder and related files from the
@@ -115,7 +115,7 @@ Uptest
 ~~~~~~
 
 Example::
-  
+
   some_runner uptest /home/dave/myproc.yaml
 
 The ``uptest`` command relies on the presence of a proc_name key in proc.yaml.
@@ -148,7 +148,7 @@ production.
 The shell command does not lock the proc.yaml while running.
 
 Runner Variants
-===============
+---------------
 
 Velociraptor provides two runner implementations.
 

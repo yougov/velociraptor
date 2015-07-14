@@ -2,10 +2,10 @@ Volumes
 =======
 
 Velociraptor's volumes feature allows you to specify one or more directories on
-the host to be mounted inside the container.  
+the host to be mounted inside the container.
 
 Caution
-~~~~~~~~
+--------
 
 The volumes feature is a departure from Velociraptor's normal requirement that
 applications be completely stateless (i.e. `12 Factor`_-compliant).  With
@@ -13,7 +13,7 @@ volumes, applications may maintain some state between deployments by reading
 from and writing to persistent files on the local disk.
 
 Configuration
-~~~~~~~~~~~~~
+-------------
 
 Volumes are specified in the user interface by entering YAML configuration into
 the Swarm or Release forms.  In both cases, the YAML should be a list of host
@@ -39,7 +39,7 @@ This format is equivalent to the above::
    - /cache
 
 Permissions
-~~~~~~~~~~~
+-----------
 
 Volumes are implemented using `bind mounts`_ written into the proc's LXC
 container configuration.  They will *not* automatically modify any permissions on

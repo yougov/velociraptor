@@ -6,7 +6,7 @@ containers where the untrusted app and buildpack code can't do harm to the rest
 of the system.
 
 CLI
-===
+---
 
 Velociraptor's build tool is called vr.builder, and can be installed like a
 normal Python package::
@@ -27,7 +27,7 @@ The vbuild tool must be run as root, as root permissions are (currently)
 required to launch LXC containers.
 
 The YAML file
-=============
+-------------
 
 The yaml file given to vbuild should have the following keys
 
@@ -48,7 +48,7 @@ Here's an example of a valid build yaml file::
 
   app_name: vr_python_example
   app_repo_type: hg
-  app_repo_url: https://github.com/btubbs/vr_python_example 
+  app_repo_url: https://github.com/btubbs/vr_python_example
   buildpack_urls:
   - https://github.com/heroku/heroku-buildpack-nodejs.git
   - https://github.com/heroku/heroku-buildpack-scala.git
@@ -60,7 +60,7 @@ buildpack_url field::
 
   app_name: vr_python_example
   app_repo_type: hg
-  app_repo_url: https://github.com/btubbs/vr_python_example 
+  app_repo_url: https://github.com/btubbs/vr_python_example
   buildpack_url: https://github.com/yougov/yg-buildpack-python2.git
   version: v3
 
@@ -73,7 +73,7 @@ dialog with the YAML).  You can copy/paste this into a local YAML file and run
 vbuild yourself to debug any problems with the build.
 
 Output
-======
+------
 
 When the build has completed there should be three new files in your current
 working directory:
@@ -87,7 +87,7 @@ working directory:
   can detect your app, compile.log will not be present.)
 
 The Shell Command and Environment
-=================================
+---------------------------------
 
 In addition to the 'build' subcommand, the vbuild tool provides a 'shell'
 subcommand.  You run it like this::
@@ -110,7 +110,7 @@ execute the buildpack::
 Read the comments and source in builder.sh for more details.
 
 Checkouts and Caches
-====================
+--------------------
 
 The vbuild tool keeps caches and copies of repositories on the local filesystem
 in order to speed up compilation on subsequent builds.  All of these are kept

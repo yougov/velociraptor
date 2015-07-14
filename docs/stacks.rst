@@ -8,7 +8,7 @@ Velociraptor's concept of a "stack" is more or less the same as `Heroku's`_::
     different stacks support different runtime environments.
 
 OS Images are to Stacks as Builds are to Apps
-=============================================
+---------------------------------------------
 
 Unlike Heroku, Velociraptor lets you create your own stacks, and provides tools
 to make it fairly simple.  When using the Velociraptor UI, you can select
@@ -39,7 +39,7 @@ will be marked as the 'active' build in the stack, and will be used for all
 builds and swarms of your app.
 
 Base Images
-===========
+-----------
 
 Velociraptor needs a base image as a starting point.  You can use an existing
 tarball provided by a Linux distribution.  `Ubuntu's website`_ provides minimal
@@ -82,7 +82,7 @@ Install vr.imager::
 Create a file named my_image.yaml with contents like this::
 
     base_image_url: http://cdn.yougov.com/build/ubuntu_trusty_pamfix.tar.gz
-    base_image_name: ubuntu_trusty_pamfix 
+    base_image_name: ubuntu_trusty_pamfix
     new_image_name: my_awesome_image_20141031
     script_url: /path/to/my_provisioning_script.sh
     env:
@@ -103,7 +103,7 @@ directory::
     my_awesome_image_20141031.log
     my_awesome_image_20141031.tar.gz
     my_image.yaml
-    
+
 If something goes wrong while running your provisioning script, you might want
 to get into the container and debug interactively.  You can do so like this::
 

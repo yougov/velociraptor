@@ -19,30 +19,30 @@ Velociraptor automates all of the above steps when you swarm.  All you have to
 do as a developer is include some uptests.
 
 Definition
-==========
+----------
 
 An uptest is a small script or program that checks whether a single instance
 of an app is running correctly.
 
 Running
-=======
+-------
 
 Uptests scripts must be executable files.  They accept two command line
 arguments: "host" and "port".  Uptests are run in an environment identical to
 production (same build, same environment variables), but not necessarily on
 the same host as the proc being tested.  The uptest should exercise the
 designated proc in some way to check whether it's ready to accept production
-traffic.  
+traffic.
 
 Results
-=======
+-------
 
 If successful, the uptest script must exit with status code 0.  Any other
 exit code signifies a failure.  The script may emit debug information to
 stdout or stderr.
 
 Organization
-============
+------------
 
 Uptests live in your app's source code repo.  Each proc in an app has different
 uptests, organized by subfolders of an 'uptests' folder in the project root.
@@ -59,14 +59,14 @@ order listed by the OS. ::
      +-- web/
         |
         +-- 01_its_alive.py
-	|
+        |
         +-- 02_login_required.py
-	|
+        |
         +-- 03_check_rss.py
 
 
 What to Test
-============
+------------
 
 Uptests do not replace the unit or functional tests that you write in the
 course of normal development.  You still need those!
@@ -88,7 +88,7 @@ It is not recommended that uptests make any persistent changes.  They shouldn't
 create or delete records.
 
 You Will Love Uptests
-=====================
+---------------------
 
 Uptests make it safe(r) to deploy your code a dozen times a day if you need
 to.  If you take the time to write some now, your future self will thank you

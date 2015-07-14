@@ -15,9 +15,8 @@ XML RPC interface enabled in supervisord.conf::
 See the Supervisor docs for how to `configure this section`, including an option
 for including a SHA1 hash of a password instead of plaintext.
 
-===============================
 The Velociraptor Event Listener
-===============================
+-------------------------------
 
 Velociraptor includes a Supervisor `event listener`_ plugin to watch for any
 changes in process state and put a message on a Redis pubsub when they happen.
@@ -56,14 +55,13 @@ interface isn't the same as the one returned by socket.getfqdn().  If they
 don't match, and you don't set HOSTNAME, you'll see duplicate procs on your
 dashboard.
 
-=======
 Version
-=======
+-------
 
 Only very recent versions of Supervisor include all the event listener support
 that Velociraptor needs.
 
 
-.. _Supervisor: http://supervisord.org/ 
+.. _Supervisor: http://supervisord.org/
 .. _event listener: http://supervisord.org/events.html
 .. _configure this section: http://supervisord.org/configuration.html#inet-http-server-section-values
