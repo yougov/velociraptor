@@ -57,7 +57,7 @@ Additionally, any Docker image can be made into a Velociraptor image by doing
 `docker export`_ and gzipping the result.
 
 Provisioning Scripts
-====================
+--------------------
 
 The only requirement on provisioning scripts is that they be executable, but
 it's recommended that you write them in Bash.
@@ -66,7 +66,7 @@ The `cedarish`_ open source project provides a provisioning script that can be
 used to make a Heroku-compatible image.
 
 Using vimage
-============
+------------
 
 Most Velociraptor functions have both a high level graphical user interface
 and a lower level command line interface.  OS images are no exception.  The
