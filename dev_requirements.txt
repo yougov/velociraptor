@@ -4,13 +4,13 @@ pytest
 mock
 
 ./django-yamlfield
+-e ./events
 -e ./common
 -e ./runners
 -e ./imager
 -e ./builder
 -e ./server
 -e ./agent
--e ./events
 -e ./cli
 
 # server tests require dateutil
