@@ -261,6 +261,62 @@ mustache.js_). They are defined as HTML script blocks with type "text/goatee".
 Velociraptor makes liberal use of jQuery_, Backbone_, and Underscore_.
 
 
+Repositories (and Subrepositories)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Velociraptor is a suite of projects in the `vr` namespace. Each of these
+projects are a separate repository, linked by the parent repository
+https://bitbucket.org/yougov/velociraptor.
+
+Here are some hints for developing with subrepositories.
+
+Getting the latest code
+-----------------------
+
+Generally speaking, the parent repository should have up-to-date
+references to the subrepositories, meaning that if you simply
+``hg pull -u``, you will get those references and Mercurial will
+automatically pull the latest code for the subrepositories.
+
+However, sometimes code is pushed to the child repositories without
+updating the parent repository. If this is the case, you can
+``hg pull -u`` in each of the individual child repositories or use
+``onsub``.
+
+Using onsub
+-----------
+
+Mercurial supports the `onsub extension
+<https://www.mercurial-scm.org/wiki/OnsubExtension>`_ for easily
+invoking an operation across subrepositories. After installing
+that extension, grabbing the latest code for the subrepositories
+is as simple as invoking ``hg onsub 'hg pull -u'``.
+
+Committing updated references
+-----------------------------
+
+After committing new changes to any of the subrepositories or
+pulling changes that weren't previously referenced by the parent
+repository, you can update the references in the parent repository
+by simply committing in that repo::
+
+    $ hg ci -m "Updating child repository references"
+
+That will update the .hgsubstate for each of the subrepositories
+to match whatever version is currently updated for the working copy::
+
+    $ hg id -R server
+    f341811ac9a2 tip
+    $ grep server .hgsubstate
+    f341811ac9a229aaf0b053c9f957f53caa87577f server
+
+Push those changes so that others who pull and update the
+velociraptor repo will get the updated child repos as well. Note
+that when you push the parent repo, Mercurial will push the
+child repos too in order to ensure that the referenced repo versions
+will be available to others.
+
+
 .. _Vagrant: http://vagrantup.com/v1/docs/getting-started/index.html
 .. _VirtualBox: http://www.virtualbox.org/wiki/Downloads
 .. _Foreman: http://ddollar.github.com/foreman/
