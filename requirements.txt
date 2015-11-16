@@ -1,4 +1,4 @@
---allow-external
+--allow-all-external
 ./common
 ./runners
 ./builder
