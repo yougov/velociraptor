@@ -61,7 +61,7 @@ forgive the deeply nested folders; I know it's tedious, but it's the cost of
 using several namespaced Python packages in the same repo)::
 
     server/vr/server/manage.py syncdb --noinput
-    server/vr/server/manage.py migrate
+    server/vr/server/manage.py loaddata bootstrap.json
 
 The schema is created with an initial user ``admin`` with password ``password``.
 
