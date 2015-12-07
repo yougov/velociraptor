@@ -60,13 +60,14 @@ Once your database is created, you'll need to create the tables.  (Please
 forgive the deeply nested folders; I know it's tedious, but it's the cost of
 using several namespaced Python packages in the same repo)::
 
-    server/vr/server/manage.py syncdb --noinput
-    server/vr/server/manage.py migrate
+    python -m vr.server.manage syncdb --noinput
+    python -m vr.server.manage migrate
 
 The schema is created with an initial user ``admin`` with password ``password``.
 
 As Velociraptor is developed and the DB schema changes, you can run
-`./manage.py migrate` again to get your local DB schema in sync with the code.
+`python -m vr.server.manage migrate` again to get your local DB schema in
+sync with the code.
 
 Dev Server
 ~~~~~~~~~~
