@@ -3,7 +3,6 @@
 pytest
 mock
 
-./django-yamlfield
 -e ./common
 -e ./events
 -e ./runners
