@@ -56,9 +56,7 @@ Postgres database used by Velociraptor::
 
     psql -U postgres -f dbsetup.sql
 
-Once your database is created, you'll need to create the tables.  (Please
-forgive the deeply nested folders; I know it's tedious, but it's the cost of
-using several namespaced Python packages in the same repo)::
+Once your database is created, you'll need to create the tables::
 
     python -m vr.server.manage syncdb --noinput
     python -m vr.server.manage migrate
