@@ -4,8 +4,8 @@ pytest
 mock
 
 ./django-yamlfield
--e ./events
 -e ./common
+-e ./events
 -e ./runners
 -e ./imager
 -e ./builder
