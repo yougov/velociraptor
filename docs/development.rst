@@ -59,7 +59,7 @@ Postgres database used by Velociraptor::
 Once your database is created, you'll need to create the tables::
 
     python -m vr.server.manage syncdb --noinput
-    python -m vr.server.manage migrate
+    python -m vr.server.manage loaddata bootstrap.json
 
 The schema is created with an initial user ``admin`` with password ``password``.
 
