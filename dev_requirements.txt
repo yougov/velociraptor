@@ -11,6 +11,3 @@ mock
 -e ./server
 -e ./agent
 -e ./cli
-
-# server tests require dateutil
-python-dateutil>=2.4
