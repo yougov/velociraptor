@@ -6,6 +6,7 @@ Open-source Platform as a Service (Paas).
 .. toctree::
    :maxdepth: 1
 
+   architecture
    balancers
    builder
    containers
