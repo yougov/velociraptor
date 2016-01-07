@@ -44,6 +44,7 @@ class vrhost {
         redis-server:;
         python-dev:;
         python-software-properties:;
+        build-essential:;
     }
 
     # We have to update first to ensure that apt can find the
@@ -65,6 +66,7 @@ class pipdeps {
       mercurial:;
       virtualenv:;
       virtualenvwrapper:;
+      ndg-httpsclient:;
 
       # The host needs to have some VR components available.  Install them from
       # the repo checkout itself.
