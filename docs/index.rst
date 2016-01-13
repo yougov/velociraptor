@@ -15,6 +15,7 @@ Open-source Platform as a Service (Paas).
    supervisor
    uptests
    volumes
+   deployment
    development
 
 
