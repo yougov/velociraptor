@@ -58,7 +58,7 @@ dashboard.
 Version
 -------
 
-Only very recent versions of Supervisor include all the event listener support
+Supervisor 3.1.0 or later is required for the event listener support
 that Velociraptor needs.
 
 
