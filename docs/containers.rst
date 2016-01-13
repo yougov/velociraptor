@@ -18,7 +18,7 @@ party code on Velociraptor.
 The use of containers enforces the 12 Factor App rules that require state to be
 maintained in backing services (databases, caches, etc.) rather than on the
 application host.  Any local files written by an app are likely to be deleted
-when the app is restarted, and *certain* to be deleted when the app is
-reswarmed.
+when the app is restarted, and *certain* to be deleted when a different
+release of the app is dispatched.
 
 .. _LXC: http://linuxcontainers.org
