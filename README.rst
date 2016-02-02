@@ -19,6 +19,8 @@ Find the `Velociraptor Documentation
 <http://velociraptor.readthedocs.org/en/latest/>`_ hosted kindly
 by `Read The Docs <https://readthedocs.org>`_.
 
+Automatic tests are run `here <https://drone.io/bitbucket.org/yougov>`_.
+
 Testimonials
 ~~~~~~~~~~~~
 
