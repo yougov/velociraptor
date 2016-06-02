@@ -31,5 +31,10 @@ like so::
 
     flower: python -m vr.server.manage celery flower --broker=$BROKER --port=$PORT
 
+Add the flower dependency in your requirements.txt (alongside
+other VR dependencies)::
+
+    Flower =>0.9, <1
+
 And deploy that proc using VR. You'll then have a web service
 configured to monitor Celery.
