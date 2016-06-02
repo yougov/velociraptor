@@ -17,3 +17,19 @@ command-line parameters:
 Please update this document if you can provide clarification on
 which parameters are actually required and how to specify those
 parameters.
+
+Monitoring with Flower
+----------------------
+
+As Velociraptor uses celery queues to manage its tasks, it's
+often useful to have a tool for monitoring them. The
+`Flower project <http://flower.readthedocs.io/en/latest/>`_
+implements one such tool.
+
+To deploy it against your broker, add a proc to your VR Procfile
+like so::
+
+    flower: python -m vr.server.manage celery flower --broker=$BROKER --port=$PORT
+
+And deploy that proc using VR. You'll then have a web service
+configured to monitor Celery.
