@@ -16,6 +16,7 @@ Open-source Platform as a Service (Paas).
    uptests
    volumes
    deployment
+   administration
    development
 
 
