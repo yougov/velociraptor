@@ -3,6 +3,19 @@ Administration
 
 This section provides some guidance on common admininstrative scenarios.
 
+Deploying Workers
+-----------------
+
+Workers are not part of a swarm, as they do not bind to a port and must be specifically installed one per host. Also, workers can't be easily deployed without a working worker. Therefore, deploying workers takes special care.
+
+First, swarm another process to the desired version. It could be the beat proc or web proc or another, but it should be using the same configuration as the workers use. After it's built properly, that will have created a release.
+
+Next, manually stop one of your workers. Note the 'config' name of the worker. Then do a manual deploy step (Actions > Deploy), select the release that was just created (should be the first one in the list). Select 'worker' for the proc and give the config the same name as noted previously. Finally, select the same host as the stopped worker and a port of 0 and submit.
+
+The proc should deploy and turn green and start completing tasks. Next, repeat the steps for the remaining workers.
+
+After you're done, you'll have a new set of workers running and the old workers stopped. Additionally, if the last worker deploy worked, that worker would have been deployed using one of the new running workers, so you have some confidence that it's functional, so it's safe now to destroy the old workers.
+
 When a Squad Loses a Host
 -------------------------
 
