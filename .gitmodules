@@ -1,0 +1,24 @@
+[submodule "agent"]
+	path = agent
+	url = ../vr.agent
+[submodule "builder"]
+	path = builder
+	url = ../vr.builder
+[submodule "cli"]
+	path = cli
+	url = ../vr.cli
+[submodule "common"]
+	path = common
+	url = ../vr.common
+[submodule "events"]
+	path = events
+	url = ../vr.events
+[submodule "imager"]
+	path = imager
+	url = ../vr.imager
+[submodule "runners"]
+	path = runners
+	url = ../vr.runners
+[submodule "server"]
+	path = server
+	url = ../vr.server
