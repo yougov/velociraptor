@@ -10,13 +10,11 @@ Go do that now.
 
 You'll need a local clone of the Velociraptor repo::
 
-    git clone https://github.com/yougov/velociraptor
-    cd velociraptor
-    git submodule init
-    git submodule update
+    git clone --recursive https://github.com/yougov/velociraptor
 
 Now launch vagrant::
 
+    cd velociraptor
     vagrant up
 
 Now go make a sandwich while you wait for the Ubuntu Trusty VM image to
