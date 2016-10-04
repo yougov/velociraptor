@@ -236,21 +236,6 @@ there.  Since the project repo is mounted inside the VM, you can do your
 editing on the outside with your regular tools, and the code running on the
 inside will stay in sync.
 
-Structure
-~~~~~~~~~
-
-Velociraptor's code is divided between the parts that are Django-specific (the
-web and worker processes), and the supporting library that is not.
-
-The Django parts are inside the 'vr' folder.  The non-Django parts are in
-the 'libraptor' folder.  This may be moved into a separate repository in the
-future.
-
-Some dependent projects are hosted in separate repos:
-
- - `vr.events`_ <https://bitbucket.org/yougov/vr.events>
- - `vr.cli`_ <https://bitbucket.org/yougov/vr.cli>
-
 UI
 ~~
 
