@@ -255,6 +255,12 @@ projects are a separate repository, linked by the parent repository
 https://github.com/yougov/velociraptor using `git submodules
 <https://git-scm.com/book/en/v2/Git-Tools-Submodules>`_.
 
+If you're committing to the project, you'll want to first configure
+the parent repository to automatically push commits in subrepos
+referenced by the parent:
+
+    $ git config push.recurseSubmodules on-demand
+
 
 .. _Vagrant: http://vagrantup.com/v1/docs/getting-started/index.html
 .. _VirtualBox: http://www.virtualbox.org/wiki/Downloads
