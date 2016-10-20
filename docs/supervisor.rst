@@ -22,7 +22,7 @@ Velociraptor includes a Supervisor `event listener`_ plugin to watch for any
 changes in process state and put a message on a Redis pubsub when they happen.
 The Velociraptor web interface relies on these messages to stay up to date.
 
-You'll need to install the 'raptor' package on each of your hosts and configure
+You'll need to install the 'vr.agent' package on each of your hosts and configure
 Supervisor to start the 'proc_publisher' event plugin, as shown in this sample
 supervisord.conf snippet::
 
@@ -34,7 +34,7 @@ supervisord.conf snippet::
 *command*
 
 The 'command' parameter here should point to the proc_publisher script
-installed by the raptor package.
+installed by the vr.agent package.
 
 *events*
 

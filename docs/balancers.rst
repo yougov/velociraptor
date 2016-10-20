@@ -29,7 +29,7 @@ The nginx_ balancer backend can be configured like so::
 
   BALANCERS:
     my_nginx_balancer:
-      BACKEND: vr.common.balancer.nginx.NginxBalancer 
+      BACKEND: vr.common.balancer.nginx.NginxBalancer
       user: some_user_with_sudo
       password: some_password
       include_dir: /etc/nginx/sites-enabled/
@@ -96,7 +96,7 @@ the nginx balancer, so its config is very similar::
 
   BALANCERS:
     my_varnish_balancer:
-      BACKEND: vr.common.balancer.varnish.VarnishBalancer 
+      BACKEND: vr.common.balancer.varnish.VarnishBalancer
       user: some_user_with_sudo
       password: some_password
       include_dir: /etc/varnish/
@@ -139,13 +139,13 @@ setting::
 
   BALANCERS:
     my_varnish_balancer:
-      BACKEND: vr.common.balancer.varnish.VarnishBalancer 
+      BACKEND: vr.common.balancer.varnish.VarnishBalancer
       user: some_user_with_sudo
       password: some_password
       hosts:
       - varnish.mydomain.com
     my_nginx_balancer:
-      BACKEND: vr.common.balancer.nginx.NginxBalancer 
+      BACKEND: vr.common.balancer.nginx.NginxBalancer
       user: some_user_with_sudo
       password: some_password
       hosts:
@@ -177,7 +177,7 @@ will do the following:
 4) Tell the remote service to reload its config.
 
 If two processes are both making changes at the same time, there's opportunity
-for the first one's changes to be overwritten by the second's.  
+for the first one's changes to be overwritten by the second's.
 
 In the nginx balancer, this risk is mitigated somewhat by use of a separate
 file for each pool.  So you'll only have problems if two workers are both
@@ -203,18 +203,18 @@ methods for add_nodes and delete_nodes.
 Creating New Balancer Backends
 ------------------------------
 
-A balancer is a Python class that implements the `raptor.balancer.Balancer`
-interface.
+A balancer is a Python class that implements the
+``vr.common.balancer.Balancer`` interface.
 
 Here's a hand-wavy hypothetical example. ::
 
-    # the abstract base class in the raptor lib doesn't actually provide any
+    # the abstract base class in the lib doesn't actually provide any
     # behavior but does help ensure you've implemented the right methods.
-    
+
     from vr.common.balancer import Balancer
     from mythical.tightrope.api imort go_get_a_pool
-    
-    
+
+
     class TightRopeBalancer(Balancer):
         def __init__(self, config):
 	    """
@@ -225,7 +225,7 @@ Here's a hand-wavy hypothetical example. ::
                 # YAML
                 BALANCERS:
                   my_tightrope_balancer:
-                    BACKEND: deployment.balancer.tightrope.Balancer 
+                    BACKEND: deployment.balancer.tightrope.Balancer
                     user: some_user_with_sudo
                     password: some_password
                     hosts:
@@ -240,7 +240,7 @@ Here's a hand-wavy hypothetical example. ::
 
         def get_nodes(self, pool_name):
             """
-	    Find the list of nodes that exist in a pool. 
+	    Find the list of nodes that exist in a pool.
 
             Args:
              - pool_name: string argument for the name of
@@ -262,7 +262,7 @@ Here's a hand-wavy hypothetical example. ::
             """
 	    Add nodes to the current pool.
 
-            Args: 
+            Args:
              - pool_name: the name of the pool as a string
              - nodes: list of strings in the form "hostname:port"
 
@@ -279,11 +279,11 @@ Here's a hand-wavy hypothetical example. ::
         def delete_nodes(self, pool_name, nodes):
             """
             Delete a node from the pool.
-             
+
             Args:
              - pool_name: the name of the pool as a string
              - nodes: list of nodes as strings in the form "hostname:port"
-             
+
             This should return successfully even if the pool
             or one of the nodes does not exist.
             """
