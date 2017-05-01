@@ -2,7 +2,7 @@
 
 # General information about the project.
 project = 'Velociraptor'
-copyright = '2015 YouGov, Plc.'
+copyright = 'YouGov, Plc.'
 
 # The short X.Y version.
 version = '4.1'
