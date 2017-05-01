@@ -10,3 +10,5 @@ version = '4.1'
 release = version
 
 master_doc = 'index'
+
+html_static_path = ['_static']
