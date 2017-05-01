@@ -1,6 +1,11 @@
 Administration
 ==============
 
+In the process of deploying apps into real-world systems, there
+are cases where actions in the UI can lead to surprising outcomes
+due to limitations that Velociraptor sets for itself in managing
+the systems.
+
 This section provides some guidance on common admininstrative scenarios.
 
 Deploying Workers
@@ -42,14 +47,6 @@ Once you have the list of swarms, you can readily dispatch each of those using t
 Important is the last '-' character, which is the version to dispatch. The dash simply indicates use the current version.
 
 The CLI will then dispatch each of the indicated swarms, getting all the procs back to production levels.
-
-Qwirks
-======
-
-In the process of deploying apps into real-world systems, there
-are cases where actions in the UI can lead to surprising outcomes
-due to limitations that Velociraptor sets for itself in managing
-the systems.
 
 Proc Supervisor
 ---------------
