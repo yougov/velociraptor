@@ -1,6 +1,5 @@
-============
-Architecture
-============
+Overview
+========
 
 Velociraptor (VR) seeks to create repeatable deployments by technical and
 non-technical users across a suite of languages, providing the
