@@ -37,7 +37,8 @@ The proc.yaml file contains the following keys:
   run.  The application's files will have their owner set to this user.
 - group: The application's files will have their group set to this.
 - env: A dictionary of environment variables to be set before launching the
-  application.
+  application. Values beginning with "$" will be substituted with the
+  corresponding environment variable during deployment.
 - settings: A dictionary of config values to be written to settings.yaml inside
   the container.  The location of that file will be passed to the application
   using the APP_SETTINGS_YAML environment variable.
@@ -147,17 +148,8 @@ production.
 
 The shell command does not lock the proc.yaml while running.
 
-Runner Variants
----------------
-
-Velociraptor provides two runner implementations.
-
-vrun_precise
-~~~~~~~~~~~~
-
-The ``vrun_precise`` runner is specific to Ubuntu 12.04 (Precise) hosts.  It
-creates bind mounts of the host's essential system folders inside the
-container.  This matches Velociraptor's original container implementation.
+Commands
+--------
 
 vrun
 ~~~~
