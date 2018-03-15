@@ -22,3 +22,6 @@
 [submodule "server"]
 	path = server
 	url = ../vr.server
+[submodule "launch"]
+	path = launch
+	url = gh://yougov/vr.launch
