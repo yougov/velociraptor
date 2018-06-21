@@ -1,0 +1,4 @@
+**/*.pyc
+**/*.so
+**/.mypy_cache/
+**/__pycache__/

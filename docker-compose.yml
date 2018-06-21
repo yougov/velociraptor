@@ -1,0 +1,36 @@
+version: '3'
+services:
+  web:
+    build: .
+    environment:
+      - APP_SETTINGS_YAML=/app/docker_settings.yaml
+    ports:
+    - "8000:8000"
+    volumes:
+    - .:/app
+    links:
+    - postgres
+    - redis
+  dbsetup:
+    build: .
+    command: /app/dbsetup.sh
+    environment:
+      - APP_SETTINGS_YAML=/app/docker_settings.yaml
+    volumes:
+    - .:/app
+    links:
+    - postgres
+  migrate:
+    build: .
+    command: python -c "import vr.server.commands as C; C.run_migrations()"
+    environment:
+      - APP_SETTINGS_YAML=/app/docker_settings.yaml
+    volumes:
+    - .:/app
+    links:
+    - postgres
+    - redis
+  postgres:
+    image: postgres
+  redis:
+    image: redis

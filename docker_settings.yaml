@@ -1,0 +1,13 @@
+DATABASES:
+  default:
+    ENGINE: 'django.db.backends.postgresql_psycopg2'
+    NAME: 'postgres'
+    USER: 'postgres'
+    PASSWORD: 'postgres'
+    HOST: 'postgres'
+    PORT: '5432'
+
+CELERYBEAT_SCHEDULE_FILENAME: 'redis://redis:6379/0'
+BROKER_URL: 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND: 'redis://redis:6379/0'
+EVENTS_PUBSUB_URL: 'redis://redis:6379/0'
