@@ -1,4 +1,4 @@
-FROM python:2.7-stretch
+FROM python:3.6
 
 LABEL maintainer="Lorenzo Bolla <lorenzo.bolla@yougov.com>"
 
@@ -12,4 +12,4 @@ RUN pip install -e ./builder
 RUN pip install -e ./imager
 RUN pip install -e ./server
 
-CMD gunicorn -c gunicorn_config.py vr.server.wsgi:app
+CMD gunicorn --log-level debug -c gunicorn_config.py vr.server.wsgi:app
